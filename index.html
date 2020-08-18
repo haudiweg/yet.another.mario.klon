@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<link rel="icon" href="img/icon.png" async>
+<meta charset="UTF-8">
+<meta http-equiv="Content-Language" content="de, en">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+<meta name="description" content="Jump and Run Game prototyp.">
+<meta name="robots" content="noindex,nofollow">
+<meta name="keywords" lang="en" content="game, canvas, jump and run, boring">
+<meta name="keywords" lang="de" content="Spiel, canvas, Jump and Run, langeweile">
+<meta name="format-detection" content="telephone=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>yet another mario klon</title>
+<noscript>Your browser does not support JavaScript!</noscript>
+<script id="shader-vs" type="x-shader/x-vertex">
+attribute vec4 coordinates;
+attribute vec2 aTexCoord;
+attribute float grassrotation;
+attribute vec3 random;
+attribute float grassnum;
+attribute vec2 grassstartcord;
+
+uniform vec2 canvashwwebgl;
+uniform float rotation;
+uniform vec4 translation;
+uniform vec4 offsgl;
+uniform vec4 aColor;
+uniform float aPicture;
+uniform float rendermode;
+
+varying vec2 vTexCoord;
+varying float vPicture;
+varying vec4 vColor;
+
+vec2 conv2(vec2 cord) {return (vec2((cord.x/canvashwwebgl.x)*2.0-1.0,((canvashwwebgl.y-cord.y)/canvashwwebgl.y)*2.0-1.0));}
+vec4 conv4(vec4 cord) {return (vec4((cord.x/canvashwwebgl.x)*2.0-1.0,((canvashwwebgl.y-cord.y)/canvashwwebgl.y)*2.0-1.0,cord.zw));}
+void main(void) {
+    if(int(rendermode)==1){
+        float roatation=atan((sin(rotation/grassnum)+sin(random.x/grassnum)+sin(grassrotation)+random.z)/(cos(rotation/grassnum)+cos(random.x/grassnum)+cos(grassrotation)+random.y));
+        //float roatation=atan((sin(rotation)+sin(random)+sin(grassrotation))/(cos(rotation)+cos(random)+cos(grassrotation)));
+        //float roatation=(rotation+random+grassrotation)/float(3);
+        //roatation=float(0);
+
+        vec4 rotatedPosition = vec4(
+            cos(roatation) * (coordinates.x-grassstartcord.x) - sin(roatation) * (coordinates.y-grassstartcord.y) + grassstartcord.x,
+            sin(roatation) * (coordinates.x-grassstartcord.x) + cos(roatation) * (coordinates.y-grassstartcord.y) + grassstartcord.y,
+            coordinates.z,
+            coordinates.w);
+
+        vColor=vec4(0,1,0,1);
+        vPicture=float(0);
+        gl_Position = conv4((rotatedPosition+translation)/offsgl.w-vec4(offsgl.xy,0,0));
+    }else if(int(rendermode)==0){
+        vColor=aColor;
+        vTexCoord=aTexCoord;
+        vPicture=aPicture;
+        gl_Position = conv4((coordinates+translation)/offsgl.w-vec4(offsgl.xy,0,0));
+    }
+
+}
+</script>
+<script id="shader-fs" type="x-shader/x-fragment">
+precision mediump float;
+varying vec4 vColor;
+varying float vPicture;
+varying vec2 vTexCoord;
+uniform sampler2D uSampler;
+void main(void) {
+    if(int(vPicture) == 0){
+        gl_FragColor = vColor;
+    }
+    if(int(vPicture) == 1){
+        gl_FragColor = texture2D(uSampler, vTexCoord);
+    }
+}
+</script>
+
+<script id="shader-webgl2-vs" type="x-shader/x-vertex">#version 300 es
+//do code of script edit in js to make that the shader use a version that is suportet
+precision highp float;
+in vec4 coordinates;        
+in vec2 aTexCoord;          //textur cordinates
+in float grassrotation;     //default position were grass look att
+in float grassnum;          //says how strong to bend the grass  (first grass segment need les bend than the last)
+in vec2 grassstartcord;     //point from were the grass rotate
+
+in vec2 aVelo;              //grass.velo[0]   grass.velo[1]
+in vec2 aWindopt;           //grass.windsmove grass.range
+in float aWind;             //input from wind of every grass
+
+uniform vec2 canvashwwebgl;
+uniform float rotation;   //is the global wind
+uniform vec4 translation;
+uniform vec4 offsgl;
+uniform vec4 aColor;
+uniform int aPicture;
+uniform int rendermode;
+
+
+uniform float fps;
+
+
+out vec2 vTexCoord;
+flat out int vPicture;
+out vec4 vColor;
+
+out vec2 aVeloout;      //output from velo of every grass
+out float aWindout;     //output from wind of every grass
+
+uniform vec4 playerposvel[16];
+uniform int playerlength;
+const float maxnumber=float(~uint(0));
+
+vec2 conv2(vec2 cord) {return (vec2((cord.x/canvashwwebgl.x)*2.0-1.0,((canvashwwebgl.y-cord.y)/canvashwwebgl.y)*2.0-1.0));}
+vec4 conv4(vec4 cord) {return (vec4((cord.x/canvashwwebgl.x)*2.0-1.0,((canvashwwebgl.y-cord.y)/canvashwwebgl.y)*2.0-1.0,0.0,1.0));}
+void main(void) {
+    if(rendermode==3){
+        aWindout=0.0;
+        aVeloout=vec2(0.0,0.0);
+    }else if(rendermode==1){
+        float randgen=float(
+            uint(((translation.x+1.)/2.)        *maxnumber)^
+            uint(((translation.y+1.)/2.)        *maxnumber)^
+            uint(((grassrotation+1.)/2.)        *maxnumber)^
+            uint(((rotation+1.)/2.)             *maxnumber)^
+            uint((fps-float(uint(fps)))         *maxnumber)^           //get just the decimal portion
+            uint(((aWindopt.x+1.)/2.)           *maxnumber)^
+            uint(aWindopt.y                     *maxnumber)^
+            uint(((aWind+1.)/2.)                *maxnumber)
+            )/maxnumber;
+        aWindout=aWind*pow(aWindopt.x,60.0/fps)+(randgen*2.0-1.0)*aWindopt.y*(1.0-pow(aWindopt.x,60.0/fps));
+        aVeloout=vec2(aVelo.x*0.95*(fps/60.0),aVelo.y*0.95*(fps/60.0));
+
+        float roatation=atan(
+            (
+                sin(rotation/grassnum)+
+                sin(aWindout/grassnum)+
+                sin(grassrotation)+
+                max(abs(aVeloout.y),0.5)*sign(aVeloout.y)
+            )/(
+                cos(rotation/grassnum)+
+                cos(aWindout/grassnum)+
+                cos(grassrotation)+
+                max(abs(aVeloout.x),0.5)*sign(aVeloout.x)
+            ));
+
+
+        vec4 rotatedPosition = vec4(
+            cos(-roatation) * (coordinates.x-grassstartcord.x) - sin(-roatation) * (coordinates.y-grassstartcord.y) + grassstartcord.x,
+            sin(-roatation) * (coordinates.x-grassstartcord.x) + cos(-roatation) * (coordinates.y-grassstartcord.y) + grassstartcord.y,
+            coordinates.z,
+            coordinates.w);
+
+        vColor=vec4(0,1,0,1);
+        vPicture=0;
+        gl_PointSize = 1.0 /offsgl.w;
+        gl_Position = conv4((rotatedPosition+translation)/offsgl.w-vec4(offsgl.xy,0,0));
+        vec2 pos=rotatedPosition.xy+translation.xy;
+        for(int i=0;i<playerlength;i++){
+            aVeloout-=playerposvel[i].wz*min(max(5.0-distance(pos,playerposvel[0].xy),0.0),0.5);
+        }
+    }else if(rendermode==0){
+        vColor=aColor;
+        vTexCoord=aTexCoord;
+        vPicture=aPicture;
+        gl_Position = conv4((coordinates+translation)/offsgl.w-vec4(offsgl.xy,0,0));
+    }
+}
+
+</script>
+<script id="shader-webgl2-fs" type="x-shader/x-fragment">#version 300 es
+precision mediump float;
+in vec4 vColor;
+flat in int vPicture;
+in vec2 vTexCoord;
+uniform sampler2D uSampler;
+out vec4 fragColor;
+void main(void) {
+    if(vPicture == 0){
+        fragColor = vColor;
+    }
+    if(vPicture == 1){
+        fragColor = texture(uSampler, vTexCoord);
+    }
+}
+</script>
+
+<script src="config.js"></script>
+<script id="manage">
+'use strict';
+console.groupCollapsed("starting");
+console.info("selftest start")
+let totest=["Worker","Performance","crypto","requestAnimationFrame","JSON","Float64Array","Set","Path2D","CanvasRenderingContext2D","URL","IdleDeadline","Image","FileReader","Blob","OffscreenCanvas"]
+let vendors=["webkit","moz","o","ms"]
+for(let i of totest){
+    if(!(i in window)){
+        console.warn(i+" not found")
+        for(let i1 of vendors){
+            let prefixedversion=i1+i.charAt(0).toUpperCase()+i.slice(1)
+            if(prefixedversion in window){
+                window[i]=window[prefixedversion]
+                console.log("found prefixed "+prefixedversion)
+            }
+        }
+
+    }
+}
+console.info("selftest finished")
+console.info("backupfunction load")
+if(!("requestAnimationFrame" in window)){window.requestAnimationFrame=function(callback){window.setTimeout(callback, 1000 / 60)};console.log("use setTimeout")}
+if(!("OffscreenCanvas" in window)){//kucke
+    console.warn("use canvas as offscreencanvas")
+    window.OffscreenCanvas=function(w=0,h=0){
+        let a=document.createElement("Canvas")
+        a.width=w
+        a.height=h
+        return a
+    }
+}else{
+    try{
+        (new OffscreenCanvas(0,0)).getContext("2d");
+    }catch{
+        console.warn("offscreencanvas context 2d dont work")
+        window.OffscreenCanvas=function(w=0,h=0){
+        let a=document.createElement("Canvas")
+        a.width=w
+        a.height=h
+        return a}
+    }
+}
+console.info("backupfunction finished")
+
+console.info("Promises start")
+let promall=[]
+let promallres=[]
+let promallrej=[]
+for(let i=0;i<=9;i++){
+    promall[i]=new Promise((r,j)=>[promallres[i],promallrej[i]]=[r,j]);
+    promall[i].res=false
+}
+console.group("Promises")
+promall[0].then(()=>{promall[0].res=true;console.info("0loaded mainscript")},()=>{console.warn("0couldnt load mainscript")})
+promall[1].then(()=>{promall[1].res=true;console.info("1loaded createobj")},()=>{console.warn("1couldnt load createobj")})
+promall[2].then(()=>{promall[2].res=true;console.info("2loaded ai")},()=>{console.warn("2couldnt load ai")})
+promall[3].then(()=>{promall[3].res=true;console.info("3loaded textur")},()=>{console.warn("3couldnt load textur")})
+promall[4].then(()=>{promall[4].res=true;console.info("4loaded save")},()=>{console.warn("4couldnt load save")})
+promall[5].then(()=>{promall[5].res=true;console.info("5loaded build")},()=>{console.warn("5couldnt load build")})
+promall[6].then(()=>{promall[6].res=true;console.info("6loaded game")},()=>{console.warn("6couldnt load game")})
+promall[7].then(()=>{promall[7].res=true;console.info("7loaded events")},()=>{console.warn("7couldnt load events")})
+promall[8].then(()=>{promall[8].res=true;console.info("8loaded maps")},()=>{console.warn("8couldnt load maps")})
+promall[9].then(()=>{promall[9].res=true;console.info("9loaded language")},()=>{console.warn("9couldnt load language")})
+
+Promise.all([promall[1],promall[8]]).then(()=>{defaultarrload();})
+Promise.all(promall).then(()=>{console.info("all loaded")},()=>{console.warn("couldnt load all")})
+
+document.addEventListener('DOMContentLoaded',()=>{
+    Promise.all([promall[0]]).then(()=>{
+        document.getElementById("start").onclick=()=>{start('ani')};
+        document.getElementById("keymap").onclick=()=>{menu(),mswitch()};
+        document.getElementById("save").onclick=()=>{loadandsave(),mswitch()};
+        document.getElementById("settings").onclick=()=>{setting(),mswitch()};
+        document.getElementById("build").onclick=()=>{start('build')};
+
+        document.getElementById("keymap").disabled=false;
+        document.getElementById("settings").disabled=false;
+        if(!disablemenucontrolls)menucontrolls()
+    })
+    Promise.all([promall[0],promall[1],promall[8]]).then(()=>{
+        document.getElementById("save").disabled=false
+    })
+    Promise.all([promall[0],promall[1],promall[6],promall[8]]).then(()=>{
+        canvasstart()
+        document.getElementById("start").disabled=false
+    })
+    Promise.all([promall[0],promall[1],promall[5],promall[8]]).then(()=>{
+        document.getElementById("build").disabled=false
+    })
+    Promise.all([promall[0],promall[9]]).then(()=>{
+        document.getElementById("keymap").title=tooltips.hasOwnProperty("buttom")&&tooltips.buttom.hasOwnProperty("keymap")?tooltips.buttom.keymap:""
+        document.getElementById("settings").title=tooltips.hasOwnProperty("buttom")&&tooltips.buttom.hasOwnProperty("settings")?tooltips.buttom.settings:""
+    })
+    Promise.all([promall[0],promall[1],promall[8],promall[9]]).then(()=>{
+        document.getElementById("save").title=tooltips.hasOwnProperty("buttom")&&tooltips.buttom.hasOwnProperty("save")?tooltips.buttom.save:""
+    })
+    Promise.all([promall[0],promall[1],promall[6],promall[8],promall[9]]).then(()=>{
+        document.getElementById("start").title=tooltips.hasOwnProperty("buttom")&&tooltips.buttom.hasOwnProperty("start")?tooltips.buttom.start:""
+    })
+    Promise.all([promall[0],promall[1],promall[5],promall[8],promall[9]]).then(()=>{
+        document.getElementById("build").title=tooltips.hasOwnProperty("buttom")&&tooltips.buttom.hasOwnProperty("build")?tooltips.buttom.build:""
+    })
+    Promise.all(promall).then(()=>{//brauch da net jede
+        urlparams()
+        specialevents()
+    })
+    Promise.all([promall[0],promall[9]]).then(()=>{
+        for(let i of document.querySelectorAll(".menu")){
+            if(tooltips.hasOwnProperty("buttomname")&&tooltips.buttomname.hasOwnProperty(i.id))i.textContent=tooltips.buttomname[i.id]
+        }
+    })
+})
+Promise.allSettled(promall).then(()=>{console.groupEnd();console.info("Promises finished");console.groupEnd();promall[0].then(()=>messurefps())})
+//bekomme alle selbst geschriebene functionen
+//for(var i in this) {
+//    try {
+//	    if((typeof this[i]).toString()=="function"&&this[i].toString().indexOf("native")==-1){
+//        }
+//    } catch(e){}
+//}
+
+</script>
+<script src="main.js" importance="high" async onerror="promallrej[0]()"></script>
+<script src="createobj.js" importance="high" async onerror="promallrej[1]()"></script>
+<script src="ai.js" async onerror="promallrej[2]()"></script>
+<script src="textur.js" async onerror="promallrej[3]()"></script>
+<script src="save.js" async onerror="promallrej[4]()"></script>
+<script src="build.js" async onerror="promallrej[5]()"></script>
+<script src="game.js" importance="high" async onerror="promallrej[6]()"></script>
+<script src="events.js" async onerror="promallrej[7]()"></script>
+<script src="maps.js" importance="high" async onerror="promallrej[8]()"></script>
+<script src="language.js" async onerror="promallrej[9]()"></script>
+<script id="worker1" async type="javascript/worker">
+self.onmessage=(e)=>{//wasser map erstelln
+    pathmap(e.data[0],e.data[1],e.data[2],e.data[3],e.data[4])
+}
+function pathmap(minx,miny,maxx,maxy,test){
+    const col=new Uint32Array((maxx-minx)*(maxy-miny)).fill(Number.MAX_SAFE_INTEGER)
+    let Old=1
+    let list=[]
+    for(let i of test){
+        const minxs=Math.trunc(Math.min(...i.x))
+        const minys=Math.trunc(Math.min(...i.y))
+        const maxxs=Math.trunc(Math.max(...i.x))+1
+        const maxys=Math.trunc(Math.max(...i.y))+1
+        const colobj1=new Uint8Array(Math.floor(maxys-minys)*Math.floor(maxxs-minxs))
+        for(let i0=0,i1=1;i0<i.x.length;i0++,i1=(i0+1)%i.x.length){
+            let winkel=Math.atan2(i.y[i0]-i.y[i1],i.x[i0]-i.x[i1])
+            for(let ix=i.x[i0],iy=i.y[i0];Math.round(ix)!=Math.round(i.x[i1])||Math.round(iy)!=Math.round(i.y[i1]);ix-=Math.cos(winkel),iy-=Math.sin(winkel)){
+                if(i.mode==2)list.push((Math.round(iy)-miny)*(maxx-minx)+Math.round(ix)-minx);
+                if(i.mode!=1)col[(Math.round(iy)-miny)*(maxx-minx)+Math.round(ix)-minx]=0
+                colobj1[(Math.round(iy)-minys)*(maxxs-minxs)+Math.round(ix)-minxs]=1
+            }
+        }
+        for(let iy=0;iy<maxys-minys;iy++){
+            for(let ix=0;ix<maxxs-minxs;ix++){
+                if(colobj1[iy*Math.floor(maxxs-minxs)+ix]==1&&colobj1[iy*Math.floor(maxxs-minxs)+Math.min(ix+1,Math.floor(maxxs-minxs))]==0){
+                    let allowed=false
+                    for(let ix1=ix+1;ix1<(maxxs-minxs);ix1++){
+                        if(colobj1[iy*Math.floor(maxxs-minxs)+ix1]==1){allowed=true;break}
+                    }
+                    if(!allowed)continue
+                    for(let ix1=ix+1;ix1<(maxxs-minxs)&&colobj1[iy*(maxxs-minxs)+ix1]==0;ix1++){
+                        if(i.mode==2)list.push((Math.round(iy)+minys-miny)*(maxx-minx)+Math.round(ix)+minxs-minx);
+                        if(i.mode!=1)col[(Math.round(iy)+minys-miny)*(maxx-minx)+Math.round(ix)+minxs-minx]=0
+                    }
+                }
+            }
+        }
+    }
+    while (true) {
+        const list1=new Set(list)
+        list=[]
+        Old++
+        for (let a1 of list1){
+            let at0=Math.trunc(a1/(maxx-minx)) //y
+            let at1=Math.trunc(a1%(maxx-minx)) //x
+            col[a1]=Old
+            if (at0+1<=(maxy-miny)&&col[a1+(maxx-minx)]==0)list.push(a1+(maxx-minx))
+            if (at1+1<=(maxx-minx)&&col[a1+1]==0)list.push(a1+1)
+            if (at0-1>=0&&col[a1-(maxx-minx)]==0)list.push(a1-(maxx-minx))
+            if (at1-1>=0&&col[a1-1]==0)list.push(a1-1)
+        }
+        if(list1.size==0){
+            const colo=col.buffer
+            postMessage(colo,[colo]);
+            break
+        }
+    }
+}
+</script>
+<script id="worker2" async type="javascript/worker">
+self.onmessage=(e)=>{
+    const minx=e.data[0],miny=e.data[1],maxx=e.data[2],maxy=e.data[3],myRect=e.data[4]
+    const col=new Uint32Array((maxy-miny)*(maxx-minx))
+    const colobj=new Uint8Array((maxy-miny)*(maxx-minx))
+    work(minx,miny,maxx,maxy,myRect,col,colobj)
+    const colb=col.buffer
+    const colbobj=colobj.buffer
+    postMessage([colb,colbobj],[colb,colbobj]);//transferobj nehmen
+    //postMessage(colb,[colb]);//transferobj nehmen
+}
+function work(minx,miny,maxx,maxy,myRect,col,colobj){
+    let offscall=false
+    if(typeof(OffscreenCanvas)=="function"){
+        offscall=true
+        //tests auf offscreen das auch context 2d geht
+        try{
+            (new OffscreenCanvas(0,0)).getContext("2d");
+        }catch{
+            offscall=false
+        }
+    }
+    for (let num in myRect){
+        let i=myRect[num]
+        //wen ich im array bin dan mach mir tiefe werte geben
+        if(typeof(i.x)=="object"){
+            if(offscall||typeof(Canvas)=="function"){
+                const minxs=Math.min(...i.x)
+                const minys=Math.min(...i.y)
+                const maxxs=Math.max(...i.x)
+                const maxys=Math.max(...i.y)
+                let canvas
+                if(offscall){
+                    canvas=new OffscreenCanvas(Math.round(maxxs-minxs),Math.round(maxys-minys))
+                }else{
+                    canvas=document.createElement("Canvas")
+                    canvas.width=Math.round(maxxs-minxs)
+                    canvas.height=Math.round(maxys-minys)
+                }
+                ctx=canvas.getContext("2d");
+                ctx.moveTo(i.x[0]-minxs,i.y[0]-minys)
+                for (let i1=1;i1<i.x.length;i1++){
+                    ctx.lineTo(i.x[i1]-minxs,i.y[i1]-minys)
+                }
+                for (let y=0;y<=maxys-minys;y++) {
+                    for (let x=0;x<=maxxs-minxs;x++) {
+                        if(ctx.isPointInPath(x,y)){
+                            col[(y+minys-miny)*(maxx-minx)+x+minxs-minx]=((maxx-minx)*(maxy-miny)+Math.min(y-minys,maxys-y,x-minxs,maxxs-x))|0
+                            colobj[(y+minys-miny)*(maxx-minx)+x+minxs-minx]=(+num+1)
+                        }
+                    }
+                }
+            }else{
+                const minxs=Math.min(...i.x)
+                const minys=Math.min(...i.y)
+                const maxxs=Math.max(...i.x)+1
+                const maxys=Math.max(...i.y)+1
+                const colobj1=new Uint8Array(Math.floor(maxys-minys)*Math.floor(maxxs-minxs))
+
+                for(let i0=0,i1=1;i0<i.x.length;i0++,i1=(i0+1)%i.x.length){
+                    let winkel=Math.atan2(i.y[i0]-i.y[i1],i.x[i0]-i.x[i1])
+                    for(let ix=i.x[i0],iy=i.y[i0];Math.round(ix)!=Math.round(i.x[i1])||Math.round(iy)!=Math.round(i.y[i1]);ix-=Math.cos(winkel),iy-=Math.sin(winkel)){
+                        colobj1[(Math.round(iy)-minys-1)*(maxxs-minxs)+Math.round(ix)-minxs]=1
+                        col[(Math.round(iy)+minys-miny)-1*(maxx-minx)+Math.round(ix)+minxs-minx]=((maxx-minx)*(maxy-miny)+Math.min(iy,maxys-(iy+minys),ix,maxxs-(ix+minxs)))|0
+                        colobj[(Math.round(iy)+minys-miny-1)*(maxx-minx)+Math.round(ix)+minxs-minx]=(+num+1)
+                    }
+                }
+                for(let iy=0;iy<maxys-minys;iy++){
+                    for(let ix=0;ix<maxxs-minxs;ix++){
+                        if(colobj1[iy*Math.floor(maxxs-minxs)+ix]==1&&colobj1[iy*Math.floor(maxxs-minxs)+Math.min(ix+1,Math.floor(maxxs-minxs))]==0){
+                            let allowed=false
+                            for(let ix1=ix+1;ix1<(maxxs-minxs);ix1++){
+                                if(colobj1[iy*Math.floor(maxxs-minxs)+ix1]==1){allowed=true;break}
+                            }
+                            if(!allowed)continue
+                            for(let ix1=ix+1;ix1<(maxxs-minxs)&&colobj1[iy*(maxxs-minxs)+ix1]==0;ix1++){
+                                col[(iy+minys-miny)*(maxx-minx)+ix1+minxs-minx]=((maxx-minx)*(maxy-miny)+Math.min(iy,maxys-(iy+minys),ix1,maxxs-(ix1+minxs)))|0
+                                colobj[(iy+minys-miny)*(maxx-minx)+ix1+minxs-minx]=(+num+1)
+                            }
+                        }
+                    }
+                }
+            }
+        }else{
+            for (let y=i.y|0;y<=i.y+i.h;y++) {
+                for (let x=i.x|0;x<=i.x+i.w;x++) {
+                    col[(y-miny)*(maxx-minx)+x-minx]=((maxx-minx)*(maxy-miny)+Math.min(y-i.y,i.y+i.h-y,x-i.x,i.x+i.w-x))|0
+                    colobj[(y-miny)*(maxx-minx)+x-minx]=(+num+1)
+                }
+            }
+        }
+    }
+}
+</script>
+<style>
+body,html,canvas{
+    margin:0;
+}
+body{
+    height:100vh;
+    display:grid;
+    grid-template-columns:auto;
+    grid-template-rows:auto;
+    overflow-x: hidden;
+    }
+img{display:none}
+#canvas{
+    position:absolute;
+    z-index: 0;
+}
+#canvasb{
+    position:absolute;
+    z-index:-2
+}
+#canvasshadow{
+    position:absolute;
+    z-index:-3
+}
+#canvasbshadow{
+    position:absolute;
+    z-index:-4
+}
+.menu{
+    margin-left:30vw;
+    margin-right:30vw;
+    z-index:1;
+    }
+.menu:focus{
+    border: 1px solid;
+}
+#buildmenu{
+    position:absolute;
+    bottom:0;
+    height:10vh;
+    width: 100vw;
+    overflow-x:auto;
+    overflow-y:hidden;
+    border-top:1px solid gray;
+    white-space: nowrap;
+}
+#buildmenu, div{
+    z-index:2;
+}
+#optionmenu{
+    position:absolute;
+    bottom:10vh;
+    top:0;
+    right:0;
+    overflow-x:auto;
+    user-select:none;
+}
+#optionmenu, input{
+    z-index:3;
+}
+.menues{
+    z-index: 1;
+}
+#buildmenu div:focus{
+    border-left: 1px solid blue;
+    border-right: 1px solid blue;
+}
+h1,h2,h3{
+    margin: 0;
+    overflow: hidden;
+}
+</style>
+</head>
+<body>
+    <button accesskey="s" title="need main createobj and game" disabled="true" class="menu" id="start" autofocus>Start</button>
+    <button accesskey="k" title="need main" disabled="true" class="menu" id="keymap">Keymap</button>
+    <button accesskey="l" title="need main (save) and createobj" disabled="true" class="menu" id="save">Load&Save</button>
+    <button accesskey="o" title="need main" disabled="true" class="menu" id="settings">Setting</button>
+    <button accesskey="b" title="need main createobj and build" disabled="true" class="menu" id="build">Build</button>
+    <canvas id="canvas">Sorry, your browser cannot display this game.</canvas>
+    <canvas id="canvasb"></canvas>
+</body>
