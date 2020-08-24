@@ -13,161 +13,162 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>yet another mario klon</title>
 <noscript>Your browser does not support JavaScript!</noscript>
-<script id="shader-vs" type="x-shader/x-vertex">
-attribute vec4 coordinates;
-attribute vec2 aTexCoord;
-attribute float grassrotation;
-attribute vec3 random;
-attribute float grassnum;
-attribute vec2 grassstartcord;
+<script id="shader-webgl2-vs-grass" type="x-shader/x-vertex">#version 300 es
+//do code of script edit in js to make that the shader use a version that is suportet
+precision highp float;
+ 
+in vec4 coordinates1;     //point from were the grass rotate
+
+in float grassrotation;     //default position were grass look att
+in float grassnum;
+in vec2 grassstartcord;
+
+in vec2 aVelo;              //grass.velo[0]   grass.velo[1]
+in vec2 aWindopt;           //grass.windsmove grass.range
+in vec3 aWind;             //input from wind of every grass
+in vec4 grasscolor;
 
 uniform vec2 canvashwwebgl;
-uniform float rotation;
-uniform vec4 translation;
 uniform vec4 offsgl;
-uniform vec4 aColor;
-uniform float aPicture;
-uniform float rendermode;
+uniform vec2 translation;
+uniform int rendermode;
+uniform float fps;
+uniform float globalwind;   //is the global wind
+uniform vec4 objectspos[MAX_NUM_TOTAL_OBJECTS];
+uniform vec2 objectsvel[MAX_NUM_TOTAL_OBJECTS];
+uniform int objectslength;
 
-varying vec2 vTexCoord;
-varying float vPicture;
-varying vec4 vColor;
+out vec4 grasscolor1;
+out vec2 aVelo1;      //output from velo of every grass
+out vec3 aWind1;     //output from wind of every grass
+flat out int debug;
+out vec4 debugc;
 
+
+const float maxnumber=float(~uint(0));
+
+float mindistpointtofloat(vec2 point,vec4 rectangle){
+    vec2 nearestpoint=vec2(0,0);
+    if(point.x<=rectangle.x){
+        nearestpoint.x=rectangle.x;
+    }else if(point.x>=rectangle.x+rectangle.z){
+        nearestpoint.x=rectangle.x+rectangle.z;
+    }else{
+        nearestpoint.x=point.x;
+    }
+    if(point.y<=rectangle.y){
+        nearestpoint.y=rectangle.y;
+    }else if(point.y>=rectangle.y+rectangle.w){
+        nearestpoint.y=rectangle.y+rectangle.w;
+    }else{
+        nearestpoint.y=point.y;
+    }
+    //negativ w h beachen vieleicht
+    return distance(point,nearestpoint);
+}
 vec2 conv2(vec2 cord) {return (vec2((cord.x/canvashwwebgl.x)*2.0-1.0,((canvashwwebgl.y-cord.y)/canvashwwebgl.y)*2.0-1.0));}
-vec4 conv4(vec4 cord) {return (vec4((cord.x/canvashwwebgl.x)*2.0-1.0,((canvashwwebgl.y-cord.y)/canvashwwebgl.y)*2.0-1.0,cord.zw));}
+vec4 conv4(vec4 cord) {return (vec4((cord.x/canvashwwebgl.x)*2.0-1.0,((canvashwwebgl.y-cord.y)/canvashwwebgl.y)*2.0-1.0,0.0,1.0));}
 void main(void) {
-    if(int(rendermode)==1){
-        float roatation=atan((sin(rotation/grassnum)+sin(random.x/grassnum)+sin(grassrotation)+random.z)/(cos(rotation/grassnum)+cos(random.x/grassnum)+cos(grassrotation)+random.y));
-        //float roatation=atan((sin(rotation)+sin(random)+sin(grassrotation))/(cos(rotation)+cos(random)+cos(grassrotation)));
-        //float roatation=(rotation+random+grassrotation)/float(3);
-        //roatation=float(0);
+    float hoenabhaenigkeit=min(max(1.0,distance(coordinates1.xy,grassstartcord)/20.0),30.0);
+    grasscolor1=grasscolor;
+    if(rendermode==1){
+        float roatation=atan(
+            (
+                sin(globalwind*grassnum*hoenabhaenigkeit)+
+                sin(aWind.x*grassnum*hoenabhaenigkeit)+
+                sin(grassrotation)+
+                (max(abs(aVelo.x),0.5)*grassnum)*sign(aVelo.x)
+            )/(
+                cos(globalwind*grassnum*hoenabhaenigkeit)+
+                cos(aWind.x*grassnum*hoenabhaenigkeit)+
+                cos(grassrotation)+
+                (max(abs(aVelo.y),0.5)*grassnum)*sign(aVelo.y)
+            ));
+
 
         vec4 rotatedPosition = vec4(
-            cos(roatation) * (coordinates.x-grassstartcord.x) - sin(roatation) * (coordinates.y-grassstartcord.y) + grassstartcord.x,
-            sin(roatation) * (coordinates.x-grassstartcord.x) + cos(roatation) * (coordinates.y-grassstartcord.y) + grassstartcord.y,
-            coordinates.z,
-            coordinates.w);
+            cos(-roatation) * (coordinates1.x-grassstartcord.x) - sin(-roatation) * (coordinates1.y-grassstartcord.y) + grassstartcord.x,
+            sin(-roatation) * (coordinates1.x-grassstartcord.x) + cos(-roatation) * (coordinates1.y-grassstartcord.y) + grassstartcord.y,
+            coordinates1.z,coordinates1.w
+        );
+        
+        gl_Position = conv4((rotatedPosition+vec4(translation.xy,0,0))/offsgl.w-vec4(offsgl.xy,0,0));
+    }else if(rendermode==0){
+        aWind1.y=aWind.y+60.0/fps;
+        aWind1.z=aWind.z;
+        if(aWind1.y>=30.0){
+            aWind1.y-=30.0;
+            aWind1.z=float(
+                uint(translation.x                  *maxnumber)^
+                uint(translation.y                  *maxnumber)^
+                uint(((grassrotation+1.)/2.)        *maxnumber)^
+                uint(((globalwind+1.)/2.)           *maxnumber)^
+                uint((fps-float(uint(fps)))         *maxnumber)^           //get just the decimal portion
+                uint(((aWindopt.x+1.)/2.)           *maxnumber)^
+                uint(aWindopt.y                     *maxnumber)^
+                uint(aWind.z                        *maxnumber)
+                )/maxnumber;
+        }
+        //randomwert jede par frames nehmen und wind langram draf anpasen lassen
+        aWind1.x=aWind.x*pow(aWindopt.x,60.0/fps)+(aWind.z*2.0-1.0)*aWindopt.y*(1.0-pow(aWindopt.x,60.0/fps));
+        aVelo1=vec2(aVelo.x*0.9*(fps/60.0),aVelo.y*0.9*(fps/60.0));
 
-        vColor=vec4(0,1,0,1);
-        vPicture=float(0);
-        gl_Position = conv4((rotatedPosition+translation)/offsgl.w-vec4(offsgl.xy,0,0));
-    }else if(int(rendermode)==0){
-        vColor=aColor;
-        vTexCoord=aTexCoord;
-        vPicture=aPicture;
-        gl_Position = conv4((coordinates+translation)/offsgl.w-vec4(offsgl.xy,0,0));
+        float roatation=atan(
+            (
+                sin(globalwind*grassnum*hoenabhaenigkeit)+
+                sin(aWind1.x*grassnum*hoenabhaenigkeit)+
+                sin(grassrotation)+
+                (max(abs(aVelo1.x),0.5)*grassnum)*sign(aVelo1.x)
+            )/(
+                cos(globalwind*grassnum*hoenabhaenigkeit)+
+                cos(aWind1.x*grassnum*hoenabhaenigkeit)+
+                cos(grassrotation)+
+                (max(abs(aVelo1.y),0.5)*grassnum)*sign(aVelo1.y)
+            ));
+
+        vec2 rotatedPosition = vec2(
+            cos(-roatation) * (coordinates1.x-grassstartcord.x) - sin(-roatation) * (coordinates1.y-grassstartcord.y) + grassstartcord.x,
+            sin(-roatation) * (coordinates1.x-grassstartcord.x) + cos(-roatation) * (coordinates1.y-grassstartcord.y) + grassstartcord.y
+        );
+
+        for(int i=0;i<objectslength;i++){
+            aVelo1-=objectsvel[i]*min(max(5.0-mindistpointtofloat(rotatedPosition.xy+translation.xy,objectspos[i]),0.0),0.5);
+        }
     }
-
 }
 </script>
-<script id="shader-fs" type="x-shader/x-fragment">
+<script id="shader-webgl2-fs-grass" type="x-shader/x-fragment">#version 300 es
 precision mediump float;
-varying vec4 vColor;
-varying float vPicture;
-varying vec2 vTexCoord;
-uniform sampler2D uSampler;
+in vec4 grasscolor1;
+out vec4 fragColor;
 void main(void) {
-    if(int(vPicture) == 0){
-        gl_FragColor = vColor;
-    }
-    if(int(vPicture) == 1){
-        gl_FragColor = texture2D(uSampler, vTexCoord);
-    }
+    fragColor = grasscolor1;
 }
 </script>
-
 <script id="shader-webgl2-vs" type="x-shader/x-vertex">#version 300 es
 //do code of script edit in js to make that the shader use a version that is suportet
 precision highp float;
 in vec4 coordinates;        
 in vec2 aTexCoord;          //textur cordinates
-in float grassrotation;     //default position were grass look att
-in float grassnum;          //says how strong to bend the grass  (first grass segment need les bend than the last)
-in vec2 grassstartcord;     //point from were the grass rotate
-
-in vec2 aVelo;              //grass.velo[0]   grass.velo[1]
-in vec2 aWindopt;           //grass.windsmove grass.range
-in float aWind;             //input from wind of every grass
 
 uniform vec2 canvashwwebgl;
-uniform float rotation;   //is the global wind
-uniform vec4 translation;
 uniform vec4 offsgl;
+uniform vec2 translation;
 uniform vec4 aColor;
 uniform int aPicture;
-uniform int rendermode;
-
-
-uniform float fps;
-
 
 out vec2 vTexCoord;
 flat out int vPicture;
 out vec4 vColor;
 
-out vec2 aVeloout;      //output from velo of every grass
-out float aWindout;     //output from wind of every grass
-
-uniform vec4 playerposvel[16];
-uniform int playerlength;
-const float maxnumber=float(~uint(0));
-
 vec2 conv2(vec2 cord) {return (vec2((cord.x/canvashwwebgl.x)*2.0-1.0,((canvashwwebgl.y-cord.y)/canvashwwebgl.y)*2.0-1.0));}
 vec4 conv4(vec4 cord) {return (vec4((cord.x/canvashwwebgl.x)*2.0-1.0,((canvashwwebgl.y-cord.y)/canvashwwebgl.y)*2.0-1.0,0.0,1.0));}
 void main(void) {
-    if(rendermode==3){
-        aWindout=0.0;
-        aVeloout=vec2(0.0,0.0);
-    }else if(rendermode==1){
-        float randgen=float(
-            uint(((translation.x+1.)/2.)        *maxnumber)^
-            uint(((translation.y+1.)/2.)        *maxnumber)^
-            uint(((grassrotation+1.)/2.)        *maxnumber)^
-            uint(((rotation+1.)/2.)             *maxnumber)^
-            uint((fps-float(uint(fps)))         *maxnumber)^           //get just the decimal portion
-            uint(((aWindopt.x+1.)/2.)           *maxnumber)^
-            uint(aWindopt.y                     *maxnumber)^
-            uint(((aWind+1.)/2.)                *maxnumber)
-            )/maxnumber;
-        aWindout=aWind*pow(aWindopt.x,60.0/fps)+(randgen*2.0-1.0)*aWindopt.y*(1.0-pow(aWindopt.x,60.0/fps));
-        aVeloout=vec2(aVelo.x*0.95*(fps/60.0),aVelo.y*0.95*(fps/60.0));
-
-        float roatation=atan(
-            (
-                sin(rotation/grassnum)+
-                sin(aWindout/grassnum)+
-                sin(grassrotation)+
-                max(abs(aVeloout.y),0.5)*sign(aVeloout.y)
-            )/(
-                cos(rotation/grassnum)+
-                cos(aWindout/grassnum)+
-                cos(grassrotation)+
-                max(abs(aVeloout.x),0.5)*sign(aVeloout.x)
-            ));
-
-
-        vec4 rotatedPosition = vec4(
-            cos(-roatation) * (coordinates.x-grassstartcord.x) - sin(-roatation) * (coordinates.y-grassstartcord.y) + grassstartcord.x,
-            sin(-roatation) * (coordinates.x-grassstartcord.x) + cos(-roatation) * (coordinates.y-grassstartcord.y) + grassstartcord.y,
-            coordinates.z,
-            coordinates.w);
-
-        vColor=vec4(0,1,0,1);
-        vPicture=0;
-        gl_PointSize = 1.0 /offsgl.w;
-        gl_Position = conv4((rotatedPosition+translation)/offsgl.w-vec4(offsgl.xy,0,0));
-        vec2 pos=rotatedPosition.xy+translation.xy;
-        for(int i=0;i<playerlength;i++){
-            aVeloout-=playerposvel[i].wz*min(max(5.0-distance(pos,playerposvel[0].xy),0.0),0.5);
-        }
-    }else if(rendermode==0){
-        vColor=aColor;
-        vTexCoord=aTexCoord;
-        vPicture=aPicture;
-        gl_Position = conv4((coordinates+translation)/offsgl.w-vec4(offsgl.xy,0,0));
-    }
+    vColor=aColor;
+    vTexCoord=aTexCoord;
+    vPicture=aPicture;
+    gl_Position = conv4((coordinates+vec4(translation.xy,0,0))/offsgl.w-vec4(offsgl.xy,0,0));
 }
-
 </script>
 <script id="shader-webgl2-fs" type="x-shader/x-fragment">#version 300 es
 precision mediump float;

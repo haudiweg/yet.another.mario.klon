@@ -350,10 +350,12 @@ const createobj={
             gen.w=1
             gen.h=10
             gen.rotation=0
-            gen.randomwind=0
-            gen.windsmove=0.94
-            gen.range=0.8
+            gen.randomwind=Math.random()*2-1
+            gen.windsmove=0.93+(Math.random()*0.1-0.05)
+            gen.range=0.8+(Math.random()*0.1-0.05)
             gen.velo=[0,0]
+            gen.spitze=Math.random()>=0.5
+            gen.color=[0+Math.random()*0.2,1-Math.random()*0.2,0+Math.random()*0.2,1]
 
             const keys=Object.keys(gen)
             if(Array.isArray(opt)){
@@ -1191,5 +1193,137 @@ function checkprop(obj){
                 ))
         }
     }else{return true}
+}
+const webglbuffer={
+    createbuffer:function(groupname,opt){
+        let group
+        if(webglbuffers.hasOwnProperty(groupname))group=webglbuffers[groupname]
+        if(group==undefined){console.warn("nogroup");return}
+        this.group=group
+        this.buffername="coordinates"
+        this.bufferlength=2
+        this.divisor=0
+        this.drawtype=group.gl.DYNAMIC_DRAW
+        this.buffertype=group.gl.ARRAY_BUFFER
+        this.numbertype=group.gl.FLOAT
+        this.normalized=false
+        this.stride=0
+        this.offset=0
+        webglbuffer.addpro.call(this,opt)
+        this.pointer=group.gl.getAttribLocation(group.shader, this.buffername)
+        this.buffer=group.gl.createBuffer()
+        group.gl.bindBuffer(group.gl.ARRAY_BUFFER,this.buffer);
+        group.gl.bufferData(this.buffertype,group.buffersize*bpe*this.bufferlength,this.drawtype)
+        group.gl.bindBuffer(group.gl.ARRAY_BUFFER,null)
+        group.buffer[this.buffername]=this
+    },
+    createfeedbackbuffer:function(groupname,opt){
+        let group
+        if(webglbuffers.hasOwnProperty(groupname))group=webglbuffers[groupname]
+        if(group==undefined){console.warn("nogroup");return}
+        let this0={}
+        let this1={}
+        this.group=group
+        this.buffername="coordinates"
+        this.bufferlength=2
+        this.divisor=0
+        this.drawtype=group.gl.DYNAMIC_DRAW
+        this.buffertype=group.gl.TRANSFORM_FEEDBACK_BUFFER
+        this.numbertype=group.gl.FLOAT
+        this.normalized=false
+        this.stride=0
+        this.offset=0
+        webglbuffer.addpro.call(this,opt)
+        this.pointer=group.gl.getAttribLocation(group.shader, this.buffername)//man solte jetzt kucken wen da1 in name steht
+        webglbuffer.addproall.call(this0,this)
+        webglbuffer.addproall.call(this1,this)
+        this0.buffer=group.gl.createBuffer()
+        group.gl.bindBuffer(group.gl.TRANSFORM_FEEDBACK_BUFFER,this0.buffer);
+        group.gl.bufferData(group.gl.TRANSFORM_FEEDBACK_BUFFER,group.buffersize*bpe*this.bufferlength,this.drawtype)
+        group.gl.bindBuffer(group.gl.TRANSFORM_FEEDBACK_BUFFER,null)
+        group.feedbackbuffer[this.buffername]=this0
+
+        this1.buffer=group.gl.createBuffer()
+        group.gl.bindBuffer(group.gl.TRANSFORM_FEEDBACK_BUFFER,this1.buffer);
+        group.gl.bufferData(group.gl.TRANSFORM_FEEDBACK_BUFFER,group.buffersize*bpe*this.bufferlength,this.drawtype)
+        group.gl.bindBuffer(group.gl.TRANSFORM_FEEDBACK_BUFFER,null)
+        group.feedbackbuffer[this.buffername+"1"]=this1
+    },
+    creategroup:function(opt){
+        this.name="newBuffer"
+        if(typeof(opt.name)=="string")this.name=opt.name
+        this.gl=ctx
+        this.shader=shaderProgram[0]
+        this.buffersize=500//500000
+        webglbuffer.addpro.call(this,opt)
+        webglbuffers[this.name]=this
+        webglbuffers[this.name].buffer={}
+        webglbuffers[this.name].feedbackbuffer={}
+        webglbuffers[this.name].uniform={}
+    },
+    createuniform:function(groupname,name){
+        let group
+        if(webglbuffers.hasOwnProperty(groupname))group=webglbuffers[groupname]
+        if(group==undefined){console.warn("nogroup");return}
+        group.uniform[name]=group.gl.getUniformLocation(group.shader,name)
+    },
+    addvaotogroup:function(groupname){
+        let group
+        if(webglbuffers.hasOwnProperty(groupname))group=webglbuffers[groupname]
+        if(group==undefined){console.warn("nogroup");return}
+        for(let i of Object.keys(group.buffer)){
+            group.gl.bindBuffer(group.gl.ARRAY_BUFFER,group.buffer[i].buffer);
+            group.gl.bufferData(group.buffer[i].buffertype,group.buffersize*bpe*group.buffer[i].bufferlength,group.buffer[i].drawtype)
+        }
+        group.vao=group.gl.createVertexArray();
+        group.gl.bindVertexArray(group.vao)
+        for(let i of Object.keys(group.buffer)){
+            group.gl.bindBuffer(group.gl.ARRAY_BUFFER,group.buffer[i].buffer);
+            group.gl.enableVertexAttribArray(group.buffer[i].pointer)
+            group.gl.vertexAttribPointer(group.buffer[i].pointer,group.buffer[i].bufferlength,group.buffer[i].numbertype,group.buffer[i].normalized,group.buffer[i].stride,group.buffer[i].offset);
+        }
+        for(let i of Object.keys(group.feedbackbuffer)){
+            group.gl.enableVertexAttribArray(group.feedbackbuffer[i].pointer)
+        }
+        group.gl.bindVertexArray(null);
+    },
+    bindandpointbuffer:function(obj){
+        obj.group.gl.bindBuffer(obj.buffertype,obj.buffer)
+        obj.group.gl.vertexAttribPointer(obj.pointer,obj.bufferlength,obj.numbertype,obj.normalized,obj.stride,obj.offset);
+    },
+    addproall:function(opt){
+        for(let i of Object.keys(opt)){
+            if(!this.hasOwnProperty(i))this[i]=opt[i]
+        }
+    },
+    addpro:function(opt){
+        for(let i of Object.keys(this)){
+            if(opt.hasOwnProperty(i))this[i]=opt[i]
+        }
+    },
+    testbufferoverflow:function(groupname,objlength){
+        //suche welche buffer enabled sind
+        let group
+        if(webglbuffers.hasOwnProperty(groupname))group=webglbuffers[groupname]
+        if(group==undefined){console.warn("nogroup");return}
+    
+        if(group.buffersize<objlength*bpe+100){
+            const buffersizeold=group.buffersize
+            let multi=Math.pow(10,(Math.log(objlength*bpe)*Math.LOG10E+1|0)-1)
+            group.buffersize=Math.ceil((objlength*bpe)/multi)*multi
+    
+            if(group.name=="obj")updatescene=true
+            if(debug)console.log("buffer to smal update size\nfrom: "+Number((buffersizeold).toFixed(1)).toLocaleString()+"\nto: "+Number((group.buffersize).toFixed(1)).toLocaleString()+"\nname: "+group.name)
+    
+            for(let i of Object.keys(group.buffer)){
+                group.gl.bindBuffer(group.buffer[i].buffertype, group.buffer[i].buffer);
+                group.gl.bufferData(group.buffer[i].buffertype, group.buffersize*bpe*group.buffer[i].bufferlength, group.buffer[i].drawtype);
+            }
+            for(let i of Object.keys(group.feedbackbuffer)){
+                group.gl.bindBuffer(group.feedbackbuffer[i].buffertype, group.feedbackbuffer[i].buffer);
+                group.gl.bufferData(group.feedbackbuffer[i].buffertype, group.buffersize*bpe*group.feedbackbuffer[i].bufferlength,group.feedbackbuffer[i].drawtype)
+            }
+        }
+    }
 }
 promallres[1]()

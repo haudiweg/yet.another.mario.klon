@@ -35,7 +35,6 @@ window.addEventListener('resize',()=>{
         zoomn=Math.pow(2,zoom)
     }
     instandzoom=false
-    if(renderer==3)updatescene=updategrass=true
     if(renderer==0)renderbackground=true
 });
 
@@ -43,7 +42,6 @@ window.addEventListener("wheel",event=>{
     if(disableszoom==false&&(stopmain||stopbuild))zoom+=Math.sign(event.deltaY);
     zoom=Math.min(Math.max(zoom,minzoom),maxzoom)
     zoomn=Math.pow(2,zoom)
-    if(renderer==3)updatescene=true
     if(renderer==0)renderbackground=true
     instandzoom=false
     });
@@ -122,55 +120,7 @@ function canvasstart(disabledesync){
             });
 
             webgl2=window[ctxarr[i]] instanceof WebGL2RenderingContext
-
-            var vertShader=window[ctxarr[i]].createShader(window[ctxarr[i]].VERTEX_SHADER);
-            window[ctxarr[i]].shaderSource(vertShader, document.getElementById(webgl2?"shader-webgl2-vs":"shader-vs").text);
-            window[ctxarr[i]].compileShader(vertShader);
-            var fragShader=window[ctxarr[i]].createShader(window[ctxarr[i]].FRAGMENT_SHADER);
-            window[ctxarr[i]].shaderSource(fragShader, document.getElementById(webgl2?"shader-webgl2-fs":"shader-fs").text);
-            window[ctxarr[i]].compileShader(fragShader);
-
-            if (!window[ctxarr[i]].getShaderParameter(vertShader,  window[ctxarr[i]].COMPILE_STATUS)) {
-                console.log("An error occurred compiling the shaders: " +  window[ctxarr[i]].getShaderInfoLog(vertShader));
-            }
-            if (!window[ctxarr[i]].getShaderParameter(fragShader,  window[ctxarr[i]].COMPILE_STATUS)) {
-                console.log("An error occurred compiling the shaders: " +  window[ctxarr[i]].getShaderInfoLog(fragShader));
-            }
-
-            shaderProgram[0]=window[ctxarr[i]].createProgram();
-            window[ctxarr[i]].attachShader(shaderProgram[0], vertShader);
-            window[ctxarr[i]].attachShader(shaderProgram[0], fragShader);
-
-
-            buffernames=webgl2?buffernameswebgl2:buffernameswebgl1,
-            buffershadervarname=webgl2?buffershadervarnamewebgl2:buffershadervarnamewebgl1,
-            buffershaderintname=webgl2?buffershaderintnamewebgl2:buffershaderintnamewebgl1,
-            bufferlength=webgl2?bufferlengthwebgl2:bufferlengthwebgl1
-
-            uniformshaderintname=webgl2?uniformshaderintnamewebgl2:uniformshaderintnamewebgl1
-            uniformshadervarname=webgl2?uniformshadervarnamewebgl2:uniformshadervarnamewebgl1
-
-            if(webgl2){
-                transformFeedback[i] = window[ctxarr[i]].createTransformFeedback()
-                window[ctxarr[i]].bindTransformFeedback(window[ctxarr[i]].TRANSFORM_FEEDBACK, transformFeedback[i])
-                window[ctxarr[i]].transformFeedbackVaryings(shaderProgram[0], ['aVeloout','aWindout'], window[ctxarr[i]].SEPARATE_ATTRIBS)
-            }
-
-            window[ctxarr[i]].linkProgram(shaderProgram[0]);
-            //console.log(window[ctxarr[i]].getProgramInfoLog(shaderProgram[0]))
-            window[ctxarr[i]].blendFunc(window[ctxarr[i]].SRC_ALPHA, window[ctxarr[i]].ONE_MINUS_SRC_ALPHA);
-            window[ctxarr[i]].enable(window[ctxarr[i]].BLEND)
-
-
-            for(let i1 in buffernames){
-                (window[buffernames[i1]]) = ctx.createBuffer();
-                ctx.bindBuffer(ctx.ARRAY_BUFFER, window[buffernames[i1]]);
-                ctx.bufferData(ctx.ARRAY_BUFFER, buffersize*bpe*bufferlength[i1], ctx.DYNAMIC_DRAW)
-                if(buffershadervarname[i1]!="")window[buffershadervarname[i1]] = ctx.getAttribLocation(shaderProgram[0], buffershaderintname[i1]);
-            }
-            for(let i1 in uniformshaderintname){
-                (window[uniformshadervarname[i1]])=ctx.getUniformLocation(shaderProgram[0],uniformshaderintname[i1])
-            }
+            webglstart(i)
         }
         if(renderer==0||renderer==3||window[canvarr[i]].id=="debug"){
             window[canvarr[i]].width=document.documentElement.clientWidth;
@@ -280,19 +230,147 @@ function repaintb(){
  if(renderer==2)repaintb2(...arguments)//svg
  if(renderer==3)console.log("wtf wieso wird das gecalled renderbackgroound   rerenderer=3")
 }
+function webglstart(i){
+    //net immer neu compile 
+    //dynamisch neues hinzufügen lassen
+    var vertShader=window[ctxarr[i]].createShader(window[ctxarr[i]].VERTEX_SHADER);
+    window[ctxarr[i]].shaderSource(vertShader, document.getElementById(webgl2?"shader-webgl2-vs":"shader-vs").text);
+    window[ctxarr[i]].compileShader(vertShader);
+    var fragShader=window[ctxarr[i]].createShader(window[ctxarr[i]].FRAGMENT_SHADER);
+    window[ctxarr[i]].shaderSource(fragShader, document.getElementById(webgl2?"shader-webgl2-fs":"shader-fs").text);
+    window[ctxarr[i]].compileShader(fragShader);
+
+    if (!window[ctxarr[i]].getShaderParameter(vertShader,  window[ctxarr[i]].COMPILE_STATUS)) {
+        console.log("An error occurred compiling the shaders: " +  window[ctxarr[i]].getShaderInfoLog(vertShader));
+    }
+    if (!window[ctxarr[i]].getShaderParameter(fragShader,  window[ctxarr[i]].COMPILE_STATUS)) {
+        console.log("An error occurred compiling the shaders: " +  window[ctxarr[i]].getShaderInfoLog(fragShader));
+    }
+
+    shaderProgram[0]=window[ctxarr[i]].createProgram();
+    window[ctxarr[i]].attachShader(shaderProgram[0], vertShader);
+    window[ctxarr[i]].attachShader(shaderProgram[0], fragShader);
+
+    if(webgl2){
+        var vertShader1=window[ctxarr[i]].createShader(window[ctxarr[i]].VERTEX_SHADER);
+        window[ctxarr[i]].shaderSource(vertShader1, maxarrinshader(document.getElementById("shader-webgl2-vs-grass").text,window[ctxarr[i]].getParameter(window[ctxarr[i]].MAX_VERTEX_UNIFORM_VECTORS)));
+        window[ctxarr[i]].compileShader(vertShader1);
+        var fragShader1=window[ctxarr[i]].createShader(window[ctxarr[i]].FRAGMENT_SHADER);
+        window[ctxarr[i]].shaderSource(fragShader1, document.getElementById("shader-webgl2-fs-grass").text);
+        window[ctxarr[i]].compileShader(fragShader1);
+
+        if (!window[ctxarr[i]].getShaderParameter(vertShader1,  window[ctxarr[i]].COMPILE_STATUS)) {
+            console.log("An error occurred compiling the shaders: " +  window[ctxarr[i]].getShaderInfoLog(vertShader1));
+        }
+        if (!window[ctxarr[i]].getShaderParameter(fragShader1,  window[ctxarr[i]].COMPILE_STATUS)) {
+            console.log("An error occurred compiling the shaders: " +  window[ctxarr[i]].getShaderInfoLog(fragShader1));
+        }
+
+        shaderProgram[1]=window[ctxarr[i]].createProgram();
+        window[ctxarr[i]].attachShader(shaderProgram[1], vertShader1);
+        window[ctxarr[i]].attachShader(shaderProgram[1], fragShader1);
+
+        WEBGLmultidraw=ctx.getExtension("WEBGL_multi_draw")
+        WEBGLdisjointtimer=ctx.getExtension('EXT_disjoint_timer_query_webgl2');
+
+        transformFeedback[i] = window[ctxarr[i]].createTransformFeedback()
+        window[ctxarr[i]].bindTransformFeedback(window[ctxarr[i]].TRANSFORM_FEEDBACK, transformFeedback[i])
+        window[ctxarr[i]].transformFeedbackVaryings(shaderProgram[1], ['aVelo1','aWind1'], window[ctxarr[i]].SEPARATE_ATTRIBS)
+    }
+
+    for(let i1 of shaderProgram){
+        window[ctxarr[i]].linkProgram(i1)
+        if (!window[ctxarr[i]].getProgramParameter(i1, window[ctxarr[i]].LINK_STATUS)) {
+            console.log("Error linking shaders:" + window[ctxarr[i]].getProgramInfoLog(i1));
+        }
+    }
+
+    window[ctxarr[i]].blendFunc(window[ctxarr[i]].SRC_ALPHA, window[ctxarr[i]].ONE_MINUS_SRC_ALPHA);
+    window[ctxarr[i]].enable(window[ctxarr[i]].BLEND)
+
+    new webglbuffer.creategroup({name:"obj",shader:shaderProgram[0]})
+    new webglbuffer.createbuffer("obj",{buffername:"coordinates"})
+    new webglbuffer.createbuffer("obj",{buffername:"aTexCoord"})
+    new webglbuffer.createuniform("obj","canvashwwebgl")
+    new webglbuffer.createuniform("obj","offsgl")
+    new webglbuffer.createuniform("obj","translation")
+    new webglbuffer.createuniform("obj","aColor")
+    new webglbuffer.createuniform("obj","aPicture")
+    new webglbuffer.addvaotogroup("obj")
+    new webglbuffer.creategroup({name:"grass",shader:shaderProgram[1]})
+    new webglbuffer.createbuffer("grass",{buffername:"coordinates1"})
+    new webglbuffer.createbuffer("grass",{buffername:"grasscolor",bufferlength:4})
+    new webglbuffer.createbuffer("grass",{buffername:"grassnum",bufferlength:1})
+    new webglbuffer.createbuffer("grass",{buffername:"grassrotation",bufferlength:1})
+    new webglbuffer.createbuffer("grass",{buffername:"aWindopt"})
+    new webglbuffer.createbuffer("grass",{buffername:"grassstartcord"})
+
+    new webglbuffer.createfeedbackbuffer("grass",{buffername:"aVelo"})
+    new webglbuffer.createfeedbackbuffer("grass",{buffername:"aWind",bufferlength:3})
+
+    new webglbuffer.createuniform("grass","canvashwwebgl")
+    new webglbuffer.createuniform("grass","offsgl")
+    new webglbuffer.createuniform("grass","translation")
+    new webglbuffer.createuniform("grass","rendermode")
+    new webglbuffer.createuniform("grass","fps")
+    new webglbuffer.createuniform("grass","globalwind")
+    new webglbuffer.createuniform("grass","objectspos")
+    new webglbuffer.createuniform("grass","objectsvel")
+    new webglbuffer.createuniform("grass","objectslength")
+    new webglbuffer.addvaotogroup("grass")
+    if(webgl2)WEBGLdisjointtimerquery=gl.createQuery();
+}
+function maxarrinshader(text,max){
+    const regex=/uniform ((vec[2-4])|(mat[2-4])|int|float)/
+    let text1=text.split("\n").filter(i1=>regex.test(i1))
+    let uniforms=0
+    let divider=0
+    for(let i1=0;i1<text1.length;i1++){
+        let t=text1[i1].match(/(vec[1-4]|int|float)|(\[(?:MAX_NUM_TOTAL_OBJECTS|[0-9]*)\])/g)
+        if(t.length==1){
+            if(t[0]=="int")uniforms+=1
+            if(t[0]=="float")uniforms+=1
+            if(t[0]=="vec2")uniforms+=2
+            if(t[0]=="vec3")uniforms+=3
+            if(t[0]=="vec4")uniforms+=4
+            if(t[0]=="mat2")uniforms+=4
+            if(t[0]=="mat3")uniforms+=9
+            if(t[0]=="mat4")uniforms+=16
+        }else if(t.length==2){
+            if(t[1]=="[MAX_NUM_TOTAL_OBJECTS]"){
+                if(t[0]=="int")divider+=1
+                if(t[0]=="float")divider+=1
+                if(t[0]=="vec2")divider+=2
+                if(t[0]=="vec3")divider+=3
+                if(t[0]=="vec4")divider+=4
+                if(t[0]=="mat2")divider+=4
+                if(t[0]=="mat3")divider+=9
+                if(t[0]=="mat4")divider+=16
+            }else{
+                if(t[0]=="int")uniforms+=1*Number.parseFloat(t[1].replace(/[^0-9]/g,""))
+                if(t[0]=="float")uniforms+=1*Number.parseFloat(t[1].replace(/[^0-9]/g,""))
+                if(t[0]=="vec2")uniforms+=2*Number.parseFloat(t[1].replace(/[^0-9]/g,""))
+                if(t[0]=="vec3")uniforms+=3*Number.parseFloat(t[1].replace(/[^0-9]/g,""))
+                if(t[0]=="vec4")uniforms+=4*Number.parseFloat(t[1].replace(/[^0-9]/g,""))
+                if(t[0]=="mat2")uniforms+=4*Number.parseFloat(t[1].replace(/[^0-9]/g,""))
+                if(t[0]=="mat3")uniforms+=9*Number.parseFloat(t[1].replace(/[^0-9]/g,""))
+                if(t[0]=="mat4")uniforms+=16*Number.parseFloat(t[1].replace(/[^0-9]/g,""))
+            }
+        }else{
+            console.warn("arsing error"+t+" "+text+" "+i1)
+        }
+    }
+    maxgrassobjects=Math.trunc((max-uniforms)/divider)
+    return text.replace(/MAX_NUM_TOTAL_OBJECTS/g,""+maxgrassobjects)
+}
 async function repaint3(x=0,y=0,time=0){
     //ctx.clear(ctx.DEPTH_BUFFER_BIT | ctx.COLOR_BUFFER_BIT);
-    windtimer-=60/fps
-    if(windtimer<=0){
-        windtimer=windreset
-        newwind=(Math.random()*2-1)*windrange
-    }
-    wind=wind*(Math.pow(windsmove,60/fps))+newwind*(1-Math.pow(windsmove,60/fps))
-
     //ctx.clearColor(0.0, 0.0, 0.0, 0.0);
     //ctx.clear(ctx.COLOR_BUFFER_BIT|ctx.DEPTH_BUFFER_BIT);
 
+
     if(updatescene||inversekinematicsold!=inversekinematics){//wen spieler was geupdatet werden muss oder game neu gestartet ist draw
+        console.log("updatescene")
         if(webglmultisampling!==1){
             gl.enable(gl.SAMPLE_COVERAGE);
             gl.sampleCoverage(webglmultisampling, false); 
@@ -303,24 +381,20 @@ async function repaint3(x=0,y=0,time=0){
             inversekinematicsold=inversekinematics
             ctxb.clearRect(0,0,canvas.width,canvas.height);
         }
-        ctx.viewport(0, 0, canvas.width, canvas.height)
 
         webglgrassdrawarr=myRect[loadmap].filter(i=>i.construck=="Grassani"&&typeof(i.grass)!="undefined")
 
         webgldrawarr=[...mySun[loadmap],...myFire[loadmap],...myRect[loadmap]].filter(i=>!i.nodraw&&!(inversekinematics&&promall[3].res&&i.inversekinematics==true))
 
-        updategrass=true
         updatescene=false
         updatetextur=true
         /**@type {number[]} objvertices */
         let objvertices=[]
         let objuv=[]
-        objvertecys=[]
-        objvertecysplit=[]
-        webglgrassarr=[]
+        objvertecys[0]=[]
 
         for (let i of webgldrawarr){
-            objvertecys.push(objvertices.length)
+            objvertecys[0].push(objvertices.length)
             let firstx=typeof(i.x)=="object"?Math.min(...i.x):i.x
             let firsty=typeof(i.y)=="object"?Math.min(...i.y):i.y
             if(typeof(i.x)=="object"){
@@ -345,47 +419,26 @@ async function repaint3(x=0,y=0,time=0){
                 )
             }
         }
-        objvertecys.push(objvertices.length)
-        objvertecysplit.push(objvertices.length)
+        objvertecys[0].push(objvertices.length)
         
 
-        if(buffersize<=objvertices.length*bpe+100){
-            const buffersizeold=buffersize
-            let multi=Math.pow(10,(Math.log(objvertices.length*bpe)*Math.LOG10E+1|0)-1)
-            buffersize=Math.ceil((objvertices.length*bpe)/multi)*multi
-
-            updategrass=true
-            if(debug)console.log("buffer to smal update size\nfrom: "+Number((buffersizeold).toFixed(1)).toLocaleString()+"\nto: "+Number((buffersize).toFixed(1)).toLocaleString())
-
-            for(let i in buffernames){
-                ctx.deleteBuffer(window[buffernames[i]])
-                window[buffernames[i]] = ctx.createBuffer();
-                ctx.bindBuffer(ctx.ARRAY_BUFFER, window[buffernames[i]]);
-                ctx.bufferData(ctx.ARRAY_BUFFER, buffersize*bpe*bufferlength[i], ctx.DYNAMIC_DRAW)
-                if(buffershadervarname[i]!="")ctx.vertexAttribPointer(window[buffershadervarname[i]], bufferlength[i], ctx.FLOAT, false, 0, 0);
-                if(buffershadervarname[i]!="")ctx.enableVertexAttribArray(window[buffershadervarname[i]])
-            }
-        }
-        ctx.bindBuffer(ctx.ARRAY_BUFFER, uv_buffer);	
+        webglbuffer.testbufferoverflow("obj",objvertices.length*bpe)
+        ctx.bindBuffer(ctx.ARRAY_BUFFER, webglbuffers.obj.buffer.aTexCoord.buffer);	
         ctx.bufferSubData(ctx.ARRAY_BUFFER,0,new Float32Array(objuv));
-        ctx.vertexAttribPointer(aTexCoord, 2, ctx.FLOAT, false, 0, 0);
-        ctx.enableVertexAttribArray(aTexCoord)
 
-
-        ctx.bindBuffer(ctx.ARRAY_BUFFER, vertex_buffer);				
+        ctx.bindBuffer(ctx.ARRAY_BUFFER, webglbuffers.obj.buffer.coordinates.buffer);				
         ctx.bufferSubData(ctx.ARRAY_BUFFER,0,new Float32Array(objvertices));
-        ctx.vertexAttribPointer(coord, 2, ctx.FLOAT, false, 0, 0);
-        ctx.enableVertexAttribArray(coord)
+
     }
     if(updatetextur){
         updatetextur=false
         let pics=0
         for (let i of webgldrawarr){
             let texturerror=false
+            let texturerrorobj=""
             if(i.fill.constructor.name.match("OffscreenCanvas|HTMLImageElement|HTMLCanvasElement")){
+                if(typeof(i.texture)=="undefined"||!gl.isTexture(i.texture))i.texture=ctx.createTexture();
                 ctx.activeTexture(ctx.TEXTURE0 + pics)
-                i.texture = ctx.createTexture();
-
                 ctx.bindTexture(ctx.TEXTURE_2D, i.texture);
                 ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_WRAP_S, ctx.CLAMP_TO_EDGE);
                 ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_WRAP_T, ctx.CLAMP_TO_EDGE);
@@ -396,10 +449,12 @@ async function repaint3(x=0,y=0,time=0){
                 ctx.pixelStorei(ctx.UNPACK_FLIP_Y_WEBGL, 1)
 
                 try{
-                   ctx.texImage2D(ctx.TEXTURE_2D, 0, ctx.RGBA, ctx.RGBA,ctx.UNSIGNED_BYTE, i.fill)
+                    ctx.texImage2D(ctx.TEXTURE_2D, 0, ctx.RGBA, ctx.RGBA,ctx.UNSIGNED_BYTE, i.fill)
                 }catch(e){
                     texturerror=true
+                    texturerrorobj="cant load texture"+i.construck+" "+e
                 }
+                ctx.bindTexture(gl.TEXTURE_2D, null);
                 pics++
             }else if(typeof(i.fill)=="string"){
                 let colorctx = new OffscreenCanvas(1,1).getContext('2d');
@@ -409,9 +464,11 @@ async function repaint3(x=0,y=0,time=0){
                 for (let i1 in compcolor)compcolor[i1]/=255
                 i.webglfill=compcolor
             }else{
+                texturerrorobj="no texture"+i.construck
                 texturerror=true
             }
             if(texturerror&&typeof(i.fillbackup)=="string"){
+                console.log("texturerror")
                 let colorctx = new OffscreenCanvas(1,1).getContext('2d');
                 colorctx.fillStyle = i.fillbackup;
                 colorctx.fillRect(0, 0, 1, 1);
@@ -419,20 +476,30 @@ async function repaint3(x=0,y=0,time=0){
                 for (let i1 in compcolor)compcolor[i1]/=255
                 i.webglfill=compcolor
             }
+            if(texturerror){
+                console.info("texturerror: "+texturerrorobj)
+            }
         }
     }
 
 
-    if(webglgrassani&&fpsav+20>m4xfps&&fps+20>m4xfps&&(updategrass||updatetgrass>updatewebglgrass||(updatetgrass>0&&fpsav+5>m4xfps&&fps+5>m4xfps))){grasstogpu()}
+    if(webglgrassani&&fpsav+20>m4xfps&&fps+20>m4xfps&&(updategrass||updatetgrass>updatewebglgrass||(updatetgrass>0&&fpsav+5>m4xfps&&fps+5>m4xfps))){
+        if(webgl2){
+            grasstogpuwebgl2()
+        }else{
+            grasstogpuwebgl1()
+        }
+    }
     if(debug)debugtext+="\nwebglgrassquali "+webglgrassquali
 
     //draw
-    ctx.useProgram(shaderProgram[0]);
-    ctx.uniform2f(canvashwwebgl,canvas.width,canvas.height);
     if(webgl2){
+        ctx.viewport(0, 0, canvas.width, canvas.height)
         webgl2draw(x,y,time)
+        if(webglgrassani)grassdrawwebgl2(x,y,time)
     }else{
         webgl1draw(x,y,time)
+        if(webglgrassani)grassdrawwebgl1(x,y,time)
     }
 
     if(inversekinematics&&promall[3].res){
@@ -469,86 +536,25 @@ async function repaint3(x=0,y=0,time=0){
         }
     }
 }
-
-function webgl1draw(x=0,y=0,time=0){
-    ctx.uniform1f(rendermodeact, 0);
-    let i=-1
-    let pics=0
-    ctx.uniform4f(offsgl,x,y,zoom,zoomn);
-    for (let i1 of webgldrawarr){
-        i++
-        if(objvertecys[i+1]-objvertecys[i]<=0)continue
-        let firstx=typeof(i1.x)=="object"?Math.min(...i1.x):i1.x
-        let firsty=typeof(i1.y)=="object"?Math.min(...i1.y):i1.y
-        ctx.uniform4f(translation, firstx, firsty,0,0);
-
-        ctx.uniform1f(aPicture, 0);
-        if(i1.fill.constructor.name.match("OffscreenCanvas|HTMLImageElement|HTMLCanvasElement")){
-            ctx.uniform1f(aPicture, 1);
-            ctx.activeTexture(ctx.TEXTURE0 + pics)
-            ctx.bindTexture(ctx.TEXTURE_2D, i1.texture);
-            if(i1.phy==true&&i1.construck=="Wasser"){
-                ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_WRAP_S, ctx.CLAMP_TO_EDGE);
-                ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_WRAP_T, ctx.CLAMP_TO_EDGE);
-                ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MIN_FILTER, ctx.NEAREST);
-
-                ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MIN_FILTER, ctx.NEAREST);
-                ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MAG_FILTER, ctx.NEAREST);
-                ctx.pixelStorei(ctx.UNPACK_FLIP_Y_WEBGL, 1)
-
-                ctx.texSubImage2D(ctx.TEXTURE_2D, 0,0,0, ctx.RGBA,ctx.UNSIGNED_BYTE, i1.fill) 
-            }
-            ctx.uniform1i(uSampler, pics)
-            pics++
-        }else if(Array.isArray(i1.webglfill)){
-            ctx.uniform4f(aColor, ...i1.webglfill);
-        }
-        ctx.drawArrays(ctx.TRIANGLE_FAN, objvertecys[i]/2, (objvertecys[i+1]-objvertecys[i])/2)
-    }
-
-    ctx.uniform1f(rendermodeact, 1);
-    if(webglgrassani){
-        if(webglgrassfpsstabilisation){
-            grasrandommove()
-        }else if(grassrandommovefuncall){grassrandommovefuncall=false;window.requestIdleCallback(grasrandommove.bind(this,0))}
-        //grasrandommove()
-        ctx.uniform1f(windv,wind);
-        for (let i1 of webglgrassdrawarr){
-            i++
-            if(objvertecys[i+1]-objvertecys[i]<=0)continue
-            let firstx=typeof(i1.x)=="object"?Math.min(...i1.x):i1.x
-            let firsty=typeof(i1.y)=="object"?Math.min(...i1.y):i1.y
-            ctx.uniform4f(translation, firstx, firsty,0,0);
-            ctx.drawArrays(ctx.LINES, objvertecys[i]/2, (objvertecys[i+1]-objvertecys[i])/2)
-        }
-    }
-}
 function webgl2draw(x=0,y=0,time=0){
-    if(webglgrassani){
-        gl.bindBuffer(gl.ARRAY_BUFFER, grassvelo_buffer);
-        gl.vertexAttribPointer(grassvelov, 2, gl.FLOAT, false, 0, 0);
-        gl.enableVertexAttribArray(grassvelov)
-        gl.bindBuffer(gl.ARRAY_BUFFER, grasswind_buffer);
-        gl.vertexAttribPointer(randomwind, 1, gl.FLOAT, false, 0, 0);
-        gl.enableVertexAttribArray(randomwind)
-    }
-    gl.bindBufferBase(gl.TRANSFORM_FEEDBACK_BUFFER, 0, grassvelobufferswap)
-    gl.bindBufferBase(gl.TRANSFORM_FEEDBACK_BUFFER, 1, grasswindbufferswap)
-    gl.beginTransformFeedback(gl.LINES)//wen line strip net erlaubt 
-
+    ctx.useProgram(shaderProgram[0]);
+    ctx.bindVertexArray(webglbuffers.obj.vao)
+    ctx.uniform2f(webglbuffers.obj.uniform.canvashwwebgl,canvas.width,canvas.height);
+    ctx.uniform4f(webglbuffers.obj.uniform.offsgl,x,y,zoom,zoomn);
     let i=-1
     let pics=0
-    ctx.uniform4f(offsgl,x,y,zoom,zoomn);
     for (let i1 of webgldrawarr){
         i++
-        if(objvertecys[i+1]-objvertecys[i]<=0)continue
-        ctx.uniform4f(translation,typeof(i1.x)=="object"?Math.min(...i1.x):i1.x,typeof(i1.y)=="object"?Math.min(...i1.y):i1.y,0,0);
+        if(objvertecys[0][i+1]-objvertecys[0][i]<=0)continue
+        ctx.uniform2f(webglbuffers.obj.uniform.translation,typeof(i1.x)=="object"?Math.min(...i1.x):i1.x,typeof(i1.y)=="object"?Math.min(...i1.y):i1.y);
 
-        ctx.uniform1i(aPicture, 0);
+        ctx.uniform1i(webglbuffers.obj.uniform.aPicture, 0);
         if(i1.fill.constructor.name.match("OffscreenCanvas|HTMLImageElement|HTMLCanvasElement")){
-            ctx.uniform1i(aPicture, 1);
-            ctx.activeTexture(ctx.TEXTURE0 + pics)
+            ctx.uniform1i(webglbuffers.obj.uniform.aPicture, 1);
+            ctx.uniform1i(webglbuffers.obj.uniform.uSampler, pics)
+            ctx.activeTexture(ctx.TEXTURE0)
             ctx.bindTexture(ctx.TEXTURE_2D, i1.texture);
+            
             if(i1.phy==true&&i1.construck=="Wasser"){
                 ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_WRAP_S, ctx.CLAMP_TO_EDGE);
                 ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_WRAP_T, ctx.CLAMP_TO_EDGE);
@@ -560,216 +566,232 @@ function webgl2draw(x=0,y=0,time=0){
 
                 ctx.texSubImage2D(ctx.TEXTURE_2D, 0,0,0, ctx.RGBA,ctx.UNSIGNED_BYTE, i1.fill) 
             }
-            ctx.uniform1i(uSampler, pics)
+            
             pics++
         }else if(Array.isArray(i1.webglfill)){
-            ctx.uniform4f(aColor, ...i1.webglfill);
+            ctx.uniform4f(webglbuffers.obj.uniform.aColor, ...i1.webglfill);
         }
-        ctx.uniform1i(rendermodeact, 0);
-        gl.pauseTransformFeedback()
-        ctx.drawArrays(ctx.TRIANGLE_FAN, objvertecys[i]/2, (objvertecys[i+1]-objvertecys[i])/2)
-        gl.resumeTransformFeedback()
-        ctx.uniform1i(rendermodeact, 3);
-        gl.enable(gl.RASTERIZER_DISCARD)
-        ctx.drawArrays(gl.LINES, objvertecys[i]/2, (objvertecys[i+1]-objvertecys[i])/2)
-        gl.disable(gl.RASTERIZER_DISCARD)
+        ctx.drawArrays(ctx.TRIANGLE_FAN, objvertecys[0][i]/2, (objvertecys[0][i+1]-objvertecys[0][i])/2)
     }
-    if(webglgrassani){
-        ctx.uniform1f(windv,wind);
-        let players=myRect[loadmap].filter(it=>it.construck=="Player")
-        ctx.uniform4fv(webgl2_grass_playermovement,[].concat(...players.map((it,it2)=>it2<16?[
-            it.x+it.w/2,
-            it.y+it.h/2,
-            it.velo[0],
-            it.velo[1]
-        ]:[])));
-        ctx.uniform1i(webgl2_grass_playerlength,players.length)
-        //mach spieler cordinate und velo zu gpu senden und da dan distanz usw
-            
-        ctx.uniform1f(webgl2_grass_fps,fps);
+    ctx.bindVertexArray(null)
+}
+function grassdrawwebgl2(x=0,y=0,time=0){
+    windtimer-=60/fps
+    if(windtimer<=0){
+        windtimer=windreset
+        newwind=(Math.random()*2-1)*windrange
+    }
+    wind=wind*(Math.pow(windsmove,60/fps))+newwind*(1-Math.pow(windsmove,60/fps))
 
-        if(test===1){
-            test=false
-            gl.bindBuffer(gl.ARRAY_BUFFER, grasswind_buffer);var arrBuffer=new DataView(new ArrayBuffer(gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE)));gl.getBufferSubDat(gl.ARRAY_BUFFER, 0, arrBuffer);console.log(new Float32Array(arrBuffer.buffer))
-            gl.bindBuffer(gl.ARRAY_BUFFER, grassvelo_buffer);arrBuffer=new DataView(new ArrayBuffer(gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE)));gl.getBufferSubData(glARRAY_BUFFER, 0, arrBuffer);console.log(new Float32Array(arrBuffer.buffer))
+    ctx.useProgram(shaderProgram[1]);
+
+    ctx.bindVertexArray(webglbuffers.grass.vao)
+
+    gl.bindBufferBase(gl.TRANSFORM_FEEDBACK_BUFFER, 0, webglbuffers.grass.feedbackbuffer.aVelo1.buffer)
+    gl.bindBufferBase(gl.TRANSFORM_FEEDBACK_BUFFER, 1, webglbuffers.grass.feedbackbuffer.aWind1.buffer)
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, webglbuffers.grass.feedbackbuffer.aVelo.buffer)
+    gl.vertexAttribPointer(
+        webglbuffers.grass.feedbackbuffer.aVelo.pointer,
+        webglbuffers.grass.feedbackbuffer.aVelo.bufferlength,
+        webglbuffers.grass.feedbackbuffer.aVelo.numbertype,
+        webglbuffers.grass.feedbackbuffer.aVelo.normalized,
+        webglbuffers.grass.feedbackbuffer.aVelo.offset,
+        webglbuffers.grass.feedbackbuffer.aVelo.stride
+    );
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, webglbuffers.grass.feedbackbuffer.aWind.buffer)
+    gl.vertexAttribPointer(
+        webglbuffers.grass.feedbackbuffer.aWind.pointer,
+        webglbuffers.grass.feedbackbuffer.aWind.bufferlength,
+        webglbuffers.grass.feedbackbuffer.aWind.numbertype,
+        webglbuffers.grass.feedbackbuffer.aWind.normalized,
+        webglbuffers.grass.feedbackbuffer.aWind.offset,
+        webglbuffers.grass.feedbackbuffer.aWind.stride
+    );
+
+
+    ctx.uniform1f(webglbuffers.grass.uniform.globalwind,wind);
+    let objectsgrassmove=myRect[loadmap].filter(it=>it.construck=="Player")
+    //wen zu viele obj gibt dan remove so viele bis es unter limit liegt  zb was ist auserhalb der sichtweite
+    //gl.getParameter(gl.MAX_VERTEX_UNIFORM_VECTORS)
+    if(maxgrassobjects<objectsgrassmove.length){
+        let objtoremove=objectsgrassmove-objectsgrassmove.length
+        objectsgrassmove.filter(i1=>i1.construck=="Player"||(objtoremove++))
+        objectsgrassmove.filter(i1=>(objtoremove++))
+    }
+    let objectsgrassmovepos=new Float32Array(objectsgrassmove.length*4)
+    let objectsgrassmovevel=new Float32Array(objectsgrassmove.length*2)
+    for(let i1=0;i1<objectsgrassmove.length;i1++){
+        if(typeof(objectsgrassmove[i1].x)=="object"){
+            objectsgrassmovepos[i1*4+0]=Math.min(...objectsgrassmove[i1].x)
+            objectsgrassmovepos[i1*4+1]=Math.min(...objectsgrassmove[i1].y)
+        }else{
+            objectsgrassmovepos[i1*4+0]=objectsgrassmove[i1].x
+            objectsgrassmovepos[i1*4+1]=objectsgrassmove[i1].y
         }
+        objectsgrassmovepos[i1*4+2]=objectsgrassmove[i1].w
+        objectsgrassmovepos[i1*4+3]=objectsgrassmove[i1].h
+        objectsgrassmovevel[i1*2+0]=objectsgrassmove[i1].velo[0]
+        objectsgrassmovevel[i1*2+1]=objectsgrassmove[i1].velo[1]
+    }
+    ctx.uniform4fv(webglbuffers.grass.uniform.objectspos,objectsgrassmovepos);
+    ctx.uniform2fv(webglbuffers.grass.uniform.objectsvel,objectsgrassmovevel);
 
-        for (let i1 of webglgrassdrawarr){
-            i++
-            if(objvertecys[i+1]-objvertecys[i]<=0)continue
-            ctx.uniform4f(translation,typeof(i1.x)=="object"?Math.min(...i1.x):i1.x,typeof(i1.y)=="object"?Math.min(...i1.y):i1.y,0,0);
-            ctx.uniform1i(rendermodeact, 1);
-            ctx.drawArrays(ctx.LINES, objvertecys[i]/2, (objvertecys[i+1]-objvertecys[i])/2)
-            gl.pauseTransformFeedback()
-            for(let i2=0,t=(webglgrassquali+webglgrassquali-1)*2;i2<=i1.grass.length*t;i2+=t)ctx.drawArrays(ctx.TRIANGLE_FAN, objvertecys[i]/2+i2,t)
-            gl.resumeTransformFeedback()
-            //berechnungen sparen vieleicht dh net nochmal random
+    ctx.uniform1i(webglbuffers.grass.uniform.objectslength,objectsgrassmove.length)  
+
+    ctx.uniform1f(webglbuffers.grass.uniform.fps,fps);
+    ctx.uniform2f(webglbuffers.grass.uniform.canvashwwebgl,canvas.width,canvas.height);
+    ctx.uniform4f(webglbuffers.grass.uniform.offsgl,x,y,zoom,zoomn);
+
+    gl.beginTransformFeedback(gl.POINTS)
+    gl.enable(gl.RASTERIZER_DISCARD)
+    ctx.uniform1i(webglbuffers.grass.uniform.rendermode, 0);
+
+
+    if(!WEBGLdisjointtimeravailable)WEBGLdisjointtimeravailable=gl.getQueryParameter(WEBGLdisjointtimerquery, gl.QUERY_RESULT_AVAILABLE);
+    if (WEBGLdisjointtimeravailable) {
+        try{
+        const grassrenderedobjintime=gl.getQueryParameter(WEBGLdisjointtimerquery, gl.QUERY_RESULT)/1000000
+        if(grassrenderedobjintime<2)grassmaxobjtorender+=0.1
+        if(grassrenderedobjintime>6)grassmaxobjtorender--
+        if(debug)debugtext+="\ngrassrenderedobjintime: "+grassrenderedobjintime.toFixed(3)+"\ngrassmaxobjtorender: "+grassmaxobjtorender.toFixed(3)
+        }catch(e){}
+    }
+    if(WEBGLdisjointtimeravailable)gl.beginQuery(WEBGLdisjointtimer.TIME_ELAPSED_EXT, WEBGLdisjointtimerquery);
+
+    let i=0
+    for (let i1 of webglgrassdrawarr){
+        if(grassmaxobjtorender<=i)break
+        if(i1.grass.length==0)continue
+        ctx.uniform2f(webglbuffers.grass.uniform.translation,typeof(i1.x)=="object"?Math.min(...i1.x):i1.x,typeof(i1.y)=="object"?Math.min(...i1.y):i1.y);
+        i+=i1.firsts.length
+        if(WEBGLmultidraw){
+            WEBGLmultidraw.multiDrawArraysWEBGL(ctx.POINTS, i1.firsts, 0, i1.counts, 0, Math.max(0,Math.min(i1.firsts.length,grassmaxobjtorender-i)));
+        }else{
+            for(let i2=0;i2<=i1.firsts.length;i2++)ctx.drawArrays(ctx.POINTS,i1.firsts[i2],i1.counts[i2])
         }
     }
-
+    gl.disable(gl.RASTERIZER_DISCARD)
     gl.endTransformFeedback()
     gl.bindBufferBase(gl.TRANSFORM_FEEDBACK_BUFFER, 0, null)
     gl.bindBufferBase(gl.TRANSFORM_FEEDBACK_BUFFER, 1, null)
-    if(test===true){
-        test=1
-        gl.bindBuffer(gl.ARRAY_BUFFER, grasswind_buffer);var arrBuffer=new DataView(new ArrayBuffer(gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE)));gl.getBufferSubDat(gl.    ARRAY_BUFFER, 0, arrBuffer);console.log(new Float32Array(arrBuffer.buffer))
-        gl.bindBuffer(gl.ARRAY_BUFFER, grassvelo_buffer);arrBuffer=new DataView(new ArrayBuffer(gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE)));gl.getBufferSubData(gl.   ARRAY_BUFFER, 0, arrBuffer);console.log(new Float32Array(arrBuffer.buffer))
-        gl.bindBuffer(gl.ARRAY_BUFFER, grasswindbufferswap);arrBuffer=new DataView(new ArrayBuffer(gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE)));gl.getBufferSubData(gl.ARRAY_BUFFER, 0, arrBuffer);console.log(new Float32Array(arrBuffer.buffer))
-        gl.bindBuffer(gl.ARRAY_BUFFER, grassvelobufferswap);arrBuffer=new DataView(new ArrayBuffer(gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE)));gl.getBufferSubData(gl.ARRAY_BUFFER, 0, arrBuffer);console.log(new Float32Array(arrBuffer.buffer))
-    }
-    try{[grassvelobufferswap,grassvelo_buffer,grasswindbufferswap,grasswind_buffer]=[grassvelo_buffer,grassvelobufferswap,grasswind_buffer,grasswindbufferswap]}catch(e){}//kp
-}
-//fallback wen webgl2 net gibt
-function grasrandommove(num=0,timetowalk=false){
-    while((timetowalk==false||timetowalk.timeRemaining()>0.1)&&webglgrassarr.length>num){
-        let i2=webglgrassarr[num]
-        //debugtext+="\na "+num
-        if(timetowalk==false){
-            i2.randomwind=i2.randomwind*Math.pow(i2.windsmove,60/fps)+(Math.random()*2-1)*i2.range*(1-Math.pow(i2.windsmove,60/fps))
-            i2.velo[0]*=0.99*(fps/60)
-            i2.velo[1]*=0.99*(fps/60)
+    ctx.uniform1i(webglbuffers.grass.uniform.rendermode, 1);
+    i=0
+    for (let i1 of webglgrassdrawarr){
+        let i1=webglgrassdrawarr[i]
+        if(i1.grass.length==0)continue
+        ctx.uniform2f(webglbuffers.grass.uniform.translation,typeof(i1.x)=="object"?Math.min(...i1.x):i1.x,typeof(i1.y)=="object"?Math.min(...i1.y):i1.y);
+        if(WEBGLmultidraw){
+            WEBGLmultidraw.multiDrawArraysWEBGL(gl.TRIANGLE_FAN, i1.firsts, 0, i1.counts, 0, Math.max(0,Math.min(i1.firsts.length,grassmaxobjtorender-i)));
         }else{
-            i2.randomwind=i2.randomwind*i2.windsmove+(Math.random()*2-1)*i2.range*(1-i2.windsmove)
-            i2.velo[0]*=0.95
-            i2.velo[1]*=0.95
+            for(let i2=0;i2<=i1.firsts.length;i2++)ctx.drawArrays(ctx.TRIANGLE_FAN,i1.firsts[i2],i1.counts[i2])
         }
-        for(let i3=0;i3<webglgrassquali*2*2-2;i3++){
-            randomwindarr.push(i2.randomwind,i2.velo[0]/5,i2.velo[1]/5)
-        }
-        num++
     }
-    if(webglgrassarr.length>num&&timetowalk!=false&&timetowalk.timeRemaining()<0.1){
-        window.requestIdleCallback(grasrandommove.bind(this,num))
-        return
-    }
-    if(timetowalk==false||timetowalk.timeRemaining()>0.1){
-        ctx.bindBuffer(ctx.ARRAY_BUFFER, grasswind_buffer);
-        ctx.bufferSubData(ctx.ARRAY_BUFFER,(objvertecysplit[0]*3)*bpe, new Float32Array(randomwindarr));
-        randomwindarr=[]
-        ctx.vertexAttribPointer(randomwind, 3, ctx.FLOAT, false, 0, 0);
-        ctx.enableVertexAttribArray(randomwind);
-        grassrandommovefuncall=true
-    }else{
-        window.requestIdleCallback(grasrandommove.bind(this,num))
-    }
+
+
+
+    if(WEBGLdisjointtimeravailable)gl.endQuery(WEBGLdisjointtimer.TIME_ELAPSED_EXT);
+
+
+    ctx.bindVertexArray(null)
+    gl.bindBuffer(gl.ARRAY_BUFFER,null)
+    //rotate buffers
+    //da müste man noch actualisieren
+    try{
+        [
+            webglbuffers.grass.feedbackbuffer.aVelo1.buffer,
+            webglbuffers.grass.feedbackbuffer.aVelo.buffer,
+            webglbuffers.grass.feedbackbuffer.aWind1.buffer,
+            webglbuffers.grass.feedbackbuffer.aWind.buffer,
+        ]=[
+            webglbuffers.grass.feedbackbuffer.aVelo.buffer,
+            webglbuffers.grass.feedbackbuffer.aVelo1.buffer,
+            webglbuffers.grass.feedbackbuffer.aWind.buffer,
+            webglbuffers.grass.feedbackbuffer.aWind1.buffer,
+        ]
+    }catch(e){console.log(e)}//kp
 }
-function grasstogpu(){
+function grasstogpuwebgl2(){
     updategrass=false
     updatetgrass=0
-    webglgrassquali=Math.round(Math.max(Math.min(webglgrasswantetpoligons/webglgrassarr.length,webglmaxgrassquali),webglmingrassquali))
-    webglgrassquali=3
-    webglgrassarr=[]
-    randomwindarr=[]
+    let howmutchgrass=0
+    for (let i in webglgrassdrawarr){
+        howmutchgrass+=webglgrassdrawarr[i].grass.length
+    }
+    webglgrassquali=Math.round(Math.max(Math.min(webglgrasswantetpoligons/howmutchgrass,webglmaxgrassquali),webglmingrassquali))
+    webglbuffer.testbufferoverflow("grass",howmutchgrass*bpe*Math.max(2+webglgrassquali*2,3))
+    objvertecys[1]=[]
     let objvertices=[]
-    let grassstartcord=[]
     let grasssrot=[]
+    let grassvelo=[]
+    let windopt=[]
+    let randomwind=[]
+    let grassstartcord=[]
     let grassnum=[]
-    let temp=[]
-    for(let i of objvertecys){
-        if(i>=objvertecysplit[0])break
-        temp.push(i)
-    }
-    objvertecys=temp
+    let grasscolor=[]
+
     //remove all grass  we could give each objvertecy a array with num and type could be better
+    for (let i in webglgrassdrawarr){
+        objvertecys[1].push(objvertices.length)
+        let firstsarr=[]
+        let countsarr=[]
 
-    if(objvertecysplit.length>1)objvertecysplit=objvertecysplit.slice(0, -1)
-    //delete grass from objvertecysplit (woold be better if it were a array)   if objvertecy have for every obj a type we could ignore objvertecysplit
-    let objsplit=objvertecysplit[objvertecysplit.length-1]
-    for (let i of webglgrassdrawarr){
-        objvertecys.push(objsplit+objvertices.length)
-        for (let i1 of i.grass){
-            webglgrassarr.push(i1)
-            for(let i2=0,i3=0;i2<webglgrassquali;i2++,i3+=i1.h/(webglgrassquali)){
-                objvertices.push(i1.x,i1.y-i3)
-                grassstartcord.push(i1.x,i1.y)
+        for (let i1 of webglgrassdrawarr[i].grass){
+            firstsarr.push(objvertices.length/2)
+            let counter=0
+            let max=Math.max(2+webglgrassquali*2,3)
+            if(max>3)max-=i1.spitze
+            for(let i2=0;i2<max;i2++){
+                // bei mitte=0 nim folles i1.h und um so niedriger um so weniger dh am entferntesten punkt von mitte ist addh=0
+                const distancefromstartendnormalised=1-(Math.abs(i2-(max&1?(max/2-0.5):(i2>(max/2-0.5)?(max/2):(max/2-1))))/Math.trunc(max/2-0.5))
+                //wen unter mitte nim i1.x wen mitte nim i1.x+i1.w/2 und wen über mitte dan i1.x+i1.w
+                const addw=(max/2-0.5==i2?i1.w/2:max/2<=i2?i1.w:0)
+                objvertices.push(i1.x+addw,i1.y-distancefromstartendnormalised*i1.h)
+                grassstartcord.push(i1.x+addw,i1.y)
+                
                 grasssrot.push(i1.rotation)
-                grassnum.push(webglgrassquali-i2)//mus man hir vieleicht math pow nehmen?
-
-                if(i2!=0){
-                    objvertices.push(i1.x,i1.y-i3)
-                    grassstartcord.push(i1.x,i1.y)
-                    grasssrot.push(i1.rotation)
-                    grassnum.push(webglgrassquali-i2)
-                }
+                grassnum.push(Math.pow(distancefromstartendnormalised,2))
+                //grassnum.push(distancefromstartendnormalised)
+                //grassvelo.push(i1.velo[0],i1.velo[1])
+                windopt.push(i1.windsmove,i1.range)
+                randomwind.push(i1.randomwind,0,0)
+                grasscolor.push(...i1.color)
+                counter++
             }
-            for(let i2=0,i3=i1.h-i1.h/(webglgrassquali);i2<webglgrassquali;i2++,i3-=i1.h/(webglgrassquali)){
-                objvertices.push(i1.x+i1.w,i1.y-i3)
-                grassstartcord.push(i1.x+i1.w,i1.y)
-                grasssrot.push(i1.rotation)
-                grassnum.push(i2+1)
-
-                if(i2!=webglgrassquali-1){
-                    objvertices.push(i1.x+i1.w,i1.y-i3)
-                    grassstartcord.push(i1.x+i1.w,i1.y)
-                    grasssrot.push(i1.rotation)
-                    grassnum.push(i2+1)
-                }
-            }
+            countsarr.push(counter)
         }
+        webglgrassdrawarr[i].firsts=new Int32Array(firstsarr)
+        webglgrassdrawarr[i].counts=new Int32Array(countsarr)
     }
-    objvertecys.push(objsplit+objvertices.length)
-    objvertecysplit.push(objsplit+objvertices.length)//schreibe wo grass endet
-    if(buffersize<=objvertecys[objvertecys.length-1]*bpe+100){
-        const buffersizeold=buffersize
-        let multi=Math.pow(10,(Math.log(objvertecys[objvertecys.length-1]*bpe)*Math.LOG10E+1|0)-1)
-        buffersize=Math.ceil((objvertecys[objvertecys.length-1]*bpe)/multi+1)*multi
-        if(debug)console.log("buffer to smal update size\nfrom: "+Number((buffersizeold).toFixed(1)).toLocaleString()+"\nto: "+Number((buffersize).toFixed(1)).toLocaleString())
-        updatescene=true
-        for(let i in buffernames){
-            ctx.deleteBuffer(window[buffernames[i]])
-            window[buffernames[i]] = ctx.createBuffer();
-            ctx.bindBuffer(ctx.ARRAY_BUFFER, window[buffernames[i]]);
-            ctx.bufferData(ctx.ARRAY_BUFFER, buffersize*bpe*bufferlength[i], ctx.DYNAMIC_DRAW)
-            if(buffershadervarname[i]!="")ctx.vertexAttribPointer(window[buffershadervarname[i]], bufferlength[i], ctx.FLOAT, false, 0, 0);
-            if(buffershadervarname[i]!="")ctx.enableVertexAttribArray(window[buffershadervarname[i]])
-        }
-    }
-    ctx.bindBuffer(ctx.ARRAY_BUFFER, vertex_buffer);				
-    ctx.bufferSubData(ctx.ARRAY_BUFFER,objsplit*bpe,new Float32Array(objvertices));
-    ctx.vertexAttribPointer(coord, 2, ctx.FLOAT, false, 0, 0);
-    ctx.enableVertexAttribArray(coord)
-    ctx.bindBuffer(ctx.ARRAY_BUFFER, grassrot_buffer);	
-    ctx.bufferSubData(ctx.ARRAY_BUFFER,(objsplit/2)*bpe,new Float32Array(grasssrot));
-    ctx.vertexAttribPointer(grassrotation, 1, ctx.FLOAT, false, 0,0);
-    ctx.enableVertexAttribArray(grassrotation)
-    ctx.bindBuffer(ctx.ARRAY_BUFFER, grassnum_buffer);	
-    ctx.bufferSubData(ctx.ARRAY_BUFFER,(objsplit/2)*bpe,new Float32Array(grassnum));
-    ctx.vertexAttribPointer(grassnumv, 1, ctx.FLOAT, false, 0, 0);
-    ctx.enableVertexAttribArray(grassnumv)
-    ctx.bindBuffer(ctx.ARRAY_BUFFER, grassstartcord_buffer);				
-    ctx.bufferSubData(ctx.ARRAY_BUFFER,objsplit*bpe,new Float32Array(grassstartcord));
-    ctx.vertexAttribPointer(grassstartcordv, 2, ctx.FLOAT, false, 0, 0);
-    ctx.enableVertexAttribArray(grassstartcordv)
+    objvertecys[1].push(objvertices.length)
 
-    if(webgl2){
-        let cordarr1=new Float32Array(webglgrassarr.length*2*webglgrassquali*2)
-        let cordarr2=new Float32Array(webglgrassarr.length*2*webglgrassquali*2)
-        let cordarr3=new Float32Array(webglgrassarr.length*webglgrassquali*2)
-        for(let i=0,i1=0;i<webglgrassarr.length;i++,i1+=2){
-            for(let i2=0,i3=0;i2<webglgrassquali*2;i2++,i3+=2){
-                cordarr1[i1*webglgrassquali*2+i3]=webglgrassarr[i].velo[0]
-                cordarr1[i1*webglgrassquali*2+1+i3]=webglgrassarr[i].velo[1]
-                cordarr2[i1*webglgrassquali*2+i3]=webglgrassarr[i].windsmove
-                cordarr2[i1*webglgrassquali*2+1+i3]=webglgrassarr[i].range
-                cordarr3[i*webglgrassquali*2+i2]=webglgrassarr[i].randomwind
-            }
-        }//das mehrfach weil quali
-        //daas dan in punkte verwandeln
-        gl.bindBuffer(gl.ARRAY_BUFFER, grassvelo_buffer)
-        gl.bufferSubData(gl.ARRAY_BUFFER,(objsplit*2)*bpe, cordarr1);
-        gl.vertexAttribPointer(grassvelov, 2, gl.FLOAT, gl.FALSE, 0, 0)
-        gl.enableVertexAttribArray(grassvelov)
+    //obj die weiter web sind weniger grass details
+    ctx.bindBuffer(ctx.ARRAY_BUFFER, webglbuffers.grass.buffer.grasscolor.buffer);				
+    ctx.bufferSubData(ctx.ARRAY_BUFFER,0,new Float32Array(grasscolor));
 
-        gl.bindBuffer(gl.ARRAY_BUFFER, grassopt_buffer)
-        gl.bufferSubData(gl.ARRAY_BUFFER,(objsplit*2)*bpe, cordarr2);
-        gl.vertexAttribPointer(grassopt, 2, gl.FLOAT, gl.FALSE, 0, 0)
-        gl.enableVertexAttribArray(grassopt)
+    ctx.bindBuffer(ctx.ARRAY_BUFFER, webglbuffers.grass.buffer.coordinates1.buffer);				
+    ctx.bufferSubData(ctx.ARRAY_BUFFER,0,new Float32Array(objvertices));
 
-        gl.bindBuffer(gl.ARRAY_BUFFER, grasswind_buffer)
-        gl.bufferSubData(gl.ARRAY_BUFFER,objsplit*bpe, cordarr3);
-        gl.vertexAttribPointer(randomwind, 1, gl.FLOAT, gl.FALSE, 0, 0)
-        gl.enableVertexAttribArray(randomwind)
-    }
+    ctx.bindBuffer(ctx.ARRAY_BUFFER, webglbuffers.grass.buffer.grassstartcord.buffer);				
+    ctx.bufferSubData(ctx.ARRAY_BUFFER,0,new Float32Array(grassstartcord));
+
+    ctx.bindBuffer(ctx.ARRAY_BUFFER, webglbuffers.grass.buffer.grassnum.buffer);				
+    ctx.bufferSubData(ctx.ARRAY_BUFFER,0,new Float32Array(grassnum));
+    
+    ctx.bindBuffer(ctx.ARRAY_BUFFER, webglbuffers.grass.buffer.grassrotation.buffer);	
+    ctx.bufferSubData(ctx.ARRAY_BUFFER,0,new Float32Array(grasssrot));
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, webglbuffers.grass.buffer.aWindopt.buffer)
+    gl.bufferSubData(gl.ARRAY_BUFFER,0, new Float32Array(windopt));
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, webglbuffers.grass.feedbackbuffer.aVelo.buffer)
+    gl.bufferSubData(gl.ARRAY_BUFFER,0, new Float32Array(grassvelo));
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, webglbuffers.grass.feedbackbuffer.aWind.buffer)
+    gl.bufferSubData(gl.ARRAY_BUFFER,0, new Float32Array(randomwind));
+
+    gl.bindBuffer(gl.ARRAY_BUFFER,null)
 }
 async function repaint0(x=0,y=0){
     //redraw nur wen bebraucht
@@ -1597,9 +1619,8 @@ function debugcol() {
         ctxarr=ctxarr.filter(i=>i!="ctxdeb")
         return
     }
-    if(zoom!=0)return
     let dctx=(renderer==0||renderer==3?ctxb:ctxdeb)
-    if(fpsav>50){
+    if(fpsav>50&&zoom==0){
         if(renderer==1||renderer==2||debugcolmap)dctx.clearRect(0, 0, canvas.width, canvas.height)
         if(debugcolmap){
             let offy=Math.trunc(rofy)

@@ -151,13 +151,13 @@ function defaultarrload(num="all"){
         new createobj.Grass(myRect,0, 710, 200, 10);
         new createobj.Grassani(myRect,0, 709, 200, 1);
 
-        //new createobj.Grass(myRect,200, 690, 500, 30);
+        new createobj.Grass(myRect,200, 690, 500, 30);
         new createobj.Grassani(myRect,200, 689, 500, 1);
-        //new createobj.Grass(myRect,700, 710, 300, 10);
+        new createobj.Grass(myRect,700, 710, 300, 10);
         new createobj.Grassani(myRect,700, 709, 300, 1);
         new createobj.Shape(myRect,400, 650, 100, 10, {fill:"gray",dest:true});
         new createobj.Shape(myRect,500, 650, 100, 10, {fill:"#333"});
-        //new createobj.Grass(myRect,1000, 710, 100, 10);
+        new createobj.Grass(myRect,1000, 710, 100, 10);
         new createobj.Grassani(myRect,1000, 709, 100, 1);
 
         new createobj.Grass(myRect,[1100,1100,1150,1400,1500,1500,1100], [720,710,705,500,500,720,720],{texturrichtung:[0,1,2,3,4]})

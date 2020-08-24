@@ -154,11 +154,11 @@ const colorobj={
                             }
                         }
                         if(max!=Infinity){
-                            me.grassspawn(gox-minxobj,goy-minyobj+1,1,Math.random()*15,dir)
+                            me.grassspawn(gox-minxobj,goy-minyobj+1,Math.random()*2+0.2,Math.random()*15+0.5,dir)
                             updatetgrass++
                         }
                     }else{
-                        me.grassspawn(gox-minxobj,goy-minyobj+1,1,Math.random()*15,0)
+                        me.grassspawn(gox-minxobj,goy-minyobj+1,Math.random()*2+0.2,Math.random()*15+0.5,0)
                         updatetgrass++
                     }
                 }
