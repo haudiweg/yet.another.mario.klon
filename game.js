@@ -1,20 +1,37 @@
 'use strict';
-function ani(me,start,time){
-    if(start==false)instandzoom=false
-    if (keys.getkeyovermin(27)){stopmain=false;debug=false;mvis()}//das in event rein
+function ani(time){
+    if (keys.getkeyovermin(27)){
+        if(multiplayerstartet&&multiplayer&&!listenforplayer){
+            let i1=-1
+            for(let i of myRect[loadmap]){if(i.playerphysik){postMessage({act:"player leave",data:{playerid:++i1},id:multiplayerid})}}
+        }
+        postMessage({act:"player afk",id:multiplayerid})
+        stopmain=false
+        mvis()
+    }//das in event rein
+    if(noob||noobpic)noobmodus()
     if(enableaudio){
-        if(listener.positionX){
-            listener.positionX.value = Math.trunc(me.x+me.w/2);
-            listener.positionY.value = Math.trunc(me.y+me.h/2);
+        if(listener.positionX){//camera statt me
+            if(soundcam){
+                listener.positionX.value = Math.trunc(rofx*zoomn+canvas.width*zoomn/2)
+                listener.positionY.value = Math.trunc(rofy*zoomn+canvas.height*zoomn/2)
+            }else{
+                listener.positionX.value = Math.trunc((anime.x+anime.w/2)/10)*10;
+                listener.positionY.value = Math.trunc((anime.y+anime.h/2)/10)*10;
+            }
         }else{
-            listener.setPosition(Math.trunc(me.x+me.w/2),Math.trunc(me.y+me.h/2),0);
+            if(soundcam){
+                listener.setPosition(Math.trunc(rofx*zoomn+canvas.width*zoomn/2),Math.trunc(rofy*zoomn+canvas.height*zoomn/2),0);
+            }else{
+                listener.setPosition(Math.trunc((anime.x+anime.w/2)/10)*10,Math.trunc((anime.y+anime.h/2)/10)*10,0);
+            }
         }
     }
     //if(gp)checkgamepad()
     fps=Math.max(1/((time-timeo)/1e3),1)
-    //fpsav=fpsav*(fpsav<=fps?0.96:0.9)+fps*(fpsav<=fps?0.04:0.1)
-    //fpsav=fpsav*(fpsav<=fps+5?0.99:0.9)+fps*(fpsav<=fps+5?0.01:0.1)
+    if(fps>fpslimit)if(stopmain){window.requestAnimationFrame(ani);return};
     fpsav=fpsav*fpsanpassung+fps*(1-fpsanpassung)
+    //if(isNaN(fpsav))fpsav=0//fallback 
     //camera
 
     if(mousex!==null||mousey!==null){
@@ -24,20 +41,49 @@ function ani(me,start,time){
         rofy+=Math.max(menuboarder-(canvas.width*zoomn-mousey),0)
     }
 
+    if((anime.x+anime.w/2)/zoomn>=rofx+canvas.width*0.9)rofx+=((anime.x+anime.w/2)/zoomn-rofx-canvas.width*0.85)/(instandzoom?15:1)
+    if((anime.x+anime.w/2)/zoomn<=rofx+canvas.width*0.1)rofx+=((anime.x+anime.w/2)/zoomn-rofx-canvas.width*0.15)/(instandzoom?15:1)
 
-    if((me.x+me.w/2)/zoomn>=rofx+canvas.width*0.9)rofx+=((me.x+me.w/2)/zoomn-rofx-canvas.width*0.85)/(instandzoom?15:1)
-    if((me.x+me.w/2)/zoomn<=rofx+canvas.width*0.1)rofx+=((me.x+me.w/2)/zoomn-rofx-canvas.width*0.15)/(instandzoom?15:1)
-
-    if((me.y+me.h/2)/zoomn>=rofy+canvas.height*0.8)rofy+=((me.y+me.h/2)/zoomn-rofy-canvas.height*0.7)/(instandzoom?80:1)
-    if((me.y+me.h/2)/zoomn<=rofy+canvas.height*0.1)rofy+=(-(me.y+me.h/2)/zoomn-rofy-canvas.height*0.6)/(instandzoom?80:1)
-
+    if((anime.y+anime.h/2)/zoomn>=rofy+canvas.height*0.8)rofy+=((anime.y+anime.h/2)/zoomn-rofy-canvas.height*0.7)/(instandzoom?80:1)
+    if((anime.y+anime.h/2)/zoomn<=rofy+canvas.height*0.1)rofy+=(-(anime.y+anime.h/2)/zoomn-rofy-canvas.height*0.6)/(instandzoom?80:1)
+    if(camfocusallplayer&&(multiplayerstartet||multipleplayer)){//das net immer ausführen
+        const players=myRect[loadmap].filter(i1=>i1.construck=="Player"||i1.construck=="Multiplayer")
+            if(players.length>=2){
+            minplayerposx=Infinity
+            minplayerposy=Infinity
+            maxplayerposx=-Infinity
+            maxplayerposy=-Infinity
+            for(let i of players){
+                if(minplayerposx>i.minx)minplayerposx=i.minx
+                if(minplayerposy>i.miny)minplayerposy=i.miny
+                if(maxplayerposx<i.minx+i.w)maxplayerposx=i.minx+i.w
+                if(maxplayerposy<i.miny+i.h)maxplayerposy=i.miny+i.h
+            }
+            //wen nicht alle obj sichtbar sind zoom rein
+            //wen obj zu nah dran ist zoom raus
+            //wen alle player in 1er bildschirm hälfte befinden dan zoom rein
+            if(canvas.width*zoomn<Math.abs(maxplayerposx-minplayerposx)+20/zoomn||canvas.height*zoomn<Math.abs(maxplayerposy-minplayerposy)+20/zoomn){
+                zoom+=0.01
+                zoomn=Math.pow(2,zoom)
+            }
+            if(zoom>0&&(canvas.width*zoomn>Math.abs(maxplayerposx-minplayerposx)+canvas.width*zoomn/2&&canvas.height*zoomn>Math.abs(maxplayerposy-minplayerposy)+canvas.height*zoomn/2)){
+                zoom-=0.002
+                zoomn=Math.pow(2,zoom)
+            }
+            rofx=Math.min((minplayerposx-10)/zoomn,rofx)
+            rofy=Math.min((minplayerposy-10)/zoomn,rofy)
+        }
+    }
 
     ////wen bild sichtbar kleiner ist als map dan mach an wand cam collision
-    if(canvas.width*zoomn<Math.abs(maxx-minx)){rofx=Math.min(Math.max(rofx,minx),(maxx-canvas.width)/zoomn)}else{rofx=((maxx-minx)/2-(canvas.width*zoomn)/2)/zoomn}
+    if(canvas.width*zoomn<Math.abs(maxx-minx)){rofx=Math.min(Math.max(rofx,minx),maxx/zoomn-canvas.width)}else{rofx=((maxx-minx)/2-(canvas.width*zoomn)/2)/zoomn}
     if(canvas.height*zoomn<Math.abs(maxy-miny)){rofy=Math.min(Math.max(rofy,miny),maxy/zoomn-canvas.height)}else{rofy=((maxy-miny)/2-(canvas.height*zoomn)/2)/zoomn}
 
-    if (promall[2].res&&canfishmap&&needfishmap&&(fishmaptimer-=60/fps)<=0){needfishmap=false;canfishmap=false;fishmaptimer=fishmapreset;pathki(me)}
-    if (cancolmap&&((colmaptimer-=60/fps)<=0||needcolmap)&&fps+10>fpsav){needcolmap=false;colmaptimer=colmapreset;collisionmap()}
+    if (promall[2].res&&canfishmap&&needfishmap&&(fishmaptimer-=60/fps)<=0){needfishmap=false;canfishmap=false;fishmaptimer=fishmapreset;pathki(anime)}
+    if (cancolmap&&needcolmap&&fps+10>fpsav){
+        needcolmap=false;
+        collisionmap()
+    }
     //aufpassen das pfals needcolmap true ist das dan colmap vor shattenberechnung fertig sein muss
 
     if(shadows){
@@ -46,7 +92,7 @@ function ani(me,start,time){
         if((renderer==3||hadrenderbackground)&&staticshadowtime>1.2&&fpsav<=m4xfps-30)shadowstaticqualli=Math.max(shadowstaticqualli-0.01,0)
         if((renderer==3||hadrenderbackground)&&staticshadowtime<1&&fpsav>m4xfps-1&&shadowstaticqualli<1&&shadowstaticqualli<maxstaticshadowlevel)shadowstaticqualli+=shadowstaticqualli>0.9?   (1-shadowstaticqualli)/10:0.001
         //die werte sollen von max fps abhänig sein
-        if((Math.abs(shadowstaticqualli-oldshadowstaticqualli)>0.1||(shadowstaticqualli==0&&oldshadowstaticqualli!=0))&&cancolmap&&fps+10>fpsav){
+        if(shadows&&(Math.abs(shadowstaticqualli-oldshadowstaticqualli)>0.1||(shadowstaticqualli==0&&oldshadowstaticqualli!=0))&&cancolmap&&fps+10>fpsav){
             if(toupdateshadow.size==0){
                 oldshadowstaticqualli=shadowstaticqualli
                 for (let i of myRect[loadmap]){
@@ -70,28 +116,28 @@ function ani(me,start,time){
     }
     collupdate=false
     if (debug)debugtext+=
-        "\ndistd "+me.distd[0]+
-        "\ndistd "+me.distd[1]+
-        "\ndistd "+me.distd[2]+
-        "\ndistd "+me.distd[3]+
-        "\nme "+myRect[loadmap].findIndex(i=>i==me)+
-        "\nvelox "+me.velo[0].toFixed(3)+
-        "\nveloy "+me.velo[1].toFixed(3)+
-        "\nx  "+me.x.toFixed(3)+
-        "\ny  "+me.y.toFixed(3)+
-        "\ndecke "+(typeof(me.umgebung[0][0])=="object"?me.umgebung[0][0].construckarr+(window[me.umgebung[0][0].construckarr][loadmap].findIndex(obf=>obf==me.umgebung[0][0])):"")+
-        "\n "+me.umgebung[0][1].toFixed(3)+
-        "\nleft "+(typeof(me.umgebung[1][0])=="object"?me.umgebung[1][0].construckarr+(window[me.umgebung[1][0].construckarr][loadmap].findIndex(obf=>obf==me.umgebung[1][0])):"")+
-        "\n "+me.umgebung[1][1].toFixed(3)+
-        "\nground "+(typeof(me.umgebung[2][0])=="object"?me.umgebung[2][0].construckarr+(window[me.umgebung[2][0].construckarr][loadmap].findIndex(obf=>obf==me.umgebung[2][0])):"")+
-        "\n "+me.umgebung[2][1].toFixed(3)+
-        "\nright "+(typeof(me.umgebung[3][0])=="object"?me.umgebung[3][0].construckarr+(window[me.umgebung[3][0].construckarr][loadmap].findIndex(obf=>obf==me.umgebung[3][0])):"")+
-        "\n "+me.umgebung[3][1].toFixed(3)+
+        "\ndistd "+anime.distd[0]+
+        "\ndistd "+anime.distd[1]+
+        "\ndistd "+anime.distd[2]+
+        "\ndistd "+anime.distd[3]+
+        "\nme "+myRect[loadmap].findIndex(i=>i==anime)+
+        "\nvelox "+anime.velo[0].toFixed(3)+
+        "\nveloy "+anime.velo[1].toFixed(3)+
+        "\nx  "+anime.x.toFixed(3)+
+        "\ny  "+anime.y.toFixed(3)+
+        "\ndecke "+(typeof(anime.umgebung[0][0])=="object"?anime.umgebung[0][0].construckarr+(window[anime.umgebung[0][0].construckarr][loadmap].findIndex(obf=>obf==anime.umgebung[0][0])):"")+
+        "\n "+anime.umgebung[0][1].toFixed(3)+
+        "\nleft "+(typeof(anime.umgebung[1][0])=="object"?anime.umgebung[1][0].construckarr+(window[anime.umgebung[1][0].construckarr][loadmap].findIndex(obf=>obf==anime.umgebung[1][0])):"")+
+        "\n "+anime.umgebung[1][1].toFixed(3)+
+        "\nground "+(typeof(anime.umgebung[2][0])=="object"?anime.umgebung[2][0].construckarr+(window[anime.umgebung[2][0].construckarr][loadmap].findIndex(obf=>obf==anime.umgebung[2][0])):"")+
+        "\n "+anime.umgebung[2][1].toFixed(3)+
+        "\nright "+(typeof(anime.umgebung[3][0])=="object"?anime.umgebung[3][0].construckarr+(window[anime.umgebung[3][0].construckarr][loadmap].findIndex(obf=>obf==anime.umgebung[3][0])):"")+
+        "\n "+anime.umgebung[3][1].toFixed(3)+
         "\nfps "+fps.toFixed(1)+
         "\nmaxfps "+m4xfps+
         "\nfpsav "+fpsav.toFixed(3)+
         "\nwasserfps "+myRect[loadmap].map(i=>typeof(i.wasserfps)=="number"?"\n "+i.wasserfps.toFixed(3):"").join("")+
-        "\nfalldistanz  "+me.falldist.toFixed(3)+
+        "\nfalldistanz  "+anime.falldist.toFixed(3)+
         "\nshadowquali "+shadowqualli.toFixed(3)+
         "\nshadowstaticqualli "+shadowstaticqualli.toFixed(3)+
         "\nshadowrand "+shadowrand+
@@ -100,21 +146,19 @@ function ani(me,start,time){
         "\nstaticshadowtime "+staticshadowtime.toFixed(3)+
         "\ndynamicshadowtime "+dynamicshadowtime.toFixed(3)+
         "\nidletime "+idletime.toFixed(3)+
-        "\ncolmaptimer "+colmaptimer.toFixed(3)+
-        "\ncolmapreset "+colmapreset+
         "\nfishmaptimer "+fishmaptimer.toFixed(3)+
         "\nfishmapreset "+fishmapreset+
         "\nneedshadow "+toupdateshadow.size+
         "\ndebtextavg "+debtextavg.toFixed(3)+
         "\ndebtextvariation "+debtextvariation.toFixed(3)+
         "\ndebtextlength "+debtextlength.toFixed(3)+
-        "\ngravirichtung "+(me.gravirich*(180/Math.PI)).toFixed(0)+"°"+
-        "\ngravi0 "+me.graviins[0].toFixed(3)+
-        "\ngravi1 "+me.graviins[1].toFixed(3)+
-        "\nrich4 "+me.rich4+
-        "\nrich2 "+me.rich2+
-        "\nrich4arr "+me.rich4arr.join()+
-        "\nrich2arr "+me.rich2arr.join()+
+        "\ngravirichtung "+(anime.gravirich*(180/Math.PI)).toFixed(0)+"°"+
+        "\ngravi0 "+anime.graviins[0].toFixed(3)+
+        "\ngravi1 "+anime.graviins[1].toFixed(3)+
+        "\nrich4 "+anime.rich4+
+        "\nrich2 "+anime.rich2+
+        "\nrich4arr "+anime.rich4arr.join()+
+        "\nrich2arr "+anime.rich2arr.join()+
         "\nmousex "+mousex+
         "\nmousey "+mousey+
         "\nmousexc "+mousexc+
@@ -122,7 +166,10 @@ function ani(me,start,time){
         "\ntodrawb0 "+todrawb[0].length+
         "\ntodrawb1 "+todrawb[1].length
 
-        
+    //das vieleicht in bored rein
+    if(multiplayerstartet&&multiplayer&&multiplayerinversekinematic){
+        for(let i of myRect[loadmap].filter(i1=>i1.construck=="Multiplayer"))inverse_kinematic(i,true)
+    }
     if(renderer==0)hadrenderbackground=false
     if((oldxcam!=Math.round((rofx+offcamx)*10)/10||oldycam!=Math.round((rofy+offcamy)*10)/10)){
         if(renderer==0)renderbackground=true
@@ -137,25 +184,27 @@ function ani(me,start,time){
         repaint(rofx+offcamx,rofy+offcamy)
     }
     for(let me1 of myFire[loadmap]){bounce(me1)}
-    if(playertexturanimation)texturupdatet=false
-    if ('requestIdleCallback' in window) {
-        if(idlecallbackactiv==false){idlecallbackactiv=true;window.requestIdleCallback(bored.bind(this,me))}
-    }else{
-        if(renderbackground&&renderer==0)repaintb(rofx+offcamx,rofy+offcamy)
-        if(promall[3].res&&cancolmap&&!needcolmap&&fps+2>fpsav&&fpsav+2>m4xfps){
-            for (let i=performance.now()+idletime;i<time+1000/m4xfps&&(toupdateshadow.size>0||(playertexturanimation&&texturupdatet==false));i+=idletime*1.5){
-                if(texturupdatet==false&&playertexturanimation){playertexturani(me);texturupdatet=true;continue}
-                let a=performance.now()
-                let pop=[...toupdateshadow][0]
-                toupdateshadow.delete(pop)
-                for (let s=0;s<mySun[loadmap].length;s++)shadow(s,pop)
-                if(pop.static)renderbackground=true
-                idletime=(idletime*idletimeanpassung)+((performance.now()-a)*(1-idletimeanpassung))
+    if((renderbackground&&renderer==0)||playertexturanimation||shadows){
+        if(playertexturanimation)texturupdatet=false
+        if ('requestIdleCallback' in window) {
+            if(idlecallbackactiv==false){idlecallbackactiv=true;window.requestIdleCallback(bored.bind(this,anime))}
+        }else{
+            if(renderbackground&&renderer==0)repaintb(rofx+offcamx,rofy+offcamy)
+            if(shadows&&promall[3].res&&cancolmap&&!needcolmap&&fps+2>fpsav&&fpsav+2>m4xfps){
+                for (let i=performance.now()+idletime;i<time+1000/m4xfps&&(toupdateshadow.size>0||(playertexturanimation&&texturupdatet==false));i+=idletime*1.5){
+                    if(texturupdatet==false&&playertexturanimation){playertexturani(anime);texturupdatet=true;continue}
+                    let a=performance.now()
+                    let pop=[...toupdateshadow][0]
+                    toupdateshadow.delete(pop)
+                    for (let s=0;s<mySun[loadmap].length;s++)shadow(s,pop)
+                    if(pop.static)renderbackground=true
+                    idletime=(idletime*idletimeanpassung)+((performance.now()-a)*(1-idletimeanpassung))
+                }
             }
         }
     }
     timeo=time
-    if (stopmain)window.requestAnimationFrame(ani.bind(this,me,true))
+    if(stopmain)window.requestAnimationFrame(ani)
     if(debugcolmap||cleardebugcolmap||debug)debugcol()
 }
 function bored(me,timetowork){
@@ -249,14 +298,14 @@ function environment(me,first){//noch an gravi anpassen
             if(renderer==3)updatescene=true
         }
         //block kaput machen
-        if (me.umgebung[me.rich4arr[2]][1]<=1&&me.falldist>30&&me.umgebung[me.rich4arr[2]][0].dest&&me.getstats.dest&&me.shift){
+        if (typeof(me.umgebung[me.rich4arr[2]][0])!="undefined"&&me.umgebung[me.rich4arr[2]][1]<=1&&me.falldist>30&&me.umgebung[me.rich4arr[2]][0].dest&&me.getstats.dest&&me.shift){
             if(shadows)for(let i of me.umgebung[me.rich4arr[2]][0].shadowadd)toupdateshadow.add(i)
             needcolmap=true
             myRect[loadmap].splice(myRect[loadmap].indexOf(me.umgebung[me.rich4arr[2]][0]),1);
             if(renderer==3)updatescene=true
             if(renderer==0)renderbackground=true
         }
-        if (me.umgebung[me.rich4arr[0]][1]<=1&&me.umgebung[me.rich4arr[0]][0].dest&&me.getstats.dest){
+        if (typeof(me.umgebung[me.rich4arr[0]][0])!="undefined"&&me.umgebung[me.rich4arr[0]][1]<=1&&me.umgebung[me.rich4arr[0]][0].dest&&me.getstats.dest){
             if(shadows)for(let i of me.umgebung[me.rich4arr[0]][0].shadowadd)toupdateshadow.add(i)
             needcolmap=true
             myRect[loadmap].splice(myRect[loadmap].indexOf(me.umgebung[me.rich4arr[0]][0]),1);
@@ -266,7 +315,7 @@ function environment(me,first){//noch an gravi anpassen
         //sumon ist noch bisle buggy bei andere richtung
         //mach spawn richtung umdrehen
         //mach dir umdrehen
-        if (me.falldist>30&&me.shift&&me.umgebung[me.rich4arr[2]][1]<=1&&me.umgebung[me.rich4arr[2]][0].constructor==createobj.Questionblock&&me.getstats.dest){
+        if (me.falldist>30&&me.shift&&typeof(me.umgebung[me.rich4arr[2]][0])!="undefined"&&me.umgebung[me.rich4arr[2]][1]<=1&&me.umgebung[me.rich4arr[2]][0].constructor=="Questionblock"&&me.getstats.dest){
             if(typeof(me.umgebung[me.rich4arr[2]][0].option[0])!=="undefined"){
                 new createobj[me.umgebung[me.rich4arr[2]][0].option[0][0]]((me.umgebung[me.rich4arr[2]][0].option[0].length==3?me.umgebung[me.rich4arr[2]][0].option[0][2]:myRect),me.umgebung[me.rich4arr[2]][0].x+(me.rich2arr[0]*(me.rich2[0]?20:40)), me.umgebung[me.rich4arr[2]][0].y+(me.rich2arr[1]*(me.rich2[1]?20:40)), 20, 20,{dir:me.umgebung[me.rich4arr[2]][0].dir,...me.umgebung[me.rich4arr[2]][0].option[0][1]})
                 if(shadows)toupdateshadow.add(myRect[loadmap][myRect[loadmap].length-1])
@@ -280,7 +329,7 @@ function environment(me,first){//noch an gravi anpassen
             if(renderer==3)updatescene=true
             if(renderer==0)renderbackground=true
         }
-        if (me.umgebung[me.rich4arr[0]][1]<=1&&me.umgebung[me.rich4arr[0]][0].constructor==createobj.Questionblock){
+        if (typeof(me.umgebung[me.rich4arr[0]][0])!="undefined"&&me.umgebung[me.rich4arr[0]][1]<=1&&me.umgebung[me.rich4arr[0]][0].constructor=="Questionblock"){
             if(typeof(me.umgebung[me.rich4arr[0]][0].option[0])!=="undefined"){
                 new createobj[me.umgebung[me.rich4arr[0]][0].option[0][0]]((me.umgebung[me.rich4arr[0]][0].option[0].length==3?me.umgebung[me.rich4arr[0]][0].option[0][2]:myRect),me.umgebung[0][0].x-(me.rich2arr[0]*(me.rich2[0]?20:40)), me.umgebung[0][0].y-(me.rich2arr[1]*(me.rich2[1]?20:40)), 20, 20, {dir:me.umgebung[me.rich4arr[0]][0].dir,...me.umgebung[me.rich4arr[0]][0].option[0][1]})
                 if(shadows)toupdateshadow.add(myRect[loadmap][myRect.length-1])
@@ -299,49 +348,86 @@ function environment(me,first){//noch an gravi anpassen
     for (let i=0;i<myRect[loadmap].length;i++) {
         let me1=myRect[loadmap][i]
         //if(me1==me)continue
-        if(typeof(me1.environment)!=undefined&&me1.environment)continue
-        const offsx=typeof(me1.x)=="object"?Math.min(...me1.x):me1.x
-        const offsy=typeof(me1.x)=="object"?Math.min(...me1.y):me1.y
+        if(typeof(me1.environment)!=undefined&&me1.environment)continue//das skipt spieler
+
 
         //kucke ob obj sichtbar ist
-        if(!(rofx*zoomn-20<offsx+me1.w&&
-        offsx/zoomn<rofx+canvas.width+20&&
-        rofy*zoomn-20<offsy+me1.h&&
-        offsy/zoomn<rofy+canvas.height+20)){continue}
+        if(!(rofx*zoomn-20<me1.minx+me1.w&&
+            me1.minx/zoomn<rofx+canvas.width+20&&
+            rofy*zoomn-20<me1.miny+me1.h&&
+            me1.miny/zoomn<rofy+canvas.height+20)){continue}
         //console.log(me1)
 
 
         //anmimnation
-        if(promall[2].res&&Object.getOwnPropertyNames(aiobj).includes(me1.type))aiobj[me1.type](me,me1,first)
+    
+        if((typeof(me1.managefromplayernum)=="undefined"||me1.managefromplayernum==multiplayerid||me1.sync)&&promall[2].res&&Object.getOwnPropertyNames(aiobj).includes(me1.type))aiobj[me1.type](me,me1,first)
 
         //feuer coll mit obj
-        if(typeof(me1.damage)!="undefined"&&promall[1].res&&typeof(me1.damage.fire)!="undefined"){
-            for(let me2 of myFire[loadmap]){
-                if(collide(me1,me2)){
-                    me1.damage.fire(me2)
-                    myFire[loadmap].splice(myFire[loadmap].indexOf(me2),1)
-                    if(renderer==3)updatescene=true
-                    if(renderer==0)renderbackground=true
+        if(typeof(me1.damage)!="undefined"&&promall[1].res){
+            if(typeof(me1.damage.fire)!="undefined"){
+                for(let me2 of myFire[loadmap]){
+                    if(collide(me1,me2)){
+                        me1.damage.fire(me2)
+                        myFire[loadmap].splice(myFire[loadmap].indexOf(me2),1)
+                        if(renderer==3)updatescene=true
+                        if(renderer==0)renderbackground=true
+                    }
                 }
             }
-        }
 
-        //spieler coll mit obj
-        if(typeof(me1.damage)!="undefined"&&promall[1].res&&collide(me,me1)){
-            if(me.falldist>=5&&typeof(me1.damage.jump)!="undefined"){
-                me1.damage.jump(me,nokill)
-            }else if(typeof(me1.damage.collide)!="undefined"){
-                me1.damage.collide(me,nokill)
+            //spieler coll mit obj
+            //das verbessern
+            //wen sound net activirt skippe grass
+            if(typeof(me1.damage.collide)!="undefined"&&me1.damage.collideendstatus>0)me1.damage.collideendstatus++
+            if((typeof(me1.damage.collide)!="undefined"||(me.falldist>=5&&typeof(me1.damage.jump)!="undefined"))&&collide(me,me1)){
+                if(typeof(me1.damage.jump)!="undefined"){
+                    me1.damage.jump(me,nokill)
+                }else if(typeof(me1.damage.collide)!="undefined"){
+                    if(me1.damage.collideendstatus==0&&typeof(me1.damage.collidestart)=="function")me1.damage.collidestart()
+                    me1.damage.collide(me,nokill)
+                    me1.damage.collideendstatus=1
+                }
+            }
+            if(typeof(me1.damage.collide)!="undefined"&&me1.damage.collideendstatus>=5){//kleines dilay das net so oft fehler gibt
+                me1.damage.collideendstatus=0
+                if(typeof(me1.damage.collideend)=="function")me1.damage.collideend()
+            }
+            if(enableaudio){
+                if(typeof(me1.damage.audiocollide)!="undefined"&&me1.damage.audiocollideendstatus>0)me1.damage.audiocollideendstatus++
+                if((typeof(me1.damage.audiocollide)!="undefined"||(me.falldist>=5&&typeof(me1.damage.audiojump)!="undefined"))&&collide(me,me1)){
+                    if(typeof(me1.damage.audiojump)!="undefined"){
+                        me1.damage.audiojump(me,nokill)
+                    }else if(typeof(me1.damage.audiocollide)!="undefined"){
+                        if(me1.damageaudio.collideendstatus==0&&typeof(me1.damage.audiocollidestart)=="function")me1.damage.audiocollidestart()
+                        me1.damage.audiocollide(me,nokill)
+                        me1.damage.audiocollideendstatus=1
+                    }
+                }
+                if(typeof(me1.damage.audiocollide)!="undefined"&&me1.damage.audiocollideendstatus>=5){//kleines dilay das net so oft fehler gibt
+                    me1.damage.audiocollideendstatus=0
+                    if(typeof(me1.damage.audiocollideend)=="function")me1.damage.audiocollideend()
+                }
             }
         }
     }
 }
 
-
-function playerphysik(me){
+function noobmodus(){
+    const metemp=myRect[loadmap].filter(i=>i.construck=="Player")
+    if(metemp.length<=noobtarget){console.warn("player dont exist resetting noobtarget");noobtarget=0}
+    const me=metemp[noobtarget]
+    if(noob&&!noobpic){
+        noobpic=true
+        window[canvarr[canvarr.length-1]].style="background: url('img/noobhintergund.svg')"
+    }
+    if(!noob&&noobpic){
+        noobpic=false
+        for(let i of canvarr)window[i].style="background:'none'"
+    }
     if(tp&&mousex!=null&&mousey!=null){
-        me.x=mousex
-        me.y=mousey
+        me.x=rofx*zoomn+mousex*zoomn
+        me.y=rofy*zoomn+mousey*zoomn
     }
     if(newstart){
         newstart=false
@@ -353,6 +439,19 @@ function playerphysik(me){
         me.x=me.sx
         me.y=me.sy
     }
+    if(playerplus1live){
+        me.dmg++
+        playerplus1live=false
+    }
+    if(playerplus1statsnum){
+        me.statsnum++
+        playerplus1statsnum=false
+    }
+    if(clearenemy){
+        myRect[loadmap]=myRect[loadmap].filter(i=>{i.construck=="Enemy"})
+        clearenemy=false
+    }
+    if(inflive){me.dmg=100}
     if(tptofinish){
         tptofinish=false
         let nextfinish=myRect[loadmap].filter(i=>i.construck=="Finish").sort((i,i1)=>{
@@ -403,12 +502,8 @@ function playerphysik(me){
             }
         }
     }
-    if(clearenemy){
-    }
-    if(inflive){
-        me.dmg=100
-    }
-
+}
+function playerphysik(me){
     //shift graviabhänig
     me.shift=keys.getkeyovermin(me.controls.s)?true:false
     let shiftchanged=false
@@ -421,6 +516,7 @@ function playerphysik(me){
             me.y+=me.h-me.getstats.h
             me.w=me.getstats.w
             me.h=me.getstats.h
+            if(multiplayerstartet&&multiplayer&&!listenforplayer)postMessage({act:"player stats update",data:{x:me.x,y:me.y,w:me.w,h:me.h},playersendid:me.playersendid,id:multiplayerid})
         }
     }else if(me.rich4==1){
         if (!me.shift&&me.umgebung[0][1]+me.umgebung[2][1]<me.stats[me.inwater|0][0][me.statsnum].w-me.h)me.shift=true
@@ -429,6 +525,7 @@ function playerphysik(me){
             shiftchanged=true
             me.w=me.getstats.h
             me.h=me.getstats.w
+            if(multiplayerstartet&&multiplayer&&!listenforplayer)postMessage({act:"player stats update",data:{x:me.x,y:me.y,w:me.w,h:me.h},playersendid:me.playersendid,id:multiplayerid})
         }
     }else if(me.rich4==2){
         if (!me.shift&&me.umgebung[0][1]+me.umgebung[2][1]<me.stats[me.inwater|0][0][me.statsnum].h-me.h)me.shift=true
@@ -437,6 +534,7 @@ function playerphysik(me){
             shiftchanged=true
             me.w=me.getstats.w
             me.h=me.getstats.h
+            if(multiplayerstartet&&multiplayer&&!listenforplayer)postMessage({act:"player stats update",data:{x:me.x,y:me.y,w:me.w,h:me.h},playersendid:me.playersendid,id:multiplayerid})
         }
     }else if(me.rich4==3){
         if (!me.shift&&me.umgebung[0][1]+me.umgebung[2][1]<me.stats[me.inwater|0][0][me.statsnum].w-me.h)me.shift=true
@@ -447,6 +545,7 @@ function playerphysik(me){
             me.y-=me.h-me.getstats.w
             me.w=me.getstats.h
             me.h=me.getstats.w
+            if(multiplayerstartet&&multiplayer&&!listenforplayer)postMessage({act:"player stats update",data:{x:me.x,y:me.y,w:me.w,h:me.h},playersendid:me.playersendid,id:multiplayerid})
         }
     }
 
@@ -508,13 +607,13 @@ function playerphysik(me){
     //}
 
     if(keys.getkeyovermin(me.controls.w)){
-        if (me.falldist>5&&me.umgebung[me.rich4arr[2]][1]>0&&(keys.getkeyovermin(me.controls.a)&&!keys.getkeyovermin(me.controls.d))&&me.umgebung[me.rich4arr[3]][1]<=2){
+        if(me.falldist>0.1&&me.umgebung[me.rich4arr[2]][1]>0&&(keys.getkeyovermin(me.controls.a)&&!keys.getkeyovermin(me.controls.d))&&me.umgebung[me.rich4arr[3]][1]<=2){
             me.velo[me.rich2arr[1]]+=me.getstats.wj.y*keys.getmapkey(me.controls.w)*me.rich2[1]
             me.velo[me.rich2arr[0]]-=me.getstats.wj.x*keys.getmapkey(me.controls.a)*me.rich2[0]
-        }else if (me.falldist>5&&me.umgebung[2][1]>0&&(keys.getkeyovermin(me.controls.d)&&!keys.getkeyovermin(me.controls.a))&&me.umgebung[1][1]<=2){
+        }else if(me.falldist>0.1&&me.umgebung[2][1]>0&&(keys.getkeyovermin(me.controls.d)&&!keys.getkeyovermin(me.controls.a))&&me.umgebung[1][1]<=2){
             me.velo[me.rich2arr[1]]+=me.getstats.wj.y*keys.getmapkey(me.controls.w)*me.rich2[1]
             me.velo[me.rich2arr[0]]+=me.getstats.wj.x*keys.getmapkey(me.controls.d)*me.rich2[0]
-        }else if(me.umgebung[me.rich4arr[2]][1]<=0.1||me.inwater)me.velo[me.rich2arr[1]]+=me.getstats.jh*keys.getmapkey(me.controls.w)*me.rich2[1]
+        }else if(me.umgebung[me.rich4arr[2]][1]<0.000001||me.inwater)me.velo[me.rich2arr[1]]+=me.getstats.jh*keys.getmapkey(me.controls.w)*me.rich2[1]*Math.max((60/fps)/2,1)
     }
 
 
@@ -532,14 +631,20 @@ function playerphysik(me){
     
         //wen r und l kleichzeitig dan stopp
         //if in air dan langsamme
-        if(keys.getkeyovermin(me.controls.d)&&keys.getkeyovermin(me.controls.a)){me.velo[me.rich2arr[0]]=0}
-        else if (keys.getkeyovermin(me.controls.a)){me.velo[me.rich2arr[0]]-=(me.umgebung[me.rich4arr[2]][1]>0.1?me.getstats.sa:me.getstats.sg)*keys.getmapkey(me.controls.a)*me.rich2[0];me.dir=-1*me.rich2[0]}
-        else if (keys.getkeyovermin(me.controls.d)){me.velo[me.rich2arr[0]]+=(me.umgebung[me.rich4arr[2]][1]>0.1?me.getstats.sa:me.getstats.sg)*keys.getmapkey(me.controls.d)*me.rich2[0];me.dir=1*me.rich2[0]}
+        if(keys.getkeyovermin(me.controls.d)&&keys.getkeyovermin(me.controls.a)){
+            me.velo[me.rich2arr[0]]=0
+        }else if(keys.getkeyovermin(me.controls.a)){
+            me.velo[me.rich2arr[0]]-=(me.umgebung[me.rich4arr[2]][1]>=0.1?me.getstats.sa:me.getstats.sg)*keys.getmapkey(me.controls.a)*me.rich2[0]
+            me.dir=-1*me.rich2[0]
+        }else if(keys.getkeyovermin(me.controls.d)){
+            me.velo[me.rich2arr[0]]+=(me.umgebung[me.rich4arr[2]][1]>=0.1?me.getstats.sa:me.getstats.sg)*keys.getmapkey(me.controls.d)*me.rich2[0]
+            me.dir=1*me.rich2[0]
+        }
     }
     //console.log(me.velo)
     //me.velo=[0,0]
     //return
-    me.velo[1]+=0.035*(60/fps)
+    //me.velo[1]+=0.035*(60/fps)
     
     if(me.umgebung[me.rich4arr[2]][1]<=0.01){
         me.falldist=0
@@ -679,20 +784,40 @@ function playerphysik(me){
         me.velo[1]=0
     }
 
-    if (shadows&&fps+20>fpsav&&(me.velo[0]!=0||me.velo[1]!=0||shiftchanged)){
-        toupdateshadow.add(me)
+    if (fps+20>fpsav&&(me.velo[0]!=0||me.velo[1]!=0||shiftchanged)){
+        if(shadows)toupdateshadow.add(me)
+        if(multiplayerstartet&&multiplayer&&!listenforplayer)postMessage({act:"player stats update",data:{
+            x:me.x,
+            y:me.y,
+            velo:me.velo,
+            falldist:me.falldist,
+            inwater:me.inwater,
+            dir:me.dir,
+            groundflat:me.distd[me.rich4arr[2]].length==3&&me.distd[me.rich4arr[2]].every((i1)=>i1==me.distd[me.rich4arr[2]][0]),
+            rich4arr:me.rich4arr
+        },playersendid:me.playersendid,id:multiplayerid})
         me.nomove=0
     }else{
         if(me.nomove==0){
-            needcolmap=true
+            if(shadows)needcolmap=true
+            if(multiplayerstartet&&multiplayer&&!listenforplayer)postMessage({act:"player stats update",data:{
+                x:me.x,
+                y:me.y,
+                velo:me.velo,
+                falldist:me.falldist,
+                inwater:me.inwater,
+                dir:me.dir,
+                groundflat:me.distd[me.rich4arr[2]].length==3&&me.distd[me.rich4arr[2]].every((i1)=>i1==me.distd[me.rich4arr[2]][0]),
+                rich4arr:me.rich4arr
+            },playersendid:me.playersendid,id:multiplayerid})
             me.nomove=1
         }
-        if(me.nomove==1&&cancolmap&&!needcolmap){
+        if(shadows&&me.nomove==1&&cancolmap&&!needcolmap){
             toupdateshadow.add(me)
             me.nomove=2
         }
     }
-    if(inversekinematics&&promall[3].res)inverse_kinematic(me)
+    if(inversekinematics&&promall[3].res)inverse_kinematic(me,false)
 }
 function winscreen(){
     let but=[]

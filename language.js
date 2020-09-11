@@ -4,6 +4,7 @@ switch(language=="auto"?(window.navigator.languages?window.navigator.languages[0
     case "de":
     tooltips={
         start:"zurück",
+        ok:"ok",
         true:"wahr",
         false:"falsch",
         loadandsave:{
@@ -46,13 +47,15 @@ switch(language=="auto"?(window.navigator.languages?window.navigator.languages[0
             settings:"ändert einstellungen zb wie das spiel aussieht wie es lägt und wie viel",
             save:"speichern und laden von levels und löschen von geladenen levels",
             start:"startet das spiel ich hoffe das du weist wie das spiel functioniert",
-            build:"ändern der map (cheater!) und erstellung neuer levels"
+            build:"ändern der map (cheater!) und erstellung neuer levels",
+            webrtc:"verbinden mit anderen spielern"
         },
         buttomname:{
             keymap:"tastatur layout",
             save:"Laden&Speichern",
             settings:"Einstellungen",
             build:"Baumodus",
+            webrtc:"Webrtc"
         },
         settings:{
             nocollision:"kopf durch die wand",
@@ -78,7 +81,6 @@ switch(language=="auto"?(window.navigator.languages?window.navigator.languages[0
             inversekinematics:"Knochenbewegung",
             bonescolor:"Knochentextur anzeigen",
             renderallinstand:"zeiche alles sofort (statt über mehreren frames)",
-            colmapreset:"collisions map actualisierungszeit",
             debtextabfac:"debug text abnahme factor",
             debtextavgabfac:"debug text durchschnits abnahme factor",
             fishmapreset:"fisch collisions map actualisierungszeit",
@@ -91,12 +93,9 @@ switch(language=="auto"?(window.navigator.languages?window.navigator.languages[0
     }
     break;
     default:
-    //"renderer","Fullscreen","imageSmoothingEnabled","suppixel","camoffsx","camoffsy","allowedmaxfps","m4xfps","shadows","maxshadow","shadowlimmiter",
-    //"maxshadowlevel","maxstaticshadowlevel","sunnlineofsight","shadowtimeanpassung","zoom","rumble","enableaudio","debug","fishmapreset","colmapreset",
-    //"idletimeanpassung","maxdistcol","buildmenuboarder","debtextabfac","debtextavgabfac","inversekinematics","bonescolor","playertexturanimation",
-    //"collmapnowebworker","wasserphysik","fpscontroll","fly","nocollision","nokill","debug","shadowrand","shadowstroke","debugcolmap","debugcolmode"
     tooltips={
         start:"Back",
+        ok:"ok",
         loadandsave:{
             save_localstorage:"save to localstorage",
             load_localstorage:"localstorage item to load",
@@ -127,7 +126,8 @@ switch(language=="auto"?(window.navigator.languages?window.navigator.languages[0
             settings:"edit settings like the game looks how it lags and how mutch its lags",
             save:"save and load maps and dell loadet games",
             start:"start the game hope you know how the game works",
-            build:"edit (cheat) and create new levels"
+            build:"edit (cheat) and create new levels",
+            webrtc:"connect with other players"
         },
         buttomname:{
 

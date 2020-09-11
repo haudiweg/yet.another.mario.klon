@@ -2,11 +2,63 @@
 'use strict';
 const colorobj={
     URL:function(x,y,me,w,h,timetowalk=false,rerender=false){
-        if(rerender)return
+        if(typeof(me.fillbackup)!="undefined")me.fill=me.fillbackup
+        if(rerender||disablepics)return
         let img = new Image();
+        img.crossOrigin = null
         img.src = me.fillpic;
-        img.onload=()=>{me.fill=img}
-        bonescolorf(me)
+        if(Array.isArray(me.fillpic)){
+            for(let i of me.fillpic){
+                let source=document.createElement("source")
+                source.src=i
+                img.appendChild(source)
+            }
+        }else{
+            img.src=me.fillpic;
+        }
+        img.onload=()=>{me.fill=img;updatetextur=true}
+
+    },
+    URLvideo:function(x,y,me,w,h,timetowalk=false,rerender=false){
+        if(typeof(me.fillbackup)!="undefined")me.fill=me.fillbackup
+        if(rerender||disablevideos)return
+        let video=document.createElement("video");
+        video.crossOrigin = null
+        video.controls=false
+        video.autoplay=true;
+        video.muted=true;
+        //video.loop=true;  macht das onendet net geht
+        if(Array.isArray(me.fillvideo)){
+            for(let i of me.fillvideo){
+                let source=document.createElement("source")
+                source.src=i
+                video.appendChild(source)
+            }
+        }else{
+            video.src=me.fillvideo;
+        }
+        video.onerror=(e)=>{
+            console.groupCollapsed("video error")
+            console.log("video error (could be that video endet)");
+            console.log(e)
+            console.log("test to restart video (load())")
+            video.load()
+            console.groupEnd()
+        }
+        video.oncanplay=()=>{
+            video.height=video.videoHeight
+            video.width=video.videoWidth
+            me.fill=video
+            updatetextur=true
+            video.play()
+            me.static=false //video should get drawn every time
+        }
+        video.onended=(e)=>{
+            console.log(e);
+            console.log("restart video");
+            video.currentTime=0;
+            video.play()
+        }
     },
     Pipe:function(x,y,me,w,h) {
         let canvas1=new OffscreenCanvas(Math.ceil(w),Math.ceil(h))
@@ -62,6 +114,7 @@ const colorobj={
         colorobj.Grass(x,y,me,w,h,timetowalk,rerender,true)
     },
     Grassstraw:function(x,y,me,w,h,timetowalk=false,rerender=false) {
+        if(!webglgrassani)return
         if(timetowalk!=false&&timetowalk.timeRemaining()<texturgenbuffertime){
             if(texturgenmaxwaittime==Infinity){
                 window.requestIdleCallback(colorobj.Grassstraw.bind(this,me.x,me.y,me,me.w,me.h))
@@ -92,7 +145,7 @@ const colorobj={
             }
         }
         let suncord=[]
-        if(webglgrasssun){
+        if(webglgrasssun&&me.ignoresun==false){
             if(timetowalk!=false&&me.temp.hasOwnProperty("suncord")){
                 suncord=me.temp.suncord
             }else{
@@ -138,7 +191,7 @@ const colorobj={
                 gox-=winkelx
                 goy-=winkely
                 if(Math.random()<=me.grassrandomfactor){
-                    if(webglgrasssun){
+                    if(webglgrasssun&&me.ignoresun==false){
                         let max=Infinity
                         let dir=0
                         br:for(let i3 of suncord){
@@ -158,7 +211,8 @@ const colorobj={
                             updatetgrass++
                         }
                     }else{
-                        me.grassspawn(gox-minxobj,goy-minyobj+1,Math.random()*2+0.2,Math.random()*15+0.5,0)
+                        let dir=Math.atan2(winkely,-winkelx)
+                        me.grassspawn(gox-minxobj,goy-minyobj+1,Math.random()*2+0.2,Math.random()*15+0.5,dir)
                         updatetgrass++
                     }
                 }
@@ -190,12 +244,10 @@ const colorobj={
         let alpha
         if(typeof(x)=="object"){
             let path=new Path2D()
-            const offsx=Math.min(...x)
-            const offsy=Math.min(...y)
             if(texalphascale){
                 alpha=new Float64Array((Math.ceil(w)*texturquali)*(Math.ceil(h)*texturquali))
-                path.moveTo((x[0]-offsx)*textureantialiasing*texturquali,(y[0]-offsy)*textureantialiasing*texturquali)
-                for (let i=1;i<x.length;i++)path.lineTo((x[i]-offsx)*textureantialiasing*texturquali,(y[i]-offsy)*textureantialiasing*texturquali)
+                path.moveTo((x[0]-me.minx)*textureantialiasing*texturquali,(y[0]-me.miny)*textureantialiasing*texturquali)
+                for (let i=1;i<x.length;i++)path.lineTo((x[i]-me.minx)*textureantialiasing*texturquali,(y[i]-me.miny)*textureantialiasing*texturquali)
                 path.closePath();
                 for (let i=0;i<(Math.ceil(w)*texturquali)*(Math.ceil(h)*texturquali);i++){
                     for (let i1=0;i1<textureantialiasing;i1++){
@@ -207,8 +259,8 @@ const colorobj={
                 }
             }else{
                 alpha=new Float64Array(Math.ceil(w)*Math.ceil(h))
-                path.moveTo((x[0]-offsx)*textureantialiasing,(y[0]-offsy)*textureantialiasing)
-                for (let i=1;i<x.length;i++)path.lineTo((x[i]-offsx)*textureantialiasing,(y[i]-offsy)*textureantialiasing)
+                path.moveTo((x[0]-me.minx)*textureantialiasing,(y[0]-me.miny)*textureantialiasing)
+                for (let i=1;i<x.length;i++)path.lineTo((x[i]-me.minx)*textureantialiasing,(y[i]-me.miny)*textureantialiasing)
                 path.closePath();
                 for (let i=0;i<Math.ceil(w)*Math.ceil(h);i++){
                     for (let i1=0;i1<textureantialiasing;i1++){
@@ -281,8 +333,8 @@ const colorobj={
         let path=[]
         let ele1=[]
         if(rerender==true){
-            offsnx=typeof(x)=="object"?Math.min(...x):x
-            offsny=typeof(y)=="object"?Math.min(...y):y
+            offsnx=me.minx
+            offsny=me.miny
             offsx=typeof(me.gennumbers[1])=="object"?Math.min(...me.gennumbers[1]):me.gennumbers[1]
             offsy=typeof(me.gennumbers[2])=="object"?Math.min(...me.gennumbers[2]):me.gennumbers[2]
             let rotation=[]
@@ -499,15 +551,13 @@ const colorobj={
                 [me.x+me.w,me.y+me.h],
                 [me.x,me.y+me.h]]
         }
-        let offsx=typeof(me.x)=="object"?Math.min(me.x):me.x
-        let offsy=typeof(me.y)=="object"?Math.min(me.y):me.y
 
         let canvas1=new OffscreenCanvas(Math.ceil(w),Math.ceil(h))
         let context1=canvas1.getContext("2d");
 
         context1.beginPath()
-        context1.moveTo(ele[0][0]-offsx,ele[0][1]-offsy)
-        for (let i=1;i<ele.length;i++)context1.lineTo(ele[i][0]-offsx,ele[i][1]-offsy)
+        context1.moveTo(ele[0][0]-me.minx,ele[0][1]-me.miny)
+        for (let i=1;i<ele.length;i++)context1.lineTo(ele[i][0]-me.minx,ele[i][1]-me.miny)
         context1.stroke();
         context1.clip();
 
@@ -543,7 +593,7 @@ const colorobj={
             let winkel=Math.atan2(ty-ele[i][1],tx-ele[i][0])
             let wx=ele[i][0]+me.questiontexturdistanz*Math.cos(winkel)
             let wy=ele[i][1]+me.questiontexturdistanz*Math.sin(winkel)
-            context1.fillRect(Math.round(wx-1-offsx),Math.round(wy-1-offsy),2,2)
+            context1.fillRect(Math.round(wx-1-me.minx),Math.round(wy-1-me.miny),2,2)
         }
         me.fill=canvas1
         if(renderer==3)updatetextur=true
@@ -844,17 +894,15 @@ async function Wasserpic(x,y,me,w,h) {
         let canvas1=new OffscreenCanvas(w,h)
         let context1=canvas1.getContext("2d");
         let path=new Path2D()
-        const offsx=Math.min(...x)
-        const offsy=Math.min(...y)
-        path.moveTo(x[0]-offsx,y[0]-offsy)
-        for (let i=1;i<x.length;i++)path.lineTo(x[i]-offsx,y[i]-offsy)
+        path.moveTo(x[0]-me.minx,y[0]-me.miny)
+        for (let i=1;i<x.length;i++)path.lineTo(x[i]-me.minx,y[i]-me.miny)
         for (let i=0;i<w*h;i++)if(!context1.isPointInPath(path,i%w, i/w)){data[i]=0}
     }
     //rgba beachten also endian
     me.fill.getContext("2d").putImageData(new ImageData(new Uint8ClampedArray(buf),w,h),0,0)
 }
 //https://codepen.io/ge1doot/pres/zGywYw
-function inverse_kinematic(me){
+function inverse_kinematic(me,multi=false){
     for(let i in me.bones){
         if (me.bones[i].phy==false)continue
         let bone=me.bones[i]
@@ -873,19 +921,20 @@ function inverse_kinematic(me){
             iy=0
 
             let winkel=Math.atan2(originy-(bone.pointer.y+(richtung?0:move)),originx-(bone.pointer.x+(richtung?move:0)))
-            for(let it=0,i1=Math.trunc(originy-miny)*(maxx-minx)+Math.trunc(originx)-minx;it<=bonseg0.len+bonseg1.len;it++,ix-=Math.cos(winkel),iy-=Math.sin(winkel))if(objcolmap[i1+Math.round(iy)*(maxx-minx)+Math.round(ix)]>1){break schleife}
+            for(let it=0,i1=Math.trunc(originy-miny)*(maxx-minx)+Math.trunc(originx)-minx;it<=bonseg0.len+bonseg1.len;it++,ix-=Math.cos(winkel),iy-=Math.sin(winkel))if(objcolmap[i1+Math.round(iy)*(maxx-minx)+Math.round(ix)]>=1){break schleife}
             if(move>=0)move++
             if(Math.abs(move)>bone.fussklippe){ix=(richtung?0:bone.fussklippe);iy=(richtung?bone.fussklippe:0);bone.wait=true;break}
             move*=-1
         }
-
-        if(debug)debugtext+="\nbonewinkel"+i+" "+wink+"°"+
-                            "\nbonewinkel"+i+" "+wink/(180/Math.PI)+
-                            "\nrichtung"+i+" "+richtung+
-                            "\nmove"+i+" "+move+
-                            "\nix"+i+" "+ix+
-                            "\niy"+i+" "+iy+
-                            "\ndir "+me.dir
+        
+        if(debug&&!multi)debugtext+="\nbonewinkel"+i+": "+wink+"°"+
+                            "\nbonewinkel"+i+": "+wink/(180/Math.PI)+
+                            "\nrichtung"+i+": "+richtung+
+                            "\nmove"+i+": "+move+
+                            "\nix"+i+": "+ix+
+                            "\niy"+i+": "+iy+
+                            "\ndir: "+me.dir+
+                            "\nbewegung"+i+": "+bone.bewegung
 
         bone.bewegung+=Math.abs(me.velo[0])
         if(me.inwater&&me.falldist>10){
@@ -901,7 +950,11 @@ function inverse_kinematic(me){
             }else if(bone.bewegung>0){
                 bone.wait=false  
             }else{
-                if(me.distd[me.rich4arr[2]].length==3&&me.distd[me.rich4arr[2]].every((i1)=>i1==me.distd[me.rich4arr[2]][0]))iy=50*Math.sign(iy)//nur wen boden gerade
+                if(multi){
+                    if(me.groundflat)iy=50*Math.sign(iy)
+                }else{
+                    if(me.distd[me.rich4arr[2]].length==3&&me.distd[me.rich4arr[2]].every((i1)=>i1==me.distd[me.rich4arr[2]][0]))iy=50*Math.sign(iy)//nur wen boden gerade
+                }
             }
             if(bone.bewegung>10)bone.bewegung%=10
             if(bone.wait==false&&me.falldist<4){
@@ -930,23 +983,21 @@ function inverse_kinematic(me){
 function wassercolide(me,me1){
     if (collide(me,me1)){
         if(me1.wasserphycollision&&wasserphycollision){
-            const offsx=typeof(me1.x)=="object"?Math.min(...me1.x):me1.x
-            const offsy=typeof(me1.x)=="object"?Math.min(...me1.y):me1.y
             let heightunderplayer=0
             let counter=0
-            for(let i1=Math.trunc(me.x-offsx);i1<Math.trunc(me.x+me.w-offsx);i1++){
+            for(let i1=Math.trunc(me.x-me1.minx);i1<Math.trunc(me.x+me.w-me1.minx);i1++){
                 if(i1<0)continue
                 if(i1>me1.w)continue
                 heightunderplayer+=me1.wasserphysa[0][i1]
                 counter++
             }
-            heightunderplayer=offsy+me1.down+(heightunderplayer/counter)
+            heightunderplayer=me1.miny+me1.down+(heightunderplayer/counter)
 
             if(me.y+me.h<heightunderplayer)return
             me.inwater=true
 
             if(me.y+me.h-heightunderplayer<10&&me1.wasserphyplayerwave&&wasserphyplayerwave){
-                for(let i1=Math.trunc(Math.max(me.x-offsx,0));i1<Math.trunc(Math.min(me.x+me.w-offsx,me1.w));i1++){
+                for(let i1=Math.trunc(Math.max(me.x-me1.minx,0));i1<Math.trunc(Math.min(me.x+me.w-me1.minx,me1.w));i1++){
                     me1.wasserphysa[1][i1]+=me.velo[1]*100
                     if(i1+1<me1.w&&i1-1>0){
                         me1.wasserphysa[1][i1-1]+=me.velo[0]*100
@@ -962,7 +1013,15 @@ function wassercolide(me,me1){
 function pani(ro,wx,wy,me){
     stopmain=false
     let paniv=true,timeo1pani=0
-    setTimeout(()=>{paniv=false,stopmain=true;me.x=wx;me.y=wy;window.requestAnimationFrame(ani.bind(this,me,false));if(renderer==0)renderbackground=true},200)
+    setTimeout(()=>{
+        paniv=false,
+        stopmain=true
+        me.x=wx
+        me.y=wy
+        timeo=timeo1pani
+        window.requestAnimationFrame(ani)
+        if(renderer==0)renderbackground=true
+    },200)
     function ani1pani(time1pani){
         const fps1=Math.max(1/((time1pani-timeo1pani)/1e3),10)
         if(promall[3].res)for (let s in mySun[loadmap])shadow(s,me)

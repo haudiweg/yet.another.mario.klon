@@ -7,26 +7,16 @@ window.onkeyup=(e)=>{keys.setnum(e.keyCode,0)}
 
 //"https://tenor.com/view/luke-ashish-bug-fix-code-gif-12504423"
 
-
 //window.onkeydown=(e)=>{keys[keymap[e.keyCode]]=1;if (e.ctrlKey&&'spwad'.indexOf(e.key)!==-1) {e.preventDefault()}}//dont like to print website
 //window.onkeyup=(e)=>{keys[keymap[e.keyCode]]=0}//wdeaktiviere key nach ner zeit
-document.addEventListener('contextmenu',event=>{keys.resetallnumstärke()});//event.preventDefault();   bei andere interuptende sachen das auch deaktivieren
+document.addEventListener('contextmenu',()=>{keys.resetallnumstärke()});//event.preventDefault();   bei andere interuptende sachen das auch deaktivieren
 window.addEventListener("gamepaddisconnected",e=>{keys.removecontrollerkeys(e.gamepad.index)})
 window.addEventListener("gamepadconnected",e=>{keys.addcontrollerkeys(e.gamepad.index)})
 window.addEventListener('resize',()=>{
     for(let i in canvarr){
         window[canvarr[i]].width=document.documentElement.clientWidth;
         window[canvarr[i]].height=document.documentElement.clientHeight;
-        if((renderer==3&&i!=0)||renderer==0){
-            if(typeof(window[ctxarr[i]]["imageSmoothingEnabled"])!="undefined"){
-                window[ctxarr[i]].imageSmoothingEnabled=imageSmoothingEnabled!=="none"
-                if(imageSmoothingEnabled!="none")window[ctxarr[i]].imageSmoothingQuality=imageSmoothingEnabled
-            }else if(typeof(window[ctxarr[i]]["webkitImageSmoothingEnabled"])!="undefined"){
-                window[ctxarr[i]].webkitImageSmoothingEnabled=imageSmoothingEnabled!=="none"
-            }else if(typeof(window[ctxarr[i]]["mozImageSmoothingEnabled"])!="undefined"){
-                window[ctxarr[i]].mozImageSmoothingEnabled=imageSmoothingEnabled!=="none"
-            }
-        }
+        if((renderer==3&&i!=0)||renderer==0)imagesmoothingset(window[ctxarr[i]])
     }
     if(disableszoom==false&&(stopmain||stopbuild)&&"visualViewport" in window){
         zoom+=Math.round((scale-window.visualViewport.scale)*2)
@@ -45,6 +35,20 @@ window.addEventListener("wheel",event=>{
     if(renderer==0)renderbackground=true
     instandzoom=false
     });
+window.onbeforeunload=()=>{if(multiplayerstartet)postMessage({act:"bye",id:multiplayerid})}
+function checkPageFocus(){
+    if(multiplayerstartet&&multiplayer&&!listenforplayer&&stopmain){
+        if(document.hidden){
+            let i1=-1
+            for(let i of myRect[loadmap])if(i.playerphysik)postMessage({act:"player leave",data:{playerid:++i1},id:multiplayerid})
+        }
+    }
+    if(document.hidden&&stopmain){
+        stopmain=false
+        mvis()
+    }
+}
+setInterval(checkPageFocus, 300);
 function mesureminmax(me){
     if(typeof(me.x)=="object"){
         for (let i1=0;i1<me.x.length;i1++) { 
@@ -64,6 +68,28 @@ function mesureminmax(me){
     maxx=Math.round(maxx)
     maxy=Math.round(maxy)
 }
+function clipread(e){
+    try{
+        navigator.clipboard.readText().then(clipText=>e.target.value=clipText)
+    }catch(a){
+        console.info(a)
+        try{
+            e.target.focus();
+            document.execCommand("paste")
+        }catch(a1){console.info(a1)}
+    }
+}
+function clipwrite(e){
+    try{
+        navigator.clipboard.writeText(e.target.textContent)
+    }catch(a){
+        console.info(a)
+        try{
+            e.target.focus();
+            document.execCommand("copy")
+        }catch(a1){console.info(a1)}
+    }
+}
 (function(){
     let sleep=(ms)=>new Promise(r=>setTimeout(r,ms))
     let rene=[["®","r","R"],["e","E","3"],["n","N","∏"],["ë","ê","é","è","É","È","ö","Ö","3"]]
@@ -81,96 +107,144 @@ function mesureminmax(me){
         },30000+Math.random()*1000);
     }
 })()
-function canvasstart(disabledesync){
+function canvasstart(disabledesync){//disablesync macht async weg wen ich in baumous bin weil hintergrund schwartz würde wen ich in baumodus währe
+    console.groupCollapsed("canvasstart")
     for(let i in canvarr){
-        try{
-            document.getElementById(canvarr[i]).remove()
-        }catch(e){
-            console.log(e)
+        let samecanvas=false
+        let rendererhere=0
+        if(renderer==0)rendererhere=0
+        if(renderer==1)rendererhere=1
+        if(renderer==2)rendererhere=2
+        if(renderer==3&&i==0)rendererhere=3 //nur das erste webgl canvas ist webgl
+        if(renderer==3&&i!=0)rendererhere=0
+
+        if(typeof(window[ctxarr[i]])!=="undefined"&&window[ctxarr[i]].hasOwnProperty("opt")){
+            if(
+               (rendererhere!=3||webglnames[usewebgl2ifcan==true?1:0].includes(window[ctxarr[i]].opt.renderer))&&
+               window[ctxarr[i]].opt.renderernum==rendererhere&&
+               window[ctxarr[i]].opt.num==i&&
+               window[ctxarr[i]].opt.antialias==antialias&&
+               window[ctxarr[i]].opt.desynchronized==(disabledesync||noob?false:desynchronized)
+               ){
+                console.info("its the same canvas dont need to create new canvas "+ctxarr[i])
+                console.info(window[ctxarr[i]].opt)
+                samecanvas=true
+            }else{
+                console.info("its not the same canvas need to create new canvas and del old one "+ctxarr[i])
+                console.info(window[ctxarr[i]].opt)
+            }
+        }else{
+            console.info("need a new canvas(there is no canvas) "+ctxarr[i])
         }
-        window[canvarr[i]]=document.createElement("canvas")
-        window[canvarr[i]].id=canvarr[i]
-        document.body.appendChild(window[canvarr[i]])
+        if(!samecanvas){
+            if(document.getElementById(canvarr[i]))document.getElementById(canvarr[i]).remove()
+            /** @global */
+            window[canvarr[i]]=document.createElement("canvas")
+            window[canvarr[i]].id=canvarr[i]
+            document.body.appendChild(window[canvarr[i]])
+            givecontext(i,rendererhere,disabledesync)
+        }
+    }
+    console.groupEnd()
+}
+function givecontext(i,rendererhere,disabledesync){
+    if(rendererhere==3){
         let canwebgl=false
-        if(renderer==3&&i==0){
-            for (let i1 of usewebgl2ifcan?["webgl2","webgl","experimental-webgl","moz-webgl","webkit-3d"]:["webgl","experimental-webgl","moz-webgl","webkit-3d"]){
-                try {
-                    window[ctxarr[i]]=window[canvarr[i]].getContext(i1,{antialias: antialias,desynchronized:disabledesync||noob?false:desynchronized});
-                    canwebgl=true
-                    break
-                } catch (error) {
-                    console.log(i1+" not work")
-                }
-            }
-            if(!canwebgl){
-                renderer=0
-                console.log("cant do webgl fallback canvas")
-                canvasstart(disabledesync)
-                return
-            }
-            window[ctxarr[i].replace(/ctx/,"gl")]=window[ctxarr[i]]//mache das ich gl stat ctx schreiben kan wen ich will
-
-            window[canvarr[i]].addEventListener("webglcontextlost",e=>{
-                console.error("context lost")
-                console.log(e)
-                if(!stopbuild)stopbuildf()
-                stopbuild=true
-                stopmain=true
-                mvis()
-            });
-
-            webgl2=window[ctxarr[i]] instanceof WebGL2RenderingContext
-            webglstart(i)
-        }
-        if(renderer==0||renderer==3||window[canvarr[i]].id=="debug"){
-            window[canvarr[i]].width=document.documentElement.clientWidth;
-            window[canvarr[i]].height=document.documentElement.clientHeight;
-        }
-        if((renderer==3&&i!=0)||renderer==0){
-            window[ctxarr[i]]=window[canvarr[i]].getContext('2d',{desynchronized:disabledesync||noob?false:desynchronized});
-            //window[ctxarr[i]]=window[canvarr[i]].getContext('2d',{pixelFormat:"float16",desynchronized:true});
-            if(typeof(window[ctxarr[i]]["imageSmoothingEnabled"])!="undefined"){
-                window[ctxarr[i]].imageSmoothingEnabled=imageSmoothingEnabled!=="none"
-                if(imageSmoothingEnabled!="none")window[ctxarr[i]].imageSmoothingQuality=imageSmoothingEnabled
-            }else if(typeof(window[ctxarr[i]]["webkitImageSmoothingEnabled"])!="undefined"){
-                window[ctxarr[i]].webkitImageSmoothingEnabled=imageSmoothingEnabled!=="none"
-            }else if(typeof(window[ctxarr[i]]["mozImageSmoothingEnabled"])!="undefined"){
-                window[ctxarr[i]].mozImageSmoothingEnabled=imageSmoothingEnabled!=="none"
+        for (let i1 of webglnames[usewebgl2ifcan==true?1:0]){
+            try{
+                window[ctxarr[i]]=window[canvarr[i]].getContext(i1,{antialias: antialias,desynchronized:(disabledesync||noob?false:desynchronized)});
+                //window[ctxarr[i]]=window[canvarr[i]].getContext(i1,{preserveDrawingBuffer: true,antialias: antialias,desynchronized:(disabledesync||noob?false:desynchronized)});
+                window[ctxarr[i]].opt={renderer:i1,renderernum:rendererhere,num:i,antialias:antialias,desynchronized:(disabledesync||noob?false:desynchronized)}
+                canwebgl=true
+                break
+            }catch(e){
+                console.log(i1+" not work"+e)
             }
         }
+        if(!canwebgl){
+            renderer=0
+            console.warn("cant do webgl fallback canvas(using webgl2 canvas)")
+            givecontext(i,0)//fallback weil webgl net geht
+            return
+        }
+        window[ctxarr[i].replace(/ctx/,"gl")]=window[ctxarr[i]]//mache das ich gl stat ctx schreiben kan wen ich will
+        window[canvarr[i]].addEventListener("webglcontextlost",e=>{
+            console.error("context lost")
+            console.log(e)
+            if(!stopbuild)stopbuildf()
+            stopbuild=true
+            stopmain=true
+            mvis()
+        });
+        webgl2=window[ctxarr[i]] instanceof WebGL2RenderingContext
+        webglstart(i)
     }
-    canvas.onmousemove=(e)=>{keys.mousemove(e)}
-    canvas.onmousedown=(e)=>{keys.mousedown(e)}
+    if(rendererhere==0){
+        window[ctxarr[i]]=window[canvarr[i]].getContext('2d',{desynchronized:disabledesync||noob?false:desynchronized});
+        window[ctxarr[i]].opt={renderernum:rendererhere,num:i,antialias:antialias,desynchronized:(disabledesync||noob?false:desynchronized)}
+        //window[ctxarr[i]]=window[canvarr[i]].getContext('2d',{pixelFormat:"float16",desynchronized:true});
+
+        //imagequali of canvas
+        imagesmoothingset(window[ctxarr[i]])
+    }
+    if(renderer==0||renderer==3||window[canvarr[i]].id=="debug"){
+        window[canvarr[i]].width=document.documentElement.clientWidth;
+        window[canvarr[i]].height=document.documentElement.clientHeight;
+    }
+    if(i==0&&(renderer==0||renderer==3)){//mache auf ersten canvas klick bzw wen das net geht zb machs auf svg element oder document
+        canvas.onmousemove=(e)=>{keys.mousemove(e)}
+        canvas.onmousedown=(e)=>{keys.mousedown(e)}
+    }
     window.onmouseup=(e)=>{keys.mouseup(e)}
-    if(enableaudio){
-        let AudioContext = window.AudioContext || window.webkitAudioContext;
-        audioCtx = new AudioContext();
-        listener=audioCtx.listener
-        listener.setOrientation(1,0,0,0,0,0)
+}
+//imagequali of canvas
+function imagesmoothingset(c){
+    if(typeof(c["imageSmoothingEnabled"])!="undefined"){
+        c.imageSmoothingEnabled=imageSmoothingEnabled!=="none"
+        if(imageSmoothingEnabled!="none")c.imageSmoothingQuality=imageSmoothingEnabled
+    }else if(typeof(c["webkitImageSmoothingEnabled"])!="undefined"){
+        window[ctxarr[i]].webkitImageSmoothingEnabled=imageSmoothingEnabled!=="none"
+    }else if(typeof(c["mozImageSmoothingEnabled"])!="undefined"){
+        c.mozImageSmoothingEnabled=imageSmoothingEnabled!=="none"
     }
-    if(window.Worker&&!collmapnowebworker){
-        workerpk=new Worker(window.URL.createObjectURL(new Blob([document.querySelector('#worker1').textContent], { type: "text/javascript" })));
-        workercol=new Worker(window.URL.createObjectURL(new Blob([document.querySelector('#worker2').textContent], { type: "text/javascript" })));
-    }
-
 }
 async function start(obj){
-    canvasstart(obj=="build")
-    for(let i of canvarr.filter(i=>i!="canvasshadow"&&i!="canvasbshadow"))window[i].style.filter = "none"
+    if(obj=="ani"&&promall[10].res&&!multiplayerjustlisten&&multiplayer)multiplayerconnect(true)//mach dich nochmal testen zu verbinden könnten ja seit client start was pasiert sein oder webrtc connect
     maxx=-Infinity
     maxy=-Infinity
     minx=0
     miny=0
     cancolmap=true
-    for (let me of [...myRect[loadmap],...mySun[loadmap],...myFire[loadmap]]) {mesureminmax(me)}
-    await collisionmap(true)
-    for (let me of myRect[loadmap])toupdateshadow.add(me)
-    for (let me of myRect[loadmap]){
-        if(me.static){
-            if(renderer==0)renderbackground=true
+    for (let me of [...myRect[loadmap],...mySun[loadmap],...myFire[loadmap]]){
+        if(typeof(me.getstats)=="function")[me.w,me.h]=[me.getstats.w,me.getstats.h]
+        mesureminmax(me)
+    }
+    let wait=collisionmap(true)
+    if(enableaudio){
+        startaudio()//pfals man audio activirt hat
+        for(let i of Object.keys(soundvalues))sound[i].gain.setValueAtTime(soundvalues[i], audioctx.currentTime)
+    }
+    if(obj=="build"){
+        canvarr[0]="canvas"
+        ctxarr[0]="ctx"
+    }
+    if(obj=="ani"){
+        if(inversekinematics||debug||!disablevideos){
+            canvarr[1]="canvasb"
+            ctxarr[1]="ctxb"
         }
-        if(typeof(colorobj)=="undefined"){if(typeof(me.fillbackup)!="undefined")me.fill=me.fillbackup}
-        else {
+        canvarr[0]="canvas"
+        ctxarr[0]="ctx"
+    }
+    canvasstart(obj=="build")
+    for(let i of canvarr.filter(i=>i!="canvasshadow"&&i!="canvasbshadow"))window[i].style.filter = "none"
+    
+    for (let me of myRect[loadmap]){
+        if(shadows)toupdateshadow.add(me)
+        if(me.static&&renderer==0)renderbackground=true
+        if(typeof(colorobj)=="undefined"){
+            if(typeof(me.fillbackup)!="undefined")me.fill=me.fillbackup
+        }else{
             bonescolorf(me)
             if(Object.getOwnPropertyNames(colorobj).includes(me.fill)){
                 if ('requestIdleCallback' in window) {
@@ -184,12 +258,39 @@ async function start(obj){
                 }
             }
         }
+        if(enableaudio&&me.audio==true&&me.createtaudio!==true){
+            me.audiogen(me)
+        }
     }
     if(renderer==3)updatescene=true
     disableszoom=false
+
     if(obj=="ani"){
         stopmain=true;
-        window.requestAnimationFrame(ani.bind(this,myRect[loadmap].find(i=>i.construck=='Player'),false))
+        anime=myRect[loadmap].find(i=>i.construck=='Player')
+        multipleplayer=myRect[loadmap].filter(i=>i.construck=='Player').length>1
+        instandzoom=false
+        if(promall[10].res&&multiplayer&&!listenforplayer&&multiplayerstartet){
+            let i1=-1
+            for(let i of myRect[loadmap]){
+                if(i.playerphysik){
+                    postMessage({act:"player join",data:{
+                        playerid:++i1,
+                        x:i.x,
+                        y:i.y,
+                        w:i.w,
+                        h:i.h,
+                        statsnum:i.statsnum,
+                        inwater:i.inwater,
+                        falldist:i.falldist
+                    },id:multiplayerid})
+                    i.playersendid=i1
+                }
+            }
+            postMessage({act:"player not afk",id:multiplayerid})
+        }
+        await wait
+        window.requestAnimationFrame(ani)
     }
     if(obj=="build"){
         stopbuild=true;
@@ -198,25 +299,24 @@ async function start(obj){
     mhid()
     menuupdatekeys=false
 }
-function audio(me){
-    panner.add(new PannerNode(audioCtx, {
-    panningModel: 'HRTF',
-    distanceModel: 'linear',
-    positionX: me.x,
-    positionY: me.y,
-    positionZ: 0,
-    orientationX: 0.0,
-    orientationY: 0.0,
-    orientationZ: -1.0,
-    refDistance: 1,
-    maxDistance: 10000,
-    rolloffFactor: 10,
-    coneInnerAngle: 60,
-    coneOuterAngle: 90,
-    coneOuterGain: 0.3
-    }))
-    audioCtx.createMediaElementSource(me).connect(panner);
-    panner[panner.lenght-1].connect(audioCtx.destination);
+function startaudio(){
+    if(enableaudio&&typeof(audioctx)=="undefined"){
+        audioctx = new AudioContext();
+        listener=audioctx.listener
+        if(listener.forwardX){
+            listener.forwardX.setValueAtTime(0, audioctx.currentTime);
+            listener.forwardY.setValueAtTime(0, audioctx.currentTime);
+            listener.forwardZ.setValueAtTime(0, audioctx.currentTime);
+            listener.upX.setValueAtTime(0, audioctx.currentTime);
+            listener.upY.setValueAtTime(0, audioctx.currentTime);
+            listener.upZ.setValueAtTime(0, audioctx.currentTime);
+        }else{
+            listener.setOrientation(0,0,0,0,0,0)
+        }
+        sound.grass=audioctx.createGain()
+        sound.grass.gain.setValueAtTime(0.9, audioctx.currentTime)
+        sound.grass.connect(audioctx.destination)
+    }
 }
 function repaint(){
  if(renderer==0)repaint0(...arguments)//canvas
@@ -233,17 +333,17 @@ function repaintb(){
 function webglstart(i){
     //net immer neu compile 
     //dynamisch neues hinzufügen lassen
-    var vertShader=window[ctxarr[i]].createShader(window[ctxarr[i]].VERTEX_SHADER);
+    let vertShader=window[ctxarr[i]].createShader(window[ctxarr[i]].VERTEX_SHADER);
     window[ctxarr[i]].shaderSource(vertShader, document.getElementById(webgl2?"shader-webgl2-vs":"shader-vs").text);
     window[ctxarr[i]].compileShader(vertShader);
-    var fragShader=window[ctxarr[i]].createShader(window[ctxarr[i]].FRAGMENT_SHADER);
+    let fragShader=window[ctxarr[i]].createShader(window[ctxarr[i]].FRAGMENT_SHADER);
     window[ctxarr[i]].shaderSource(fragShader, document.getElementById(webgl2?"shader-webgl2-fs":"shader-fs").text);
     window[ctxarr[i]].compileShader(fragShader);
 
-    if (!window[ctxarr[i]].getShaderParameter(vertShader,  window[ctxarr[i]].COMPILE_STATUS)) {
+    if (!webglstartdisablechecks&&!window[ctxarr[i]].getShaderParameter(vertShader,  window[ctxarr[i]].COMPILE_STATUS)) {
         console.log("An error occurred compiling the shaders: " +  window[ctxarr[i]].getShaderInfoLog(vertShader));
     }
-    if (!window[ctxarr[i]].getShaderParameter(fragShader,  window[ctxarr[i]].COMPILE_STATUS)) {
+    if (!webglstartdisablechecks&&!window[ctxarr[i]].getShaderParameter(fragShader,  window[ctxarr[i]].COMPILE_STATUS)) {
         console.log("An error occurred compiling the shaders: " +  window[ctxarr[i]].getShaderInfoLog(fragShader));
     }
 
@@ -252,17 +352,17 @@ function webglstart(i){
     window[ctxarr[i]].attachShader(shaderProgram[0], fragShader);
 
     if(webgl2){
-        var vertShader1=window[ctxarr[i]].createShader(window[ctxarr[i]].VERTEX_SHADER);
+        let vertShader1=window[ctxarr[i]].createShader(window[ctxarr[i]].VERTEX_SHADER);
         window[ctxarr[i]].shaderSource(vertShader1, maxarrinshader(document.getElementById("shader-webgl2-vs-grass").text,window[ctxarr[i]].getParameter(window[ctxarr[i]].MAX_VERTEX_UNIFORM_VECTORS)));
         window[ctxarr[i]].compileShader(vertShader1);
-        var fragShader1=window[ctxarr[i]].createShader(window[ctxarr[i]].FRAGMENT_SHADER);
+        let fragShader1=window[ctxarr[i]].createShader(window[ctxarr[i]].FRAGMENT_SHADER);
         window[ctxarr[i]].shaderSource(fragShader1, document.getElementById("shader-webgl2-fs-grass").text);
         window[ctxarr[i]].compileShader(fragShader1);
 
-        if (!window[ctxarr[i]].getShaderParameter(vertShader1,  window[ctxarr[i]].COMPILE_STATUS)) {
+        if (!webglstartdisablechecks&&!window[ctxarr[i]].getShaderParameter(vertShader1,  window[ctxarr[i]].COMPILE_STATUS)) {
             console.log("An error occurred compiling the shaders: " +  window[ctxarr[i]].getShaderInfoLog(vertShader1));
         }
-        if (!window[ctxarr[i]].getShaderParameter(fragShader1,  window[ctxarr[i]].COMPILE_STATUS)) {
+        if (!webglstartdisablechecks&&!window[ctxarr[i]].getShaderParameter(fragShader1,  window[ctxarr[i]].COMPILE_STATUS)) {
             console.log("An error occurred compiling the shaders: " +  window[ctxarr[i]].getShaderInfoLog(fragShader1));
         }
 
@@ -270,17 +370,19 @@ function webglstart(i){
         window[ctxarr[i]].attachShader(shaderProgram[1], vertShader1);
         window[ctxarr[i]].attachShader(shaderProgram[1], fragShader1);
 
-        WEBGLmultidraw=ctx.getExtension("WEBGL_multi_draw")
-        WEBGLdisjointtimer=ctx.getExtension('EXT_disjoint_timer_query_webgl2');
+        WEBGLmultidraw=gl.getExtension("WEBGL_multi_draw")
+        WEBGLdisjointtimer=gl.getExtension('EXT_disjoint_timer_query_webgl2');
 
         transformFeedback[i] = window[ctxarr[i]].createTransformFeedback()
         window[ctxarr[i]].bindTransformFeedback(window[ctxarr[i]].TRANSFORM_FEEDBACK, transformFeedback[i])
-        window[ctxarr[i]].transformFeedbackVaryings(shaderProgram[1], ['aVelo1','aWind1'], window[ctxarr[i]].SEPARATE_ATTRIBS)
+        window[ctxarr[i]].transformFeedbackVaryings(shaderProgram[1], ['aVelo1','aWind1','aWindrandtimer1'], window[ctxarr[i]].SEPARATE_ATTRIBS)
+    }else{
+        WEBGLoes=gl.getExtension("OES_vertex_array_object");
     }
 
     for(let i1 of shaderProgram){
         window[ctxarr[i]].linkProgram(i1)
-        if (!window[ctxarr[i]].getProgramParameter(i1, window[ctxarr[i]].LINK_STATUS)) {
+        if (!webglstartdisablechecks&&!window[ctxarr[i]].getProgramParameter(i1, window[ctxarr[i]].LINK_STATUS)) {
             console.log("Error linking shaders:" + window[ctxarr[i]].getProgramInfoLog(i1));
         }
     }
@@ -297,28 +399,33 @@ function webglstart(i){
     new webglbuffer.createuniform("obj","aColor")
     new webglbuffer.createuniform("obj","aPicture")
     new webglbuffer.addvaotogroup("obj")
-    new webglbuffer.creategroup({name:"grass",shader:shaderProgram[1]})
-    new webglbuffer.createbuffer("grass",{buffername:"coordinates1"})
-    new webglbuffer.createbuffer("grass",{buffername:"grasscolor",bufferlength:4})
-    new webglbuffer.createbuffer("grass",{buffername:"grassnum",bufferlength:1})
-    new webglbuffer.createbuffer("grass",{buffername:"grassrotation",bufferlength:1})
-    new webglbuffer.createbuffer("grass",{buffername:"aWindopt"})
-    new webglbuffer.createbuffer("grass",{buffername:"grassstartcord"})
+    if(webgl2){
+        new webglbuffer.creategroup({name:"grass",shader:shaderProgram[1]})
+        new webglbuffer.createbuffer("grass",{buffername:"coordinates1"})
+        new webglbuffer.createbuffer("grass",{buffername:"grasscolor",bufferlength:4})
+        new webglbuffer.createbuffer("grass",{buffername:"grassnum",bufferlength:1})
+        new webglbuffer.createbuffer("grass",{buffername:"grassrotation",bufferlength:1})
+        new webglbuffer.createbuffer("grass",{buffername:"aWindopt",bufferlength:3})
+        new webglbuffer.createbuffer("grass",{buffername:"grassstartcord"})
 
-    new webglbuffer.createfeedbackbuffer("grass",{buffername:"aVelo"})
-    new webglbuffer.createfeedbackbuffer("grass",{buffername:"aWind",bufferlength:3})
+        new webglbuffer.createfeedbackbuffer("grass",{buffername:"aVelo"})
+        new webglbuffer.createfeedbackbuffer("grass",{buffername:"aWind"})
+        new webglbuffer.createfeedbackbuffer("grass",{buffername:"aWindrandtimer",bufferlength:4})
 
-    new webglbuffer.createuniform("grass","canvashwwebgl")
-    new webglbuffer.createuniform("grass","offsgl")
-    new webglbuffer.createuniform("grass","translation")
-    new webglbuffer.createuniform("grass","rendermode")
-    new webglbuffer.createuniform("grass","fps")
-    new webglbuffer.createuniform("grass","globalwind")
-    new webglbuffer.createuniform("grass","objectspos")
-    new webglbuffer.createuniform("grass","objectsvel")
-    new webglbuffer.createuniform("grass","objectslength")
-    new webglbuffer.addvaotogroup("grass")
-    if(webgl2)WEBGLdisjointtimerquery=gl.createQuery();
+
+        new webglbuffer.createuniform("grass","canvashwwebgl")
+        new webglbuffer.createuniform("grass","offsgl")
+        new webglbuffer.createuniform("grass","rendermode")
+        new webglbuffer.createuniform("grass","fps")
+        new webglbuffer.createuniform("grass","globalwind")
+        new webglbuffer.createuniform("grass","objectspos")
+        new webglbuffer.createuniform("grass","objectsvel")
+        new webglbuffer.createuniform("grass","objectslength")
+        new webglbuffer.addvaotogroup("grass")
+    }
+    if(webgl2&&WEBGLdisjointtimer){
+        WEBGLdisjointtimerquery=gl.createQuery()
+    }
 }
 function maxarrinshader(text,max){
     const regex=/uniform ((vec[2-4])|(mat[2-4])|int|float)/
@@ -370,6 +477,8 @@ async function repaint3(x=0,y=0,time=0){
 
 
     if(updatescene||inversekinematicsold!=inversekinematics){//wen spieler was geupdatet werden muss oder game neu gestartet ist draw
+        updatescene=false
+        updatetextur=true
         console.log("updatescene")
         if(webglmultisampling!==1){
             gl.enable(gl.SAMPLE_COVERAGE);
@@ -382,12 +491,10 @@ async function repaint3(x=0,y=0,time=0){
             ctxb.clearRect(0,0,canvas.width,canvas.height);
         }
 
-        webglgrassdrawarr=myRect[loadmap].filter(i=>i.construck=="Grassani"&&typeof(i.grass)!="undefined")
 
-        webgldrawarr=[...mySun[loadmap],...myFire[loadmap],...myRect[loadmap]].filter(i=>!i.nodraw&&!(inversekinematics&&promall[3].res&&i.inversekinematics==true))
+        webgldrawarr=[...mySun[loadmap],...myFire[loadmap],...myRect[loadmap]].filter(i=>(!webglfallback||!i.webglcantdraw)&&!(inversekinematics&&promall[3].res&&i.inversekinematics==true))
 
-        updatescene=false
-        updatetextur=true
+
         /**@type {number[]} objvertices */
         let objvertices=[]
         let objuv=[]
@@ -395,21 +502,19 @@ async function repaint3(x=0,y=0,time=0){
 
         for (let i of webgldrawarr){
             objvertecys[0].push(objvertices.length)
-            let firstx=typeof(i.x)=="object"?Math.min(...i.x):i.x
-            let firsty=typeof(i.y)=="object"?Math.min(...i.y):i.y
             if(typeof(i.x)=="object"){
                 for (let i1=0;i1<i.x.length;i1++){
-                    objvertices.push(i.x[i1]-firstx)
-                    objvertices.push(i.y[i1]-firsty)
-                    objuv.push((i.x[i1]-firstx)/i.w)//uv mapping
-                    objuv.push(1-(i.y[i1]-firsty)/i.h)//uv mapping
+                    objvertices.push(i.x[i1]-i.minx)
+                    objvertices.push(i.y[i1]-i.miny)
+                    objuv.push((i.x[i1]-i.minx)/i.w)//uv mapping
+                    objuv.push(1-(i.y[i1]-i.miny)/i.h)//uv mapping
                 }
             }else{
                 objvertices.push(
-                    i.x-firstx,i.y-firsty,
-                    i.x+i.w-firstx,i.y-firsty,
-                    i.x+i.w-firstx,i.y+i.h-firsty,
-                    i.x-firstx,i.h+i.y-firsty
+                    i.x-i.minx,i.y-i.miny,
+                    i.x+i.w-i.minx,i.y-i.miny,
+                    i.x+i.w-i.minx,i.y+i.h-i.miny,
+                    i.x-i.minx,i.h+i.y-i.miny
                 )
                 objuv.push(
                     0,1,
@@ -423,11 +528,11 @@ async function repaint3(x=0,y=0,time=0){
         
 
         webglbuffer.testbufferoverflow("obj",objvertices.length*bpe)
-        ctx.bindBuffer(ctx.ARRAY_BUFFER, webglbuffers.obj.buffer.aTexCoord.buffer);	
-        ctx.bufferSubData(ctx.ARRAY_BUFFER,0,new Float32Array(objuv));
+        gl.bindBuffer(gl.ARRAY_BUFFER, webglbuffers.obj.buffer.aTexCoord.buffer);	
+        gl.bufferSubData(gl.ARRAY_BUFFER,0,new Float32Array(objuv));
 
-        ctx.bindBuffer(ctx.ARRAY_BUFFER, webglbuffers.obj.buffer.coordinates.buffer);				
-        ctx.bufferSubData(ctx.ARRAY_BUFFER,0,new Float32Array(objvertices));
+        gl.bindBuffer(gl.ARRAY_BUFFER, webglbuffers.obj.buffer.coordinates.buffer);				
+        gl.bufferSubData(gl.ARRAY_BUFFER,0,new Float32Array(objvertices));
 
     }
     if(updatetextur){
@@ -436,25 +541,38 @@ async function repaint3(x=0,y=0,time=0){
         for (let i of webgldrawarr){
             let texturerror=false
             let texturerrorobj=""
-            if(i.fill.constructor.name.match("OffscreenCanvas|HTMLImageElement|HTMLCanvasElement")){
-                if(typeof(i.texture)=="undefined"||!gl.isTexture(i.texture))i.texture=ctx.createTexture();
-                ctx.activeTexture(ctx.TEXTURE0 + pics)
-                ctx.bindTexture(ctx.TEXTURE_2D, i.texture);
-                ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_WRAP_S, ctx.CLAMP_TO_EDGE);
-                ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_WRAP_T, ctx.CLAMP_TO_EDGE);
-                ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MIN_FILTER, ctx.NEAREST);
+            if(i.nodraw||i.invisible){
+                i.webglfill=[0,0,0,0]
+            }else if(i.fill.constructor.name.match("OffscreenCanvas|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement")&&i.webglcantdraw!=true){
+                if(typeof(i.texture)=="undefined"||!gl.isTexture(i.texture))i.texture=gl.createTexture();
+                gl.activeTexture(gl.TEXTURE0 + pics)
+                gl.bindTexture(gl.TEXTURE_2D, i.texture);
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
 
-                ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MIN_FILTER, ctx.NEAREST);
-                ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MAG_FILTER, ctx.NEAREST);
-                ctx.pixelStorei(ctx.UNPACK_FLIP_Y_WEBGL, 1)
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+                gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 1)
 
                 try{
-                    ctx.texImage2D(ctx.TEXTURE_2D, 0, ctx.RGBA, ctx.RGBA,ctx.UNSIGNED_BYTE, i.fill)
+                    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA,gl.UNSIGNED_BYTE, i.fill)
                 }catch(e){
+                    if(webglfallback){
+                        i.webglcantdraw=true
+                        updatescene=true
+                    }
+                    gl.deleteTexture(i.texture)
+                    delete i.texture
                     texturerror=true
-                    texturerrorobj="cant load texture"+i.construck+" "+e
+                    texturerrorobj=
+                    "cant load texture"+
+                    "\nconstr: "+i.construck+
+                    "\nerror: "+e+
+                    "\nimg/video: "+(typeof(i.fillvideo)!="undefined"?i.fillvideo:"")+(typeof(i.fillpic)!="undefined"?i.fillpic:"")+
+                    (webglfallback?"\nusing canvas for it":"")
                 }
-                ctx.bindTexture(gl.TEXTURE_2D, null);
+                gl.bindTexture(gl.TEXTURE_2D, null);
                 pics++
             }else if(typeof(i.fill)=="string"){
                 let colorctx = new OffscreenCanvas(1,1).getContext('2d');
@@ -467,128 +585,135 @@ async function repaint3(x=0,y=0,time=0){
                 texturerrorobj="no texture"+i.construck
                 texturerror=true
             }
-            if(texturerror&&typeof(i.fillbackup)=="string"){
-                console.log("texturerror")
+            if(texturerror){
+                i.webglcantdrawfillbackup=true
                 let colorctx = new OffscreenCanvas(1,1).getContext('2d');
-                colorctx.fillStyle = i.fillbackup;
+                colorctx.fillStyle = typeof(i.fillbackup)=="string"?i.fillbackup:"black";
                 colorctx.fillRect(0, 0, 1, 1);
                 let compcolor=[...colorctx.getImageData(0, 0, 1, 1).data]
                 for (let i1 in compcolor)compcolor[i1]/=255
                 i.webglfill=compcolor
-            }
-            if(texturerror){
+                console.groupCollapsed("texture webgl info")
                 console.info("texturerror: "+texturerrorobj)
+                console.groupEnd()
             }
         }
     }
 
 
-    if(webglgrassani&&fpsav+20>m4xfps&&fps+20>m4xfps&&(updategrass||updatetgrass>updatewebglgrass||(updatetgrass>0&&fpsav+5>m4xfps&&fps+5>m4xfps))){
-        if(webgl2){
-            grasstogpuwebgl2()
-        }else{
-            grasstogpuwebgl1()
+    if(grasstogpuwebgl2mode==0&&webgl2&&webglgrassani&&fpsav+10>m4xfps&&fps+10>m4xfps){
+        if(updategrass||updatetgrass>updatewebglgrass||(updatetgrass>0&&fpsav+2>m4xfps&&fps+5>m4xfps)){
+            grasstogpuwebgl2mode=1
+            if('requestIdleCallback' in window){window.requestIdleCallback(grasstogpuwebgl2)}else{grasstogpuwebgl2(false)}
         }
     }
     if(debug)debugtext+="\nwebglgrassquali "+webglgrassquali
 
-    //draw
-    if(webgl2){
-        ctx.viewport(0, 0, canvas.width, canvas.height)
-        webgl2draw(x,y,time)
-        if(webglgrassani)grassdrawwebgl2(x,y,time)
-    }else{
-        webgl1draw(x,y,time)
-        if(webglgrassani)grassdrawwebgl1(x,y,time)
+    if(WEBGLdisjointtimer){
+        if(WEBGLdisjointtimermode==1&&!gl.isQuery(WEBGLdisjointtimerquery)){WEBGLdisjointtimermode=0;console.warn("query error reset mode")}//fallsave wen net resetet worden
+        if(WEBGLdisjointtimermode==1&&gl.getQueryParameter(WEBGLdisjointtimerquery, gl.QUERY_RESULT_AVAILABLE)) {
+            rendertime=gl.getQueryParameter(WEBGLdisjointtimerquery, gl.QUERY_RESULT)/1000000
+            rendertimeavg=rendertimeavg*rendertimeabfac+rendertime*(1-rendertimeabfac)
+            WEBGLdisjointtimermode=0
+            
+        }
+        if(WEBGLdisjointtimermode==0)gl.beginQuery(WEBGLdisjointtimer.TIME_ELAPSED_EXT, WEBGLdisjointtimerquery);
+    }
+    if(debug)debugtext+=""+
+        "\nrendertime: "+rendertime.toFixed(5)+
+        "\nrendertimeavg: "+rendertimeavg.toFixed(5)+
+        "\nhowmutchgrass: "+howmutchgrass+
+        "\ngrasstorender: "+grasstorender+
+        "\nupdatetgrass: "+updatetgrass+
+        "\ngrasstogpuwebgl2mode: "+grasstogpuwebgl2mode+
+        "\ngrasslimitact: "+grasslimitact+
+        "\nwebglgrasscut: "+webglgrasscut
+
+    gl.viewport(0, 0, canvas.width, canvas.height)
+    webgldraw(x,y,time)
+    if(webgl2&&webglgrassani)grassdrawwebgl2(x,y,time)
+
+    if(WEBGLdisjointtimer&&WEBGLdisjointtimermode==0){
+        gl.endQuery(WEBGLdisjointtimer.TIME_ELAPSED_EXT)
+        WEBGLdisjointtimermode=1
     }
 
-    if(inversekinematics&&promall[3].res){
-        ctxb.clearRect(0,0,canvas.width,canvas.height);
-        ctxb.strokeStyle = "gray";
-        ctxb.lineWidth=2
-        for(let me of myRect[loadmap]){
-            if(me.inversekinematics!=true)continue
-            for(let i in me.bones){
-                for(let i1=0;(typeof(me.bones[i]["segment"+i1])!="undefined");i1++){
-                    let seg=me.bones[i]["segment"+i1]
-                    let textur1=seg.fillconfig
-                    let originx=seg.origin.x
-                    let originy=seg.origin.y
-                    let finishx=seg.finish.x
-                    let finishy=seg.finish.y
-                    if(typeof(textur1)=="object"&&textur1.constructor.name.match("OffscreenCanvas|HTMLImageElement|HTMLCanvasElement")){
-                        let dist=Math.sqrt(Math.pow(Math.abs(originx/zoomn-finishx/zoomn),2)+Math.pow(Math.abs(originy/zoomn-finishy/zoomn),2))
-                        let rot=Math.atan2(originy-finishy,originx-finishx)-Math.PI/2-Math.PI
-                        ctxb.save();
-                        ctxb.translate(originx/zoomn-x,originy/zoomn-y);
-                        ctxb.rotate(rot);
-                        ctxb.drawImage(textur1,0,0,textur1.width,textur1.height,-(seg.width/zoomn)/2,0,(seg.width/zoomn),dist)
-                        ctxb.restore();
-                    }else{
-                        if(typeof(textur1)=="string")ctxb.fillStyle=textur1
-                        ctxb.beginPath();
-                        ctxb.moveTo(originx/zoomn-x,originy/zoomn-y);
-                        ctxb.lineTo(finishx/zoomn-x,finishy/zoomn-y);
-                        ctxb.stroke()
-                    }
-                } 
-            }
-        }
-    }
+    if(webglfallback||debug)ctxb.clearRect(0,0,canvas.width,canvas.height)
+    if(inversekinematics&&promall[3].res&&webglfallback)canvasdrawbones(ctxb,x,y)
+    if(webglfallback)for(let i of [...mySun[loadmap],...myFire[loadmap],...myRect[loadmap]])if(i.webglcantdraw)canvasdrawimage(ctxb,i,x,y)
+
 }
-function webgl2draw(x=0,y=0,time=0){
-    ctx.useProgram(shaderProgram[0]);
-    ctx.bindVertexArray(webglbuffers.obj.vao)
-    ctx.uniform2f(webglbuffers.obj.uniform.canvashwwebgl,canvas.width,canvas.height);
-    ctx.uniform4f(webglbuffers.obj.uniform.offsgl,x,y,zoom,zoomn);
+function webgldraw(x=0,y=0,time=0){
+    gl.useProgram(shaderProgram[0]);
+    webglbuffer.bindvertexarray("obj")
+    gl.uniform2f(webglbuffers.obj.uniform.canvashwwebgl,canvas.width,canvas.height);
+    gl.uniform4f(webglbuffers.obj.uniform.offsgl,x,y,zoom,zoomn);
     let i=-1
     let pics=0
     for (let i1 of webgldrawarr){
         i++
-        if(objvertecys[0][i+1]-objvertecys[0][i]<=0)continue
-        ctx.uniform2f(webglbuffers.obj.uniform.translation,typeof(i1.x)=="object"?Math.min(...i1.x):i1.x,typeof(i1.y)=="object"?Math.min(...i1.y):i1.y);
+        if(i1.nodraw||i1.invisible)continue//wen obj unsichtbar oder net gedrawt werden sol net drawn
+        if(objvertecys[0][i+1]-objvertecys[0][i]<=0)continue//wen obj keine vertecys hat net draw
+        if(!(rofx*zoomn-20<i1.minx+i1.w&&
+            i1.minx/zoomn<rofx+canvas.width+20&&
+            rofy*zoomn-20<i1.miny+i1.h&&
+            i1.miny/zoomn<rofy+canvas.height+20))continue//wen unsichtbar nicht draw
+        gl.uniform2f(webglbuffers.obj.uniform.translation,i1.minx,i1.miny);
 
-        ctx.uniform1i(webglbuffers.obj.uniform.aPicture, 0);
-        if(i1.fill.constructor.name.match("OffscreenCanvas|HTMLImageElement|HTMLCanvasElement")){
-            ctx.uniform1i(webglbuffers.obj.uniform.aPicture, 1);
-            ctx.uniform1i(webglbuffers.obj.uniform.uSampler, pics)
-            ctx.activeTexture(ctx.TEXTURE0)
-            ctx.bindTexture(ctx.TEXTURE_2D, i1.texture);
+        gl.uniform1f(webglbuffers.obj.uniform.aPicture, 0);
+        if(i1.fill.constructor.name.match("OffscreenCanvas|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement")&&!i1.webglcantdrawfillbackup){
+            gl.uniform1f(webglbuffers.obj.uniform.aPicture, 1);
+            gl.uniform1i(webglbuffers.obj.uniform.uSampler, pics)
+            gl.activeTexture(gl.TEXTURE0)
+            gl.bindTexture(gl.TEXTURE_2D, i1.texture);
             
-            if(i1.phy==true&&i1.construck=="Wasser"){
-                ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_WRAP_S, ctx.CLAMP_TO_EDGE);
-                ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_WRAP_T, ctx.CLAMP_TO_EDGE);
-                ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MIN_FILTER, ctx.NEAREST);
+            if(((i1.phy==true&&i1.construck=="Wasser")||i1.fill.constructor.name.match("HTMLVideoElement"))&&!i1.webglcantdraw){
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
 
-                ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MIN_FILTER, ctx.NEAREST);
-                ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MAG_FILTER, ctx.NEAREST);
-                ctx.pixelStorei(ctx.UNPACK_FLIP_Y_WEBGL, 1)
-
-                ctx.texSubImage2D(ctx.TEXTURE_2D, 0,0,0, ctx.RGBA,ctx.UNSIGNED_BYTE, i1.fill) 
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+                gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 1)
+                
+                gl.texSubImage2D(gl.TEXTURE_2D, 0,0,0, gl.RGBA,gl.UNSIGNED_BYTE, i1.fill) 
             }
             
             pics++
         }else if(Array.isArray(i1.webglfill)){
-            ctx.uniform4f(webglbuffers.obj.uniform.aColor, ...i1.webglfill);
+            gl.uniform4f(webglbuffers.obj.uniform.aColor, ...i1.webglfill);
         }
-        ctx.drawArrays(ctx.TRIANGLE_FAN, objvertecys[0][i]/2, (objvertecys[0][i+1]-objvertecys[0][i])/2)
+        gl.drawArrays(gl.TRIANGLE_FAN, objvertecys[0][i]/2, (objvertecys[0][i+1]-objvertecys[0][i])/2)
     }
-    ctx.bindVertexArray(null)
+    if(webgl2){
+        gl.bindVertexArray(null)
+    }else if(WEBGLoes){
+        WEBGLoes.bindVertexArrayOES(null)
+    }else{
+        gl.bindBuffer(gl.ARRAY_BUFFER,null)
+    }
 }
 function grassdrawwebgl2(x=0,y=0,time=0){
     windtimer-=60/fps
     if(windtimer<=0){
         windtimer=windreset
-        newwind=(Math.random()*2-1)*windrange
+        newwind[0]=(Math.random()*2-1)*windrange[0]
+        newwind[1]=(Math.random()*2-1)*windrange[1]
     }
-    wind=wind*(Math.pow(windsmove,60/fps))+newwind*(1-Math.pow(windsmove,60/fps))
+    wind[0]=wind[0]*(Math.pow(windsmove,60/fps))+newwind[0]*(1-Math.pow(windsmove,60/fps))
+    wind[1]=wind[1]*(Math.pow(windsmove,60/fps))+newwind[1]*(1-Math.pow(windsmove,60/fps))
+    //wind[1]=0
 
-    ctx.useProgram(shaderProgram[1]);
+    if(zoom>=4)return //grass ist so klein sieht e keiner
+    if(webglgrassdrawarr.firsts.length==0)return
+    gl.useProgram(shaderProgram[1]);
 
-    ctx.bindVertexArray(webglbuffers.grass.vao)
+    gl.bindVertexArray(webglbuffers.grass.vao)
 
+    //bindBufferBase bindBuffer und vertexAttribPointer combinieren als ein befehl
     gl.bindBufferBase(gl.TRANSFORM_FEEDBACK_BUFFER, 0, webglbuffers.grass.feedbackbuffer.aVelo1.buffer)
     gl.bindBufferBase(gl.TRANSFORM_FEEDBACK_BUFFER, 1, webglbuffers.grass.feedbackbuffer.aWind1.buffer)
+    gl.bindBufferBase(gl.TRANSFORM_FEEDBACK_BUFFER, 2, webglbuffers.grass.feedbackbuffer.aWindrandtimer1.buffer)
 
     gl.bindBuffer(gl.ARRAY_BUFFER, webglbuffers.grass.feedbackbuffer.aVelo.buffer)
     gl.vertexAttribPointer(
@@ -609,10 +734,20 @@ function grassdrawwebgl2(x=0,y=0,time=0){
         webglbuffers.grass.feedbackbuffer.aWind.offset,
         webglbuffers.grass.feedbackbuffer.aWind.stride
     );
+    gl.bindBuffer(gl.ARRAY_BUFFER, webglbuffers.grass.feedbackbuffer.aWindrandtimer.buffer)
+    gl.vertexAttribPointer(
+        webglbuffers.grass.feedbackbuffer.aWindrandtimer.pointer,
+        webglbuffers.grass.feedbackbuffer.aWindrandtimer.bufferlength,
+        webglbuffers.grass.feedbackbuffer.aWindrandtimer.numbertype,
+        webglbuffers.grass.feedbackbuffer.aWindrandtimer.normalized,
+        webglbuffers.grass.feedbackbuffer.aWindrandtimer.offset,
+        webglbuffers.grass.feedbackbuffer.aWindrandtimer.stride
+    );
+    
 
 
-    ctx.uniform1f(webglbuffers.grass.uniform.globalwind,wind);
-    let objectsgrassmove=myRect[loadmap].filter(it=>it.construck=="Player")
+    gl.uniform2f(webglbuffers.grass.uniform.globalwind,wind[0],wind[1]);
+    let objectsgrassmove=myRect[loadmap].filter(i1=>typeof(i1.velo)=="object"&&Array.isArray(i1.velo)&&i1.velo.length==2)
     //wen zu viele obj gibt dan remove so viele bis es unter limit liegt  zb was ist auserhalb der sichtweite
     //gl.getParameter(gl.MAX_VERTEX_UNIFORM_VECTORS)
     if(maxgrassobjects<objectsgrassmove.length){
@@ -635,163 +770,229 @@ function grassdrawwebgl2(x=0,y=0,time=0){
         objectsgrassmovevel[i1*2+0]=objectsgrassmove[i1].velo[0]
         objectsgrassmovevel[i1*2+1]=objectsgrassmove[i1].velo[1]
     }
-    ctx.uniform4fv(webglbuffers.grass.uniform.objectspos,objectsgrassmovepos);
-    ctx.uniform2fv(webglbuffers.grass.uniform.objectsvel,objectsgrassmovevel);
+    gl.uniform4fv(webglbuffers.grass.uniform.objectspos,objectsgrassmovepos);
+    gl.uniform2fv(webglbuffers.grass.uniform.objectsvel,objectsgrassmovevel);
 
-    ctx.uniform1i(webglbuffers.grass.uniform.objectslength,objectsgrassmove.length)  
+    gl.uniform1i(webglbuffers.grass.uniform.objectslength,objectsgrassmove.length)  
 
-    ctx.uniform1f(webglbuffers.grass.uniform.fps,fps);
-    ctx.uniform2f(webglbuffers.grass.uniform.canvashwwebgl,canvas.width,canvas.height);
-    ctx.uniform4f(webglbuffers.grass.uniform.offsgl,x,y,zoom,zoomn);
+    gl.uniform1f(webglbuffers.grass.uniform.fps,fps);
+    gl.uniform2f(webglbuffers.grass.uniform.canvashwwebgl,canvas.width,canvas.height);
+    gl.uniform4f(webglbuffers.grass.uniform.offsgl,x,y,zoom,zoomn);
 
     gl.beginTransformFeedback(gl.POINTS)
     gl.enable(gl.RASTERIZER_DISCARD)
-    ctx.uniform1i(webglbuffers.grass.uniform.rendermode, 0);
-
-
-    if(!WEBGLdisjointtimeravailable)WEBGLdisjointtimeravailable=gl.getQueryParameter(WEBGLdisjointtimerquery, gl.QUERY_RESULT_AVAILABLE);
-    if (WEBGLdisjointtimeravailable) {
-        try{
-        const grassrenderedobjintime=gl.getQueryParameter(WEBGLdisjointtimerquery, gl.QUERY_RESULT)/1000000
-        if(grassrenderedobjintime<2)grassmaxobjtorender+=0.1
-        if(grassrenderedobjintime>6)grassmaxobjtorender--
-        if(debug)debugtext+="\ngrassrenderedobjintime: "+grassrenderedobjintime.toFixed(3)+"\ngrassmaxobjtorender: "+grassmaxobjtorender.toFixed(3)
-        }catch(e){}
-    }
-    if(WEBGLdisjointtimeravailable)gl.beginQuery(WEBGLdisjointtimer.TIME_ELAPSED_EXT, WEBGLdisjointtimerquery);
-
-    let i=0
-    for (let i1 of webglgrassdrawarr){
-        if(grassmaxobjtorender<=i)break
-        if(i1.grass.length==0)continue
-        ctx.uniform2f(webglbuffers.grass.uniform.translation,typeof(i1.x)=="object"?Math.min(...i1.x):i1.x,typeof(i1.y)=="object"?Math.min(...i1.y):i1.y);
-        i+=i1.firsts.length
-        if(WEBGLmultidraw){
-            WEBGLmultidraw.multiDrawArraysWEBGL(ctx.POINTS, i1.firsts, 0, i1.counts, 0, Math.max(0,Math.min(i1.firsts.length,grassmaxobjtorender-i)));
-        }else{
-            for(let i2=0;i2<=i1.firsts.length;i2++)ctx.drawArrays(ctx.POINTS,i1.firsts[i2],i1.counts[i2])
-        }
+    gl.uniform1i(webglbuffers.grass.uniform.rendermode, 0);
+    
+    if(WEBGLmultidraw){
+        WEBGLmultidraw.multiDrawArraysWEBGL(gl.POINTS, webglgrassdrawarr.firsts, 0, webglgrassdrawarr.counts, 0, webglgrassdrawarr.firsts.length);
+    }else{
+        for(let i2=0;i2<=webglgrassdrawarr.firsts.length;i2++)gl.drawArrays(gl.POINTS,webglgrassdrawarr.firsts[i2],webglgrassdrawarr.counts[i2])
     }
     gl.disable(gl.RASTERIZER_DISCARD)
     gl.endTransformFeedback()
     gl.bindBufferBase(gl.TRANSFORM_FEEDBACK_BUFFER, 0, null)
     gl.bindBufferBase(gl.TRANSFORM_FEEDBACK_BUFFER, 1, null)
-    ctx.uniform1i(webglbuffers.grass.uniform.rendermode, 1);
-    i=0
-    for (let i1 of webglgrassdrawarr){
-        let i1=webglgrassdrawarr[i]
-        if(i1.grass.length==0)continue
-        ctx.uniform2f(webglbuffers.grass.uniform.translation,typeof(i1.x)=="object"?Math.min(...i1.x):i1.x,typeof(i1.y)=="object"?Math.min(...i1.y):i1.y);
-        if(WEBGLmultidraw){
-            WEBGLmultidraw.multiDrawArraysWEBGL(gl.TRIANGLE_FAN, i1.firsts, 0, i1.counts, 0, Math.max(0,Math.min(i1.firsts.length,grassmaxobjtorender-i)));
-        }else{
-            for(let i2=0;i2<=i1.firsts.length;i2++)ctx.drawArrays(ctx.TRIANGLE_FAN,i1.firsts[i2],i1.counts[i2])
-        }
+    gl.bindBufferBase(gl.TRANSFORM_FEEDBACK_BUFFER, 2, null)
+    gl.uniform1i(webglbuffers.grass.uniform.rendermode, 1);
+    if(WEBGLmultidraw){
+        WEBGLmultidraw.multiDrawArraysWEBGL(gl.TRIANGLE_FAN, webglgrassdrawarr.firsts, 0, webglgrassdrawarr.counts, 0, webglgrassdrawarr.firsts.length);
+    }else{
+        for(let i2=0;i2<webglgrassdrawarr.firsts.length;i2++)gl.drawArrays(gl.TRIANGLE_FAN,webglgrassdrawarr.firsts[i2],webglgrassdrawarr.counts[i2])
     }
 
 
-
-    if(WEBGLdisjointtimeravailable)gl.endQuery(WEBGLdisjointtimer.TIME_ELAPSED_EXT);
-
-
-    ctx.bindVertexArray(null)
+    gl.bindVertexArray(null)
     gl.bindBuffer(gl.ARRAY_BUFFER,null)
-    //rotate buffers
-    //da müste man noch actualisieren
+
+    //mach ne buffer swap function
     try{
         [
             webglbuffers.grass.feedbackbuffer.aVelo1.buffer,
             webglbuffers.grass.feedbackbuffer.aVelo.buffer,
             webglbuffers.grass.feedbackbuffer.aWind1.buffer,
             webglbuffers.grass.feedbackbuffer.aWind.buffer,
+            webglbuffers.grass.feedbackbuffer.aWindrandtimer1.buffer,
+            webglbuffers.grass.feedbackbuffer.aWindrandtimer.buffer,
         ]=[
             webglbuffers.grass.feedbackbuffer.aVelo.buffer,
             webglbuffers.grass.feedbackbuffer.aVelo1.buffer,
             webglbuffers.grass.feedbackbuffer.aWind.buffer,
             webglbuffers.grass.feedbackbuffer.aWind1.buffer,
+            webglbuffers.grass.feedbackbuffer.aWindrandtimer.buffer,
+            webglbuffers.grass.feedbackbuffer.aWindrandtimer1.buffer,
         ]
     }catch(e){console.log(e)}//kp
 }
-function grasstogpuwebgl2(){
-    updategrass=false
-    updatetgrass=0
-    let howmutchgrass=0
-    for (let i in webglgrassdrawarr){
-        howmutchgrass+=webglgrassdrawarr[i].grass.length
+function grasstogpuwebgl2(timetowalk){//das in itle callback und in 2 teile 
+    grasstogpuwebgl2time[0]-=grasstogpuwebgl2timeminus
+    if(timetowalk==false||timetowalk.timeRemaining()>grasstogpuwebgl2time[0]||timetowalk.didTimeout){
+        const ttime=performance.now()
+        const arrBuffer=[
+            new Float32Array(new ArrayBuffer(webglbuffers.grass.feedbackbuffer.aVelo.group.buffersize*bpe*webglbuffers.grass.feedbackbuffer.aVelo.bufferlength)),
+            new Float32Array(new ArrayBuffer(webglbuffers.grass.feedbackbuffer.aWind.group.buffersize*bpe*webglbuffers.grass.feedbackbuffer.aWind.bufferlength)),
+            new Float32Array(new ArrayBuffer(webglbuffers.grass.feedbackbuffer.aWindrandtimer.group.buffersize*bpe*webglbuffers.grass.feedbackbuffer.aWindrandtimer.bufferlength)),
+        ]
+        gl.bindBuffer(gl.ARRAY_BUFFER, webglbuffers.grass.feedbackbuffer.aVelo.buffer)
+        gl.getBufferSubData(gl.ARRAY_BUFFER, 0, arrBuffer[0])
+        gl.bindBuffer(gl.ARRAY_BUFFER,null)
+        gl.bindBuffer(gl.ARRAY_BUFFER, webglbuffers.grass.feedbackbuffer.aWind.buffer)
+        gl.getBufferSubData(gl.ARRAY_BUFFER, 0, arrBuffer[1])
+        gl.bindBuffer(gl.ARRAY_BUFFER,null)
+        gl.bindBuffer(gl.ARRAY_BUFFER, webglbuffers.grass.feedbackbuffer.aWindrandtimer.buffer)
+        gl.getBufferSubData(gl.ARRAY_BUFFER, 0, arrBuffer[2])
+        gl.bindBuffer(gl.ARRAY_BUFFER,null)
+        grasstogpuwebgl2time[0]=grasstogpuwebgl2time[0]*grasstogpuwebgl2timeabfac+(performance.now()-ttime)*(1-grasstogpuwebgl2timeabfac)
+        grasstogpuwebgl20(arrBuffer,0,timetowalk)
+    }else window.requestIdleCallback(grasstogpuwebgl2)
+}
+function grasstogpuwebgl20(arrBuffer,starti,timetowalk){
+    for (let i=starti;i<webglgrassdrawarr.firsts.length;i++){
+        if(timetowalk!=false&&timetowalk.timeRemaining()<0.2){
+            window.requestIdleCallback(grasstogpuwebgl20.bind(this,arrBuffer,i))
+            return
+        }
+        const i1=webglgrassdrawarr.num[i]
+        const counter=webglgrassdrawarr.firsts[i]
+        i1.velo[0]=arrBuffer[0][webglbuffers.grass.feedbackbuffer.aVelo.bufferlength*counter+0]
+        i1.velo[1]=arrBuffer[0][webglbuffers.grass.feedbackbuffer.aVelo.bufferlength*counter+1]
+        i1.randomwind[0]=arrBuffer[1][webglbuffers.grass.feedbackbuffer.aWind.bufferlength*counter+0]
+        i1.randomwind[1]=arrBuffer[1][webglbuffers.grass.feedbackbuffer.aWind.bufferlength*counter+1]
+        i1.randomwindtimer[0]=arrBuffer[2][webglbuffers.grass.feedbackbuffer.aWindrandtimer.bufferlength*counter+0]
+        i1.randomwindtimer[1]=arrBuffer[2][webglbuffers.grass.feedbackbuffer.aWindrandtimer.bufferlength*counter+1]
+        i1.randomwindtimer[2]=arrBuffer[2][webglbuffers.grass.feedbackbuffer.aWindrandtimer.bufferlength*counter+2]
+        i1.randomwindtimer[3]=arrBuffer[2][webglbuffers.grass.feedbackbuffer.aWindrandtimer.bufferlength*counter+3]
     }
-    webglgrassquali=Math.round(Math.max(Math.min(webglgrasswantetpoligons/howmutchgrass,webglmaxgrassquali),webglmingrassquali))
-    webglbuffer.testbufferoverflow("grass",howmutchgrass*bpe*Math.max(2+webglgrassquali*2,3))
-    objvertecys[1]=[]
-    let objvertices=[]
-    let grasssrot=[]
-    let grassvelo=[]
-    let windopt=[]
-    let randomwind=[]
-    let grassstartcord=[]
-    let grassnum=[]
-    let grasscolor=[]
+    grasstogpuwebgl21(timetowalk)
+}
+function grasstogpuwebgl21(timetowalk){
+    grasstogpuwebgl2time[1]-=grasstogpuwebgl2timeminus
+    if(timetowalk==false||timetowalk.timeRemaining()>grasstogpuwebgl2time[1]||timetowalk.didTimeout){
+        const ttime=performance.now()
+        const grasst=myRect[loadmap].filter(i=>i.construck=="Grassani"&&typeof(i.grass)!="undefined")
+        howmutchgrass=0
+        for(let i of grasst)howmutchgrass+=i.grass.length
 
-    //remove all grass  we could give each objvertecy a array with num and type could be better
-    for (let i in webglgrassdrawarr){
-        objvertecys[1].push(objvertices.length)
+        grasshalm=[]
+        for(let i of grasst){
+            for(let i1 of i.grass){
+                grasshalm.push([i1.w*i1.h,i1.x+i.minx,i1.y+i.miny,i1])
+            }
+        }
+        grasslimitact=grasshalm.length>webglgrasscut&&!grassrenderall
+        grasstogpuwebgl2time[1]=grasstogpuwebgl2time[1]*grasstogpuwebgl2timeabfac+(performance.now()-ttime)*(1-grasstogpuwebgl2timeabfac)
+
+        if(grasslimitact){
+            if(timetowalk==false)grasstogpuwebgl22(false)
+            if(timetowalk!=false)window.requestIdleCallback(grasstogpuwebgl22)
+        }else{
+            grasstogpuwebgl23(timetowalk)
+        }
+    }else window.requestIdleCallback(grasstogpuwebgl21)
+}
+function grasstogpuwebgl22(timetowalk){
+    grasstogpuwebgl2time[2]-=grasstogpuwebgl2timeminus
+    if(timetowalk==false||timetowalk.timeRemaining()>grasstogpuwebgl2time[2]||timetowalk.didTimeout){
+        const ttime=performance.now()
+        const newgrasslimitact=Math.trunc((webglgrasscut/rendertimeavg)*rendertimeopt)
+        if(newgrasslimitact<webglgrasscut)webglgrasscut=newgrasslimitact
+        if(newgrasslimitact>webglgrasscut+(updategrass&&grasstorender?0:100))webglgrasscut=webglgrasscut+Math.min(newgrasslimitact-webglgrasscut,15)
+        grasshalm=grasshalm.sort((i0,i1)=>Math.sign(i1[0]-i0[0])).slice(0,webglgrasscut)
+        grasstorender=grasshalm.length
+        grasstogpuwebgl2time[2]=grasstogpuwebgl2time[2]*grasstogpuwebgl2timeabfac+(performance.now()-ttime)*(1-grasstogpuwebgl2timeabfac)
+        grasstogpuwebgl23(timetowalk)
+    }else window.requestIdleCallback(grasstogpuwebgl22)
+}
+function grasstogpuwebgl23(timetowalk){
+    grasstogpuwebgl2time[3]-=grasstogpuwebgl2timeminus
+    if(timetowalk==false||timetowalk.timeRemaining()>grasstogpuwebgl2time[3]||timetowalk.didTimeout){//mach das über multible frames
+        const ttime=performance.now()
+        updategrass=false
+        updatetgrass=0
+        webglgrassquali=Math.round(Math.max(Math.min(webglgrasswantetpoligons/howmutchgrass,webglmaxgrassquali),webglmingrassquali))
+        let objvertices=[]
+        let grasssrot=[]
+        let grassvelo=[]
+        let windopt=[]
+        let grassstrawwind=[]
+        let randomwindtimer=[]
+        let grassstartcord=[]
+        let grassnum=[]
+        let grasscolor=[]
         let firstsarr=[]
         let countsarr=[]
 
-        for (let i1 of webglgrassdrawarr[i].grass){
+        //remove all grass  we could give each objvertecy a array with num and type could be better
+        for (let i in grasshalm){
             firstsarr.push(objvertices.length/2)
-            let counter=0
+            const i1=grasshalm[i][3]
+            webglgrassdrawarr.num[i]=i1
+            webglgrassdrawarr.xy[i]=[grasshalm[i][1],grasshalm[i][2]]
             let max=Math.max(2+webglgrassquali*2,3)
-            if(max>3)max-=i1.spitze
+            if(max>3){
+                max-=i1.spitze
+                max=Math.min(Math.max(Math.trunc(i1.h*2),3),max)//um so höher grass ist um so mehr poligone sind erlaubt
+            }
             for(let i2=0;i2<max;i2++){
                 // bei mitte=0 nim folles i1.h und um so niedriger um so weniger dh am entferntesten punkt von mitte ist addh=0
                 const distancefromstartendnormalised=1-(Math.abs(i2-(max&1?(max/2-0.5):(i2>(max/2-0.5)?(max/2):(max/2-1))))/Math.trunc(max/2-0.5))
-                //wen unter mitte nim i1.x wen mitte nim i1.x+i1.w/2 und wen über mitte dan i1.x+i1.w
+                //wen unter mitte nim grasshalm[i][1] wen mitte nim i1.x+i1.w/2 und wen über mitte dan i1.x+i1.w
                 const addw=(max/2-0.5==i2?i1.w/2:max/2<=i2?i1.w:0)
-                objvertices.push(i1.x+addw,i1.y-distancefromstartendnormalised*i1.h)
-                grassstartcord.push(i1.x+addw,i1.y)
-                
+                //const addh=(max/2-0.5==i2?i1.h/2:max/2<=i2?i1.h:0)
+                objvertices.push(grasshalm[i][1]+addw,grasshalm[i][2]-distancefromstartendnormalised*i1.h)
+                //grassstartcord.push(grasshalm[i][1]+addw,grasshalm[i][2])
+                //grassstartcord.push(grasshalm[i][1],grasshalm[i][2])
+                //rotiere mich um 0 punkt
+                const rot=Math.abs(Math.cos(i1.rotation))>Math.abs(Math.sin(i1.rotation))
+                grassstartcord.push(grasshalm[i][1]+(rot?addw:0),grasshalm[i][2])
+                //grassstartcord.push(grasshalm[i][1]+addw*Math.cos(i1.rotation),grasshalm[i][2]))
+
                 grasssrot.push(i1.rotation)
                 grassnum.push(Math.pow(distancefromstartendnormalised,2))
                 //grassnum.push(distancefromstartendnormalised)
                 //grassvelo.push(i1.velo[0],i1.velo[1])
-                windopt.push(i1.windsmove,i1.range)
-                randomwind.push(i1.randomwind,0,0)
+                windopt.push(i1.strengthgwind,i1.strengthiwind,i1.strengthvelo)
+                grassstrawwind.push(...i1.randomwind)
+                randomwindtimer.push(...i1.randomwindtimer)//random value x   random value y   timer value  grasswachstum 
                 grasscolor.push(...i1.color)
-                counter++
             }
-            countsarr.push(counter)
+            countsarr.push(max)
         }
-        webglgrassdrawarr[i].firsts=new Int32Array(firstsarr)
-        webglgrassdrawarr[i].counts=new Int32Array(countsarr)
-    }
-    objvertecys[1].push(objvertices.length)
+        webglgrassdrawarr.firsts=new Int32Array(firstsarr)
+        webglgrassdrawarr.counts=new Int32Array(countsarr)
+        webglbuffer.testbufferoverflow("grass",(objvertices.length/2)*bpe)
 
-    //obj die weiter web sind weniger grass details
-    ctx.bindBuffer(ctx.ARRAY_BUFFER, webglbuffers.grass.buffer.grasscolor.buffer);				
-    ctx.bufferSubData(ctx.ARRAY_BUFFER,0,new Float32Array(grasscolor));
+        //obj die weiter web sind weniger grass details
+        gl.bindBuffer(gl.ARRAY_BUFFER, webglbuffers.grass.buffer.grasscolor.buffer);				
+        gl.bufferSubData(gl.ARRAY_BUFFER,0,new Float32Array(grasscolor));
 
-    ctx.bindBuffer(ctx.ARRAY_BUFFER, webglbuffers.grass.buffer.coordinates1.buffer);				
-    ctx.bufferSubData(ctx.ARRAY_BUFFER,0,new Float32Array(objvertices));
+        gl.bindBuffer(gl.ARRAY_BUFFER, webglbuffers.grass.buffer.coordinates1.buffer);				
+        gl.bufferSubData(gl.ARRAY_BUFFER,0,new Float32Array(objvertices));
 
-    ctx.bindBuffer(ctx.ARRAY_BUFFER, webglbuffers.grass.buffer.grassstartcord.buffer);				
-    ctx.bufferSubData(ctx.ARRAY_BUFFER,0,new Float32Array(grassstartcord));
+        gl.bindBuffer(gl.ARRAY_BUFFER, webglbuffers.grass.buffer.grassstartcord.buffer);				
+        gl.bufferSubData(gl.ARRAY_BUFFER,0,new Float32Array(grassstartcord));
 
-    ctx.bindBuffer(ctx.ARRAY_BUFFER, webglbuffers.grass.buffer.grassnum.buffer);				
-    ctx.bufferSubData(ctx.ARRAY_BUFFER,0,new Float32Array(grassnum));
-    
-    ctx.bindBuffer(ctx.ARRAY_BUFFER, webglbuffers.grass.buffer.grassrotation.buffer);	
-    ctx.bufferSubData(ctx.ARRAY_BUFFER,0,new Float32Array(grasssrot));
+        gl.bindBuffer(gl.ARRAY_BUFFER, webglbuffers.grass.buffer.grassnum.buffer);				
+        gl.bufferSubData(gl.ARRAY_BUFFER,0,new Float32Array(grassnum));
 
-    gl.bindBuffer(gl.ARRAY_BUFFER, webglbuffers.grass.buffer.aWindopt.buffer)
-    gl.bufferSubData(gl.ARRAY_BUFFER,0, new Float32Array(windopt));
+        gl.bindBuffer(gl.ARRAY_BUFFER, webglbuffers.grass.buffer.grassrotation.buffer);	
+        gl.bufferSubData(gl.ARRAY_BUFFER,0,new Float32Array(grasssrot));
 
-    gl.bindBuffer(gl.ARRAY_BUFFER, webglbuffers.grass.feedbackbuffer.aVelo.buffer)
-    gl.bufferSubData(gl.ARRAY_BUFFER,0, new Float32Array(grassvelo));
+        gl.bindBuffer(gl.ARRAY_BUFFER, webglbuffers.grass.buffer.aWindopt.buffer)
+        gl.bufferSubData(gl.ARRAY_BUFFER,0, new Float32Array(windopt));
 
-    gl.bindBuffer(gl.ARRAY_BUFFER, webglbuffers.grass.feedbackbuffer.aWind.buffer)
-    gl.bufferSubData(gl.ARRAY_BUFFER,0, new Float32Array(randomwind));
+        gl.bindBuffer(gl.ARRAY_BUFFER, webglbuffers.grass.feedbackbuffer.aVelo.buffer)
+        gl.bufferSubData(gl.ARRAY_BUFFER,0, new Float32Array(grassvelo));
 
-    gl.bindBuffer(gl.ARRAY_BUFFER,null)
+        gl.bindBuffer(gl.ARRAY_BUFFER, webglbuffers.grass.feedbackbuffer.aWind.buffer)
+        gl.bufferSubData(gl.ARRAY_BUFFER,0, new Float32Array(grassstrawwind));
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, webglbuffers.grass.feedbackbuffer.aWindrandtimer.buffer)
+        gl.bufferSubData(gl.ARRAY_BUFFER,0, new Float32Array(randomwindtimer));
+
+        gl.bindBuffer(gl.ARRAY_BUFFER,null)
+        grasstogpuwebgl2time[3]=grasstogpuwebgl2time[3]*grasstogpuwebgl2timeabfac+(performance.now()-ttime)*(1-grasstogpuwebgl2timeabfac)
+        grasstogpuwebgl2mode=0
+    }else window.requestIdleCallback(grasstogpuwebgl23)
 }
 async function repaint0(x=0,y=0){
     //redraw nur wen bebraucht
@@ -802,25 +1003,18 @@ async function repaint0(x=0,y=0){
         if(!ctxarr.includes("ctxshadow"))ctxarr.push("ctxshadow")
         canvasshadow.width=document.documentElement.clientWidth;
         canvasshadow.height=document.documentElement.clientHeight;
-        if(typeof(ctxshadow["imageSmoothingEnabled"])!="undefined"){
-            ctxshadow.imageSmoothingEnabled=imageSmoothingEnabled!=="none"
-            if(imageSmoothingEnabled!="none")ctxshadow.imageSmoothingQuality=imageSmoothingEnabled
-        }else if(typeof(ctxshadow["webkitImageSmoothingEnabled"])!="undefined"){
-            ctxshadow.webkitImageSmoothingEnabled=imageSmoothingEnabled!=="none"
-        }else if(typeof(ctxshadow["mozImageSmoothingEnabled"])!="undefined"){
-            ctxshadow.mozImageSmoothingEnabled=imageSmoothingEnabled!=="none"
-        }
+        imagesmoothingset(ctxshadow)
         canvasshadow.id="canvasshadow"
-        if(shadowblurtype==1)canvasbshadow.style.filer="blur("+shadowblur+"px)"
-        if(shadowblurtype==2)canvasbshadow.filer="blur("+shadowblur+"px)"
+        if(shadowblurtype==1)canvasshadow.style.filter="blur("+shadowblur+"px)"
+        if(shadowblurtype==2)canvasshadow.filter="blur("+shadowblur+"px)"
         document.body.appendChild(canvasshadow)
     }
     if(!shadows&&typeof(canvasshadow)!="undefined"&&canvasshadow.constructor.name=="HTMLCanvasElement"){
         canvasshadow.remove()
         canvarr=canvarr.filter(i=>i!="canvasshadow")
         ctxarr=canvarr.filter(i=>i!="ctxshadow")
-        canvasshadow=""
-        ctxshadow=""
+        canvasshadow=null
+        ctxshadow=null
     }
     if(shadows&&shadowqualli>0){
         ctxshadow.clearRect(0,0,ctx.drawingBufferWidth, ctx.drawingBufferHeight);
@@ -837,7 +1031,7 @@ async function repaint0(x=0,y=0){
             let firsty=typeof(i.y)=="object"?i.y[0]/zoomn:i.y/zoomn
             for (let sun of i.shadow) {
                 if(sun==undefined||typeof(sun[Symbol.iterator])!=="function")continue
-                if(sun.constructor.name.match("OffscreenCanvas|HTMLCanvasElement")){
+                if(sun.constructor.name.match("OffscreenCanvas|HTMLCanvasElement|HTMLVideoElement")){
                     ctxshadow.drawImage(sun,0,0,sun.width,sun.height,Math.trunc(firstx+sun.minxs-x),Math.trunc(firsty+sun.minys-y),sun.width/zoomn,sun.height/zoomn)
                 }else{
                     for (let i1 of sun) {
@@ -898,96 +1092,100 @@ async function repaint0(x=0,y=0){
                 }
             }
         }else if(typeof(i.fill)=="object"){
-            if(i.fill.constructor.name.match("OffscreenCanvas|HTMLImageElement|HTMLCanvasElement")){
-                if(typeof(i.rotate)=="number"&&i.rotate!=0){
-                    ctx.save();
+            canvasdrawimage(ctx,i,x,y)
+        }
+    }//animierte textur feuer schweif usw noch reinbaun
+
+    if(inversekinematics&&promall[3].res)canvasdrawbones(ctx,x,y)
+}
+function canvasdrawimage(ctxt,i,x,y){
+    if(i.fill.constructor.name.match("OffscreenCanvas|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement")){
+        if(typeof(i.rotate)=="number"&&i.rotate!=0){
+            ctxt.save();
+            if(typeof(i.x)=="object"){
+                ctxt.translate(i.minx/zoomn+(i.w/zoomn/2)-x,i.miny/zoomn+(i.h/zoomn/2)-y);
+            }else{
+                ctxt.translate(i.x/zoomn+(i.w/zoomn/2)-x,i.y/zoomn+(i.h/zoomn/2)-y);
+            }
+            ctxt.rotate(i.rotate);
+            ctxt.drawImage(i.fill,0,0,i.fill.width,i.fill.height,-i.w*2+(typeof(i.picoff)=="object"?i.picoff[0]:0),-i.h*2+(typeof(i.picoff)=="object"?i.picoff[1]:0),i.w/zoomn,i.h/zoomn)
+            ctxt.restore()
+        }else{
+            if(suppixel){
+                if(typeof(i.picoff)=="object"){
                     if(typeof(i.x)=="object"){
-                        ctx.translate(Math.min(...i.x)/zoomn+(i.w/zoomn/2)-x,Math.min(...i.y)/zoomn+(i.h/zoomn/2)-y);
+                        ctxt.drawImage(i.fill,0,0,i.fill.width,i.fill.height,i.minx/zoomn-x+i.picoff[0],i.miny/zoomn-y+i.picoff[1],i.w/zoomn,i.h/zoomn)
                     }else{
-                        ctx.translate(i.x/zoomn+(i.w/zoomn/2)-x,i.y/zoomn+(i.h/zoomn/2)-y);
+                        ctxt.drawImage(i.fill,0,0,i.fill.width,i.fill.height,i.x/zoomn-x+i.picoff[0],i.y/zoomn-y+i.picoff[1],i.w/zoomn,i.h/zoomn)
                     }
-                    ctx.rotate(i.rotate);
-                    ctx.drawImage(i.fill,0,0,i.fill.width,i.fill.height,-i.w*2+(typeof(i.picoff)=="object"?i.picoff[0]:0),-i.h*2+(typeof(i.picoff)=="object"?i.picoff[1]:0),i.w/zoomn,i.h/zoomn)
-                    ctx.restore()
                 }else{
-                    if(suppixel){
-                        if(typeof(i.picoff)=="object"){
-                            if(typeof(i.x)=="object"){
-                                ctx.drawImage(i.fill,0,0,i.fill.width,i.fill.height,Math.min(...i.x)/zoomn-x+i.picoff[0],Math.min(...i.y)/zoomn-y+i.picoff[1],i.w/zoomn,i.h/zoomn)
-                            }else{
-                                ctx.drawImage(i.fill,0,0,i.fill.width,i.fill.height,i.x/zoomn-x+i.picoff[0],i.y/zoomn-y+i.picoff[1],i.w/zoomn,i.h/zoomn)
-                            }
-                        }else{
-                            if(typeof(i.x)=="object"){
-                                ctx.drawImage(i.fill,0,0,i.fill.width,i.fill.height,Math.min(...i.x)/zoomn-x,Math.min(...i.y)/zoomn-y,i.w/zoomn,i.h/zoomn)
-                            }else{
-                                ctx.drawImage(i.fill,0,0,i.fill.width,i.fill.height,i.x/zoomn-x,i.y/zoomn-y,i.w/zoomn,i.h/zoomn)
-                            }
-                        }
+                    if(typeof(i.x)=="object"){
+                        ctxt.drawImage(i.fill,0,0,i.fill.width,i.fill.height,i.minx/zoomn-x,i.miny/zoomn-y,i.w/zoomn,i.h/zoomn)
                     }else{
-                        if(typeof(i.picoff)=="object"){
-                            if(typeof(i.x)=="object"){
-                                ctx.drawImage(i.fill,0,0,i.fill.width,i.fill.height,Math.trunc(Math.min(...i.x)/zoomn-x+i.picoff[0]),Math.trunc(Math.min(...i.y)/zoomn-y+i.picoff[1]),i.w/zoomn,i.h/zoomn)
-                            }else{
-                                ctx.drawImage(i.fill,0,0,i.fill.width,i.fill.height,Math.trunc(i.x/zoomn-x+i.picoff[0]),Math.trunc(i.y/zoomn-y+i.picoff[1]),i.w/zoomn,i.h/zoomn)
-                            }
-                        }else{
-                            if(typeof(i.x)=="object"){
-                                ctx.drawImage(i.fill,0,0,i.fill.width,i.fill.height,Math.trunc(Math.min(...i.x)/zoomn-x),Math.trunc(Math.min(...i.y)/zoomn-y),i.w/zoomn,i.h/zoomn)
-                            }else{
-                                ctx.drawImage(i.fill,0,0,i.fill.width,i.fill.height,Math.trunc(i.x/zoomn-x),Math.trunc(i.y/zoomn-y),i.w/zoomn,i.h/zoomn)
-                            }
-                        }
+                        ctxt.drawImage(i.fill,0,0,i.fill.width,i.fill.height,i.x/zoomn-x,i.y/zoomn-y,i.w/zoomn,i.h/zoomn)
                     }
                 }
-            }else if(i.fill.constructor.name=="ImageData"){
-                if(suppixel){
+            }else{
+                if(typeof(i.picoff)=="object"){
                     if(typeof(i.x)=="object"){
-                        ctx.putImageData(i.fill,Math.min(...i.x)/zoomn-x,Math.min(...i.y)/zoomn-y)
+                        ctxt.drawImage(i.fill,0,0,i.fill.width,i.fill.height,Math.trunc(i.minx/zoomn-x+i.picoff[0]),Math.trunc(i.miny/zoomn-y+i.picoff[1]),i.w/zoomn,i.h/zoomn)
                     }else{
-                        ctx.putImageData(i.fill,i.x/zoomn-x,i.y/zoomn-y)
+                        ctxt.drawImage(i.fill,0,0,i.fill.width,i.fill.height,Math.trunc(i.x/zoomn-x+i.picoff[0]),Math.trunc(i.y/zoomn-y+i.picoff[1]),i.w/zoomn,i.h/zoomn)
                     }
                 }else{
                     if(typeof(i.x)=="object"){
-                        ctx.putImageData(i.fill,Math.trunc(Math.min(...i.x)/zoomn-x),Math.trunc(Math.min(...i.y)/zoomn-y))
+                        ctxt.drawImage(i.fill,0,0,i.fill.width,i.fill.height,Math.trunc(i.minx/zoomn-x),Math.trunc(i.miny/zoomn-y),i.w/zoomn,i.h/zoomn)
                     }else{
-                        ctx.putImageData(i.fill,Math.trunc(i.x/zoomn-x),Math.trunc(i.y/zoomn-y))
+                        ctxt.drawImage(i.fill,0,0,i.fill.width,i.fill.height,Math.trunc(i.x/zoomn-x),Math.trunc(i.y/zoomn-y),i.w/zoomn,i.h/zoomn)
                     }
                 }
             }
         }
-    }//animierte textur feuer schweif usw noch reinbaun
-
-    if(inversekinematics&&promall[3].res){
-        ctx.strokeStyle = "gray";
-        ctx.lineWidth=2
-        for(let me of myRect[loadmap]){
-            if(me.inversekinematics!=true)continue
-            for(let i in me.bones){
-                for(let i1=0;(typeof(me.bones[i]["segment"+i1])!="undefined");i1++){
-                    let seg=me.bones[i]["segment"+i1]
-                    let textur1=seg.fillconfig
-                    let originx=seg.origin.x
-                    let originy=seg.origin.y
-                    let finishx=seg.finish.x
-                    let finishy=seg.finish.y
-                    if(typeof(textur1)=="object"&&textur1.constructor.name.match("OffscreenCanvas|HTMLImageElement|HTMLCanvasElement")){
-                        let dist=Math.sqrt(Math.pow(Math.abs(originx/zoomn-finishx/zoomn),2)+Math.pow(Math.abs(originy/zoomn-finishy/zoomn),2))
-                        let rot=Math.atan2(originy-finishy,originx-finishx)-Math.PI/2-Math.PI
-                        ctx.save();
-                        ctx.translate(originx/zoomn-x,originy/zoomn-y);
-                        ctx.rotate(rot);
-                        ctx.drawImage(textur1,0,0,textur1.width,textur1.height,-(seg.width/zoomn)/2,0,(seg.width/zoomn),dist)
-                        ctx.restore();
-                    }else{
-                        if(typeof(textur1)=="string")ctx.fillStyle=textur1
-                        ctx.beginPath();
-                        ctx.moveTo(originx/zoomn-x,originy/zoomn-y);
-                        ctx.lineTo(finishx/zoomn-x,finishy/zoomn-y);
-                        ctx.stroke()
-                    }
-                } 
+    }else if(i.fill.constructor.name=="ImageData"){
+        if(suppixel){
+            if(typeof(i.x)=="object"){
+                ctxt.putImageData(i.fill,i.minx/zoomn-x,i.miny/zoomn-y)
+            }else{
+                ctxt.putImageData(i.fill,i.x/zoomn-x,i.y/zoomn-y)
             }
+        }else{
+            if(typeof(i.x)=="object"){
+                ctxt.putImageData(i.fill,Math.trunc(i.minx/zoomn-x),Math.trunc(i.miny/zoomn-y))
+            }else{
+                ctxt.putImageData(i.fill,Math.trunc(i.x/zoomn-x),Math.trunc(i.y/zoomn-y))
+            }
+        }
+    }
+}
+function canvasdrawbones(ctxt,x,y){
+    ctxt.strokeStyle = "gray";
+    ctxt.lineWidth=2
+    for(let me of myRect[loadmap]){
+        if(me.inversekinematics!=true)continue
+        for(let i in me.bones){
+            for(let i1=0;(typeof(me.bones[i]["segment"+i1])!="undefined");i1++){
+                let seg=me.bones[i]["segment"+i1]
+                let textur1=seg.fillconfig
+                let originx=seg.origin.x
+                let originy=seg.origin.y
+                let finishx=seg.finish.x
+                let finishy=seg.finish.y
+                if(typeof(textur1)=="object"&&textur1.constructor.name.match("OffscreenCanvas|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement")){
+                    let dist=Math.sqrt(Math.pow(Math.abs(originx/zoomn-finishx/zoomn),2)+Math.pow(Math.abs(originy/zoomn-finishy/zoomn),2))
+                    let rot=Math.atan2(originy-finishy,originx-finishx)-Math.PI/2-Math.PI
+                    ctxt.save();
+                    ctxt.translate(originx/zoomn-x,originy/zoomn-y);
+                    ctxt.rotate(rot);
+                    ctxt.drawImage(textur1,0,0,textur1.width,textur1.height,-(seg.width/zoomn)/2,0,(seg.width/zoomn),dist)
+                    ctxt.restore();
+                }else{
+                    if(typeof(textur1)=="string")ctxt.fillStyle=textur1
+                    ctxt.beginPath();
+                    ctxt.moveTo(originx/zoomn-x,originy/zoomn-y);
+                    ctxt.lineTo(finishx/zoomn-x,finishy/zoomn-y);
+                    ctxt.stroke()
+                }
+            } 
         }
     }
 }
@@ -999,25 +1197,18 @@ async function repaintb0(x=0,y=0,time=0){
         if(!ctxarr.includes("ctxbshadow"))ctxarr.push("ctxbshadow")
         canvasbshadow.width=document.documentElement.clientWidth;
         canvasbshadow.height=document.documentElement.clientHeight;
-        if(typeof(ctxbshadow["imageSmoothingEnabled"])!="undefined"){
-            ctxbshadow.imageSmoothingEnabled=imageSmoothingEnabled!=="none"
-            if(imageSmoothingEnabled!="none")ctxbshadow.imageSmoothingQuality=imageSmoothingEnabled
-        }else if(typeof(ctxbshadow["webkitImageSmoothingEnabled"])!="undefined"){
-            ctxbshadow.webkitImageSmoothingEnabled=imageSmoothingEnabled!=="none"
-        }else if(typeof(ctxbshadow["mozImageSmoothingEnabled"])!="undefined"){
-            ctxbshadow.mozImageSmoothingEnabled=imageSmoothingEnabled!=="none"
-        }
+        imagesmoothingset(ctxbshadow)
         canvasbshadow.id="canvasbshadow"
-        if(shadowblurtype==1)canvasbshadow.style.filer="blur("+shadowblur+"px)"
-        if(shadowblurtype==2)canvasbshadow.filer="blur("+shadowblur+"px)"
+        if(shadowblurtype==1)canvasbshadow.style.filter="blur("+shadowblur+"px)"
+        if(shadowblurtype==2)canvasbshadow.filter="blur("+shadowblur+"px)"
         document.body.appendChild(canvasbshadow)
     }
     if(!shadows&&typeof(canvasbshadow)!="undefined"&&canvasbshadow.constructor.name=="HTMLCanvasElement"){
         canvasbshadow.remove()
         canvarr=canvarr.filter(i=>i!="canvasbshadow")
         ctxarr=canvarr.filter(i=>i!="ctxbshadow")
-        canvasbshadow=""
-        ctxbshadow=""
+        canvasbshadow=null
+        ctxbshadow=null
     }
     if(renderbackground===true){
         repaintbtime=performance.now()
@@ -1072,17 +1263,17 @@ async function repaintb0(x=0,y=0,time=0){
                 }
             }
         }else if(typeof(i.fill)=="object"){
-            if(i.fill.constructor.name.match("OffscreenCanvas|HTMLImageElement|HTMLCanvasElement")){
+            if(i.fill.constructor.name.match("OffscreenCanvas|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement")){
                 if(suppixel){
-                    ctxb.drawImage(i.fill,0,0,i.fill.width,i.fill.height,(typeof(i.x)=="object"?Math.min(...i.x):i.x)/zoomn-x,(typeof(i.y)=="object"?Math.min(...i.y):i.y)/zoomn-y,i.w/zoomn,i.h/zoomn)
+                    ctxb.drawImage(i.fill,0,0,i.fill.width,i.fill.height,i.minx/zoomn-x,i.miny/zoomn-y,i.w/zoomn,i.h/zoomn)
                 }else{
-                    ctxb.drawImage(i.fill,0,0,i.fill.width,i.fill.height,Math.trunc(typeof(i.x)=="object"?Math.min(...i.x):i.x)/zoomn-x,Math.trunc(typeof(i.y)=="object"?Math.min(...i.y):i.y)/zoomn-y,i.w/zoomn,i.h/zoomn)
+                    ctxb.drawImage(i.fill,0,0,i.fill.width,i.fill.height,Math.trunc(i.minx)/zoomn-x,Math.trunc(i.miny)/zoomn-y,i.w/zoomn,i.h/zoomn)
                 }
             }else if(i.fill.constructor.name=="ImageData"){
                 if(suppixel){
-                    ctxb.putImageData(i.fill,(typeof(i.x)=="object"?Math.min(...i.x):i.x)/zoomn-x,(typeof(i.y)=="object"?Math.min(...i.y):i.y)/zoomn-y)
+                    ctxb.putImageData(i.fill,i.minx/zoomn-x,i.miny/zoomn-y)
                 }else{
-                    ctxb.putImageData(i.fill,Math.trunc(typeof(i.x)=="object"?Math.min(...i.x):i.x)/zoomn-x,Math.trunc(typeof(i.y)=="object"?Math.min(...i.y):i.y)/zoomn-y)
+                    ctxb.putImageData(i.fill,Math.trunc(i.minx)/zoomn-x,Math.trunc(i.miny)/zoomn-y)
                 }
             }
         }
@@ -1093,7 +1284,7 @@ async function repaintb0(x=0,y=0,time=0){
         let firsty=typeof(i.y)=="object"?i.y[0]/zoomn:i.y/zoomn
         for (let sun of i.shadow) {
             if(sun==undefined||typeof(sun[Symbol.iterator])!=="function")continue   //fail save wen game fertig ist
-            if(sun.constructor.name.match("OffscreenCanvas|HTMLCanvasElement")){
+            if(sun.constructor.name.match("OffscreenCanvas|HTMLCanvasElement|HTMLVideoElement")){
                 ctxbshadow.drawImage(sun,0,0,sun.width,sun.height,Math.trunc(firstx+sun.minxs-x),Math.trunc(firsty+sun.minys-y),sun.width/zoomn,sun.height/zoomn)
             }else{
                 for (let i1 of sun) {
@@ -1140,7 +1331,7 @@ function collisionmap(wait=false,ignore=false){
     cancolmap=false
     colobjarr=[]
     let test=[]
-    for(let i of [...myRect[loadmap],...mySun[loadmap]])if(ignore||(i.havcoll==true&&!(typeof(i.playerphysik)!=undefined&&i.playerphysik==true))){colobjarr.push(i);test.push({x:i.x,y:i.y,w:i.w,h:i.h})}
+    for(let i of [...myRect[loadmap],...mySun[loadmap]])if(ignore||i.havcoll==true){colobjarr.push(i);test.push({x:i.x,y:i.y,w:i.w,h:i.h,invisible:i.invisible})}
     if(!window.Worker||collmapnowebworker){
         if(document.querySelectorAll("#worker2backup").length==0){
             console.log("backup")
@@ -1166,7 +1357,7 @@ function collisionmap(wait=false,ignore=false){
     }else{
         if(wait){
             return new Promise((resolve, reject) => {
-                workercol.postMessage([minx,miny,maxx,maxy,test])
+                workercol.postMessage([minx,miny,maxx,maxy,test,gpuacceleratedgame])
                 workercol.onmessage=(e)=>{
                     colmap=new Uint32Array(e.data[0]);
                     objcolmap=new Uint8Array(e.data[1]);
@@ -1177,7 +1368,7 @@ function collisionmap(wait=false,ignore=false){
                 workercol.onerror=reject
             })
         }else{
-            workercol.postMessage([minx,miny,maxx,maxy,test])
+            workercol.postMessage([minx,miny,maxx,maxy,test,gpuacceleratedgame])
             workercol.onmessage=(e)=>{
                 colmap=new Uint32Array(e.data[0]);
                 objcolmap=new Uint8Array(e.data[1]);
@@ -1187,8 +1378,7 @@ function collisionmap(wait=false,ignore=false){
         }
     }
 }
-
-function menu() {
+function menu(){
     let but=[]
     but.push(document.createElement("BUTTON"))
     but[but.length-1].textContent=tooltips.hasOwnProperty("keymap")&&tooltips.keymap.hasOwnProperty("save")?tooltips.keymap.save:"save"
@@ -1296,6 +1486,7 @@ function loadandsave() {//gib an wie datei heisen sol    bei load werden dan all
         but.push(document.createElement("BUTTON"))
         but[but.length-1].style.gridColumn="1/span 3";
         but[but.length-1].textContent=mapinfo[i].mapname
+        if(loadmap==i)but[but.length-1].style.background="lightgray"
         but[but.length-1].onclick=()=>{
             loadmap=i;
             if(renderer==3)updatescene=true
@@ -1338,11 +1529,22 @@ function loadandsave() {//gib an wie datei heisen sol    bei load werden dan all
             document.querySelectorAll('.preset').forEach((me)=>me.remove());
             loadandsave()
         }
+        if(multiplayerstartet){
+            but.push(document.createElement("BUTTON"))
+            but[but.length-1].style.gridColumn="6/6";
+            but[but.length-1].textContent=tooltips.hasOwnProperty("loadandsave")&&tooltips.loadandsave.hasOwnProperty("upload")?tooltips.loadandsave.duplicate:"upload"
+            but[but.length-1].onclick=()=>{
+                mapinfo[mapinfo.length]=mapinfo[i]
+                postMessage({act:"sendmap",obj:savearr(2)})
+                document.querySelectorAll('.preset').forEach((me)=>me.remove());
+                loadandsave()
+            }
+        }
     }
 
     if(promall[4].res){
         but.push(document.createElement("BUTTON"))
-        but[but.length-1].style.gridColumn="1/span 5";
+        but[but.length-1].style.gridColumn=multiplayerstartet?"1/span 6":"1/span 5";
         but[but.length-1].textContent=tooltips.hasOwnProperty("loadandsave")&&tooltips.loadandsave.hasOwnProperty("save")?tooltips.loadandsave.save:"save"
         but[but.length-1].onclick=()=>savearr(0)
 
@@ -1365,19 +1567,19 @@ function loadandsave() {//gib an wie datei heisen sol    bei load werden dan all
         but[but.length-1].multiple="multiple"
 
         but.push(document.createElement("BUTTON"))
-        but[but.length-1].style.gridColumn="1/span 5";
+        but[but.length-1].style.gridColumn=multiplayerstartet?"1/span 6":"1/span 5";
         but[but.length-1].textContent=tooltips.hasOwnProperty("loadandsave")&&tooltips.loadandsave.hasOwnProperty("save_localstorage")?tooltips.loadandsave.save_localstorage:"save_localstorage"
         but[but.length-1].onclick=()=>savearr(1)
 
         but.push(document.createElement("BUTTON"))
-        but[but.length-1].style.gridColumn="1/span 5";
+        but[but.length-1].style.gridColumn=multiplayerstartet?"1/span 6":"1/span 5";
         but[but.length-1].onclick=(m)=>{loadstorage(window.prompt("",""));document.querySelectorAll('.preset').forEach((me)=>me.remove());loadandsave()}
         but[but.length-1].name="client-localstorage"
         but[but.length-1].textContent=tooltips.hasOwnProperty("loadandsave")&&tooltips.loadandsave.hasOwnProperty("load_localstorage")?tooltips.loadandsave.load_localstorage:"load_localstorage"
     }
 
     but.push(document.createElement("BUTTON"))
-    but[but.length-1].style.gridColumn="1/span 5";
+    but[but.length-1].style.gridColumn=multiplayerstartet?"1/span 6":"1/span 5";
     but[but.length-1].textContent=tooltips.hasOwnProperty("start")?tooltips.start:"start"
     but[but.length-1].onclick=(event)=>{document.querySelectorAll('.preset').forEach((me)=>me.remove());event.target.remove();mvis()}
     for (let i of but)i.className="preset"
@@ -1425,7 +1627,8 @@ function setting(){
                 i1.style.width="100%"
                 i1.textContent=tooltips.hasOwnProperty("settingsname")&&tooltips.settingsname.hasOwnProperty(a)?tooltips.settingsname[a]:a
                 i1.style.gridColumn="1/span 2";
-                i1.onclick=event=>{window[a]}
+                i1.onclick=event=>{window[a]()}
+                i1.onblur=event=>{if(Array.isArray(checksettings[a])&&checksettings[a].length==4)checksettings[a][3]()}
                 i1.title=tooltips.hasOwnProperty("settings")&&tooltips.settings.hasOwnProperty(a)?tooltips.settings[a]:""
                 if(renderer!=0)i1.style.backgroundColor="white"
                 return [i1]
@@ -1438,6 +1641,7 @@ function setting(){
                 i2.value=type=="object"?JSON.stringify(window[a]):window[a]
                 i2.onclick=event=>menuallowedtomove=false
                 i2.onblur=event=>{
+                    if(Array.isArray(checksettings[a])&&checksettings[a].length==4)checksettings[a][3]()
                     menuallowedtomove=true
                     i2.style.color=""
                     i2.value=type=="object"?JSON.stringify(window[a]):window[a]
@@ -1473,6 +1677,7 @@ function setting(){
                 i2.value=window[a]
                 i2.textContent=tooltips.hasOwnProperty(window[a])?tooltips[window[a]]:window[a]
                 i2.onclick=event=>{
+                    if(Array.isArray(checksettings[a])&&checksettings[a].length==4)checksettings[a][3]()
                     let a1=event.target.value=="true"?false:true
                     i2.value=a1
                     window[a]=a1
@@ -1491,8 +1696,22 @@ function setting(){
         }
     }
     obj.push(...settings)
-    if(cheats)obj.push(...cheatsettings)
-    if(noob)obj.push(...noobsettings)
+    if(cheats)obj.push([...cheatsettings])
+    if(noob){
+        let finish=false
+        let search=function(i){
+            if(finish)return
+            for(let i1 of i){
+                if(Array.isArray(i1)){
+                    search(i1)
+                }else if(i1=="noob"){
+                    i.push(...noobsettings)
+                    finish=true
+                }
+            }
+        }
+        search(obj)//hoffe das das so geht wen net breuchte ich array das sich pfad merkt
+    }
     but.push(...settingsarray(obj,0))
     but.push(document.createElement("BUTTON"))
     but[but.length-1].style.gridColumn="1/span 2";
@@ -1515,11 +1734,26 @@ function checksetting(settingname,obj){
     let numberregcheck
     let regexcheck=false
     let convregexcheck=""
-    if(Array.isArray(checksettings[settingname])&&checksettings[settingname].length==3){
+    if(Array.isArray(checksettings[settingname])&&checksettings[settingname].length>=3){
         if(checksettings[settingname][2] instanceof RegExp){
             convregexcheck=JSON.stringify(obj)
             numberregcheck=convregexcheck.match(checksettings[settingname][2])
             regexcheck=true
+        }else{
+            console.error(new SyntaxError(
+                "setting invalide(3param is not regex or string):"+
+                "\nsetting:"+settingname+
+                "\n"+new Error().stack))
+            return false
+        }
+    }
+    if(Array.isArray(checksettings[settingname])&&checksettings[settingname].length==4){
+        if(!(checksettings[settingname][3] instanceof Function)){//mach function check ob save ist
+            console.error(new SyntaxError(
+                "setting invalide(4param is not function):"+
+                "\nsetting:"+settingname+
+                "\n"+new Error().stack))
+            return false
         }
     }
     let type=conv.match(match)
@@ -1572,6 +1806,7 @@ function mswitch() {
     if(typeof(canvas)=="object")canvas.style.zIndex="-1"
 }
 function mvis() {
+    if(enableaudio)for(let me of myRect[loadmap])if(me.audio==true&&me.createtaudio==true)me.audiorem(me)
     while(menunode.length)document.body.appendChild(menunode.shift())
     if(typeof(canvas)=="object")canvas.style.zIndex="-1"
     menuupdatekeys=true
@@ -1638,7 +1873,6 @@ function debugcol() {
             dctx.putImageData(new ImageData(new Uint8ClampedArray(buf),maxx-minx),0,0)
         }
     }
-    if(renderer==3&&!(inversekinematics&&promall[3].res)&&debug)dctx.clearRect(0, 0, canvas.width, canvas.height)
     if(debug){
         let lines=debugtext.split('\n');
         dctx.font="20px Arial";
@@ -1655,13 +1889,13 @@ function debugcol() {
         debtextavg=debtextavg*debtextavgabfac+maxlengthdebtext*(1-debtextavgabfac)
         if(maxlengthdebtext>debtextlength)debtextlength=maxlengthdebtext
         if(maxlengthdebtext<debtextlength)debtextlength-=1/Math.pow(2,debtextvariation)   // oder 1/debtextvariation 
-        let hight=canvas.height
+        let height=canvas.height
         let othersite=false
         for (let i=0,i1=0;i<lines.length;i++,i1++){
             let secend=lines[i].substring(lines[i].indexOf(" "))
             dctx.fillText(lines[i].substring(0,lines[i].indexOf(" ")),othersite?canvas.width-debtextlength:0,10+i1*maxl)
             dctx.fillText(secend,(othersite?canvas.width:debtextlength)-dctx.measureText(secend).width,10+i1*maxl)
-            if(!othersite&&(hight-=maxl)<maxl){othersite=true;i1=0}
+            if(!othersite&&(height-=maxl)<maxl){othersite=true;i1=0}
         }
         debugtext=""
     }

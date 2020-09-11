@@ -21,6 +21,8 @@ const createobj={
         y:[/^\[(number,)*number\]$|^number$/,"object"],
         w:"number",
         h:"number",
+        minx:"number",
+        miny:"number",
         static:"boolean",
         shadow:[/^\[(,?\[(object,)*(object)?\])+\]|\[undefined\]|\[\]$/,"object"],
         shadowadd:"object",
@@ -92,7 +94,8 @@ const createobj={
         texturrichtung:[/\[(number,)*number\]/,"object"],
         überlagerung:"number",
         savemin:"number",
-        fillpic:"string",
+        fillpic:[/(\[(string,)*string\])|string/,"object|string"],
+        fillvideo:[/(\[(string,)*string\])|string/,"object|string"],
         blur:"number",
         blurcolor:"string",
         stats:[/\[(\[((\[(object,)*object\],)*(\[(object,)*object\]))\],)*(\[((\[(object,)*object\],)*(\[(object,)*object\]))\])\]/,"object"],
@@ -132,15 +135,39 @@ const createobj={
         texture:"object",
         webglfill:[/\[(number,){3}number\]/,"object"],//hir noch werte eingrenzen
         grassrandomfactor:"number",
+        audio:"boolean",
+        createtaudio:"boolean",
+        audiogen:"function",
+        audiorem:"function",
+        audioobj:"object",
+        webglcantdraw:"boolean",
+        webglcantdrawfillbackup:"boolean",
+        managefromplayer:"boolean",
+        managefromplayernum:"string",
+        managefromplayerobjnum:"number",
+        sync:"boolean",
+        groundflat:"boolean",
+        invisible:"boolean",
+        kimultiplayertimer:"number",
+        kimultiplayertimerreset:"number",
+        Multiplayer:{
+            onlineplayernum:"number",
+            onlineplayer:"string",
+        },
         Questionblock:{
             option:[/(\[(\[string(,object)?(,\[\[object\]\]|(,\[number,\[\[object\]\]\])|(,\[number,number,\[\[object\]\]\]))?\])?,?(\[string(,object)?(,\[\[object\]\]|(,\[number,\[\[object\]\]\])|(,\[number,number,\[\[object\]\]\]))?\])?\])/,"object"]
         },
         Specialblock:{
-            option:[/(\[(number,)*number\])|number/,"object"]
+            option:[/(\[(number,)*number\])|number/,"object"],
+            timeout:"object",
+            timeout1:"object",
+            playeronobj:"number"
         },
         Grassani:{
             grass:[/\[((object,)*object)?\]/,"object"],
-            grassspawn:"function"
+            firsts:[/\[((number,)*number)?\]/,"object"],
+            grassspawn:"function",
+            ignoresun:"boolean"
         },
         Player:{
             environment:"boolean",
@@ -179,7 +206,8 @@ const createobj={
             "damage",
             "disto",
             "distd",
-            "grassspawn"
+            "grassspawn",
+            "groundflat"
         ]
     },
     savedell:[
@@ -200,7 +228,8 @@ const createobj={
         "disto",
         "texture",
         "webglfill",
-        "grassspawn"
+        "grassspawn",
+        "groundflat"
     ],
     tooltip:{
         en:{
@@ -210,6 +239,35 @@ const createobj={
             x:"cordinaten <> von Spieler" 
         }
     },
+    multiplayerallowedprop:[
+        "x",
+        "y",
+        "w",
+        "h",
+        "statsnum",
+        "velo",
+        "inwater",
+        "falldist",
+        "dir",
+        "groundflat",
+        "rich4arr"
+    ],
+    multiplayerallowedobjprop:[
+        "x",
+        "y",
+        "w",
+        "h",
+        "dir",
+        "nodraw",
+        "havcoll",
+        "invisible"
+    ],
+    multiplayerallowedspawn:[
+        "Powerup"
+    ],
+    multiplayerallowedremove:[
+        "Powerup"
+    ],
     /**@private */
     check:function(arr,defaultarr){
         if(typeof(createobj[this.constructor.name].type)=="undefined"){
@@ -264,6 +322,7 @@ const createobj={
     },
     /**@private */
     pos:function(opt){
+        if(!Array.isArray(opt))opt=[opt]
         let numt=opt.findIndex(i=>i.constructor.name=="Object")
         if(numt!=-1){
             let temp=opt[numt]
@@ -274,6 +333,25 @@ const createobj={
         Object.assign(this,{x:opt[0],y:opt[1],w:opt[2],h:opt[3]},opt[4])
         if(typeof(this.x)=="object")this.w=Math.max(0,Math.max(...this.x)-Math.min(...this.x));
         if(typeof(this.y)=="object")this.h=Math.max(0,Math.max(...this.y)-Math.min(...this.y));
+
+        //get the min x and y pos
+        //use getter that i allways have the actuel lowest number
+        if(typeof(this.x)=="object"){
+            let minx=Infinity
+            let minxnum=0
+            for(let i in this.x)if(minx>this.x[i]){minx=this.x[i];minxnum=i}
+            Object.defineProperty(this, 'minx', {get:()=>{return this.x[minxnum]}});
+        }else{
+            Object.defineProperty(this, 'minx', {get:()=>{return this.x}});
+        }
+        if(typeof(this.y)=="object"){
+            let miny=Infinity
+            let minynum=0
+            for(let i in this.y)if(miny>this.y[i]){miny=this.y[i];minynum=i}
+            Object.defineProperty(this, 'miny', {get:()=>{return this.y[minynum]}});
+        }else{
+            Object.defineProperty(this, 'miny', {get:()=>{return this.y}});
+        }
     },
     /**@private */
     bones:function(){
@@ -335,6 +413,7 @@ const createobj={
         this.fillbackup = "rgba(0,0,0,0)";
         this.fill = "Grassstraw";
         this.md = 1;
+        this.ignoresun = false;
         this.nodraw = true;
         this.havcoll = false;
         this.dest = false;
@@ -343,6 +422,27 @@ const createobj={
         this.haftreibung = 0.3;
         this.grassrandomfactor = 0.8;//0.8
         this.texturrichtung = [0,1];
+        this.audio=true
+        this.audioobj={}
+        this.audiogen=function(me){
+            let gain=audioctx.createGain()
+            let panner=audioctx.createPanner()
+            if(soundHRTF)panner.panningModel = 'HRTF';
+            gain.connect(panner);
+            me.audioobj.panner=panner
+            me.audioobj.gain=gain
+            me.createtaudio=true
+        }
+        this.audiorem=function(me){
+            try{
+                me.audioobj.osc.stop();
+                me.audioobj.osc.disconnect(me.audioobj.gain);
+                me.audioobj.panner.disconnect(sound.grass);
+            }catch(e){}
+            me.audioobj.gain.disconnect(me.audioobj.panner)
+            me.audioobj={}
+            me.createtaudio=false
+        }
         this.grassspawn=function(...opt){
             let gen={}
             gen.x=0
@@ -350,15 +450,17 @@ const createobj={
             gen.w=1
             gen.h=10
             gen.rotation=0
-            gen.randomwind=Math.random()*2-1
-            gen.windsmove=0.93+(Math.random()*0.1-0.05)
-            gen.range=0.8+(Math.random()*0.1-0.05)
+            gen.randomwind=[Math.random()*2-1,Math.random()*2-1]
             gen.velo=[0,0]
+            gen.randomwindtimer=[0,0,Math.random(),0]
+            gen.strengthgwind=0.9+(Math.random()*0.1)
+            gen.strengthiwind=0.3+(Math.random()*0.1)
+            gen.strengthvelo=0.9+(Math.random()*0.1)
             gen.spitze=Math.random()>=0.5
             gen.color=[0+Math.random()*0.2,1-Math.random()*0.2,0+Math.random()*0.2,1]
 
             const keys=Object.keys(gen)
-            if(Array.isArray(opt)){
+            if(Array.isArray(opt)){//das hir alles fixen und jshint
                 let test=true
                 for(let i=0;i<opt.length;i++){
                     let test1=false
@@ -378,7 +480,7 @@ const createobj={
                 if(test){
                     for(let i=0;i<opt.length;i++){
                         if(typeof(opt[i])=="object"&&!Array.isArray(opt[i])){
-                            for(i1 of keys)if(opt[i].includes(i1))gen[i1]=opt[i][i1]
+                            for(let i1 of keys)if(opt[i].includes(i1))gen[i1]=opt[i][i1]
                         }else{
                             gen[keys[i]]=opt[i]
                         }
@@ -389,22 +491,40 @@ const createobj={
                 console.warn("syntax error grass")
             }
         }
-        this.grass = [];
+        this.grass=[];
+        this.firsts=[];
         this.damage={
             t:this,
-            collide:function(me){
-                if(renderer==3&&!webgl2&&webglgrassani){
-                    const mingx=typeof(this.t.x)=="object"?Math.min(...this.t.x):this.t.x
-                    const mingy=typeof(this.t.y)=="object"?Math.min(...this.t.y):this.t.y
-                    for(let i of this.t.grass){
-                        let i1=(me.x+me.w/2-(mingx+i.x))*(me.x+me.w/2-(mingx+i.x))+(me.y+me.h/2-(mingy+i.y))*(me.y+me.h/2-(mingy+i.y))
-                        if (i1<100){
-                            i.velo[0]=-me.velo[0]*((400-i1)/25)
-                            i.velo[1]=-me.velo[1]*((400-i1)/25)
-                        }
-                    }
+            audiocollideendstatus:0,
+            audiocollidestart:function(){
+                let osc=audioctx.createOscillator();
+                osc.frequency.value = 500;
+                osc.start()
+                osc.connect(this.t.audioobj.gain)
+                this.t.audioobj.osc=osc
+                this.t.audioobj.panner.connect(sound.grass);
+            },
+            audiocollide:function(me){
+                const velo=Math.abs(me.velo[0])+Math.abs(me.velo[1])
+                if(this.t.audioobj.gain.v==velo)return
+                this.t.audioobj.gain.gain.setValueAtTime(Math.max(0,Math.min(1,velo)), audioctx.currentTime)
+                this.t.audioobj.gain.v=velo
+                if(velo<0.1)return
+                const mingx=this.t.minx
+                const mingy=this.t.miny
+                if(this.t.audioobj.panner.positionX){
+                    this.t.audioobj.panner.positionX.setValueAtTime(Math.max(this.t.minx,Math.min(me.minx+me.w/2,this.t.minx+this.t.w)), audioctx.currentTime);
+                    this.t.audioobj.panner.positionY.setValueAtTime(Math.max(this.t.miny,Math.min(me.miny+me.h/2,this.t.miny+this.t.w)), audioctx.currentTime);
+                }else{
+                    this.t.audioobj.panner.setPosition(Math.max(this.t.minx,Math.min(me.minx+me.w/2,this.t.minx+this.t.w)),Math.max(this.t.miny,Math.min(me.miny+me.h/2,this.t.miny+this.t.w)),0);
                 }
             },
+            audiocollideend:function(){
+                    this.t.audioobj.osc.stop();
+                    this.t.audioobj.osc.disconnect(this.t.audioobj.gain);
+                    this.t.audioobj.panner.disconnect(sound.grass);
+                    delete this.t.audioobj.osc
+            }
         };
         createobj.pos.call(this,opt)
         this.fillstr=this.fill;
@@ -525,16 +645,23 @@ const createobj={
         this.md = 0;
         this.dir = 0;
         this.type = 0;
-        this.static = true;
+        this.managefromplayer = true;
+        this.static = false;
         this.damage={
             t:this,
             jump:function(me){
-                if (me.getstats.powerup.includes(this.t.md)){me.statsnum=this.t.md}
+                if (me.getstats.powerup.includes(this.t.md)){
+                    me.statsnum=this.t.md
+                    if(multiplayerstartet&&multiplayer&&!listenforplayer)postMessage({act:"player stats update",data:{statsnum:me.statsnum},playersendid:me.playersendid,id:multiplayerid})
+                }
                 myRect[loadmap].splice(myRect[loadmap].indexOf(this.t),1)
                 if(renderer==3)updatescene=true
             },
             collide:function(me){
-                if (me.getstats.powerup.includes(this.t.md)){me.statsnum=this.t.md}
+                if (me.getstats.powerup.includes(this.t.md)){
+                    me.statsnum=this.t.md
+                    if(multiplayerstartet&&multiplayer&&!listenforplayer)postMessage({act:"player stats update",data:{statsnum:me.statsnum},playersendid:me.playersendid,id:multiplayerid})
+                }
                 myRect[loadmap].splice(myRect[loadmap].indexOf(this.t),1)
                 if(renderer==3)updatescene=true
             },
@@ -557,6 +684,7 @@ const createobj={
         this.md = 0;
         this.kitype = 0;
         this.dir = 0;
+        this.managefromplayer = true;
         this.static = false;
         this.damage={
             t:this,
@@ -580,6 +708,7 @@ const createobj={
                     console.log("dmg")
                     me.statsnum=me.getstats.minus
                     me.nokill=1
+                    if(multiplayerstartet&&multiplayer&&!listenforplayer)postMessage({act:"player stats update",data:{statsnum:me.statsnum},playersendid:me.playersendid,id:multiplayerid})
                 }else if (me.dmg>0){
                     console.log("kill")
                     me.x=me.sx
@@ -587,6 +716,7 @@ const createobj={
                     me.dmg--
                     me.nokill=1
                     if(renderer==0)renderbackground=true
+                    if(multiplayerstartet&&multiplayer&&!listenforplayer)postMessage({act:"player stats update",data:{x:me.x,y:me.y},playersendid:me.playersendid,id:multiplayerid})
                 }else{
                     console.log("kill no live")
                     me.x=me.sx=me.dx
@@ -594,6 +724,7 @@ const createobj={
                     me.dmg=5
                     me.nokill=1
                     if(renderer==0)renderbackground=true
+                    if(multiplayerstartet&&multiplayer&&!listenforplayer)postMessage({act:"player stats update",data:{x:me.x,y:me.y},playersendid:me.playersendid,id:multiplayerid})
                 }
                 if(renderer==3)updatescene=true
             }
@@ -616,6 +747,7 @@ const createobj={
         this.md = 0;
         this.kitype = 0;
         this.dir = 0;
+        this.managefromplayer = true;
         this.static = false;
         createobj.pos.call(this,opt)
         this.fillstr=this.fill;
@@ -634,7 +766,14 @@ const createobj={
         this.option = 0;
         this.reibung = 0.06;
         this.haftreibung = 0.02;
+        this.managefromplayer = true;//achtung wegen moving und breaking
+        this.kimultiplayertimer = 0;
+        this.kimultiplayertimerreset = 5;
         this.static = false;
+        this.timeout = null;
+        this.timeout1 = null;
+        this.invisible = false;
+        this.sync = true;
         createobj.pos.call(this,opt)
         this.fillstr=this.fill;
         createobj.check.call(this,arr,defaultarr)
@@ -663,9 +802,520 @@ const createobj={
         createobj.check.call(this,arr,defaultarr)
     },
 /**@type {createobjfunc}*/
+    Multiplayer:function(arr,...opt) {
+        let defaultarr=myRect;
+        this.x = 0;
+        this.y = 0;
+        this.w = 0;
+        this.h = 0;
+        this.velo = [0,0];
+        this.inwater = false;
+        this.falldist = 0;
+        this.dir = 1;
+        this.statsnum = 0;
+        this.havcoll = false;
+        this.fill = "orange";
+        this.dest = false;
+        this.static = false;
+        this.reibung = 0.1;
+        this.haftreibung = 0.3;
+        this.groundflat = true;
+        this.rich4arr = [0,1,2,3];
+        createobj.pos.call(this,opt)
+        this.inversekinematics = true;
+        skelett.Luigi.call(this)
+        //skelett.Mario.call(this)
+        createobj.bones.call(this)
+        this.fillstr=this.fill;
+        createobj.check.call(this,arr,defaultarr)
+    },
+/**@type {createobjfunc}*/
     Player:function(arr,...opt) {
         let defaultarr=myRect;
+        this.controls = {w:87,a:65,s:83,d:68,r:82};
+        this.x = 0;
+        this.y = 0;
+        this.w = 0;
+        this.h = 0;
+        this.havcoll = false;
+        this.fill = "blue";
+        this.rotate = 0;
+        this.fishtoattack = true;
+
+        //wen bild geladen fügs in animation rein
+        //fillconfig schreibt dan was wan ausgefürt wird
+        //dadurch picturesort usw entfernen
+        //vorteil modularer
+        //bild trigger
+        this.animation={
+            //frames (auch komma werte), bildurl img
+            //trigger sol return [bool,importance,this]
+            fillpicwl:{
+                pic:new Map([
+                    [0,["img/wl(0).png"]],
+                    [1,["img/wl(1).png"]],
+                ]),
+                get trigger(){
+                    return [this.t.velo[0]<-1,0,this]
+                },
+                mode:"loopback",
+                aniframe:0
+            },
+            fillpicwr:{
+                pic:new Map([
+                    [0,["img/wr(0).png"]],
+                    [1,["img/wr(1).png"]]
+                ]),
+                get trigger(){
+                    return [this.t.velo[0]>1,0,this]
+                },
+                aniframe:0
+            },
+        }
+        createobj.animation.call(this)
+        this.environment = true;
+        this.playerphysik = true;
+        this.fillbackup = "blue";
+        this.dmg = 5;
+        this.statsnum = 0;
+        this.nokill = 0;
+        this.graviins = [0,0];
+        this.static = false;
+        this.dir = 1;
+        this.masse = 300;
+        this.velo = [0,0];
+        this.falldist = 0;
+        this.inwater = false;
+        this.umgebung = [[,0],[,0],[,0],[,0]];
+        this.stats = stats;
+        createobj.pos.call(this,opt)
+        this.sx = this.x;
+        this.sy = this.y;
+        this.dx = this.x;
+        this.dy = this.y;
+        this.fillstr=this.fill;
+        this.shift=false;
+        Object.defineProperties(this,{getstats:{get:function(){return this.stats[this.inwater|0][this.shift|0][this.statsnum|0]}}})
         this.inversekinematics = true;
+        skelett.Mario.call(this)
+        createobj.bones.call(this)
+        createobj.check.call(this,arr,defaultarr)
+    },
+/**@type {createobjfunc}*/
+    Sun:function(arr,...opt) {
+        let defaultarr=mySun;
+        this.x = 0;
+        this.y = 0;
+        this.w = 0;
+        this.h = 0;
+        this.havcoll = false;
+        this.fill = "yellow";
+        this.static = true;
+        this.blur=5;
+        this.blurcolor="yellow";
+        createobj.pos.call(this,opt)
+        this.fillstr=this.fill;
+        createobj.check.call(this,arr,defaultarr)
+    },
+/**@type {createobjfunc}*/
+    Questionblock:function(arr,...opt) {
+        let defaultarr=myRect;
+        this.x = 0;
+        this.y = 0;
+        this.w = 0;
+        this.h = 0;
+        this.havcoll = true;
+        this.fill = "Question";
+        this.fillbackup = "orange";
+        this.option = [["Powerup",{dmg:0,md:1,type:"ki",kitype:0,dir:1}],["Shape",{fill:"black"}]];
+        //summonobj(type) summonobj(optionen) summonobj(arr) replaceobj(type) replaceobj(optionen)  replaceobj(arr)
+        this.static = true;
+        this.dir = 0;
+        this.reibung = 0.06;
+        this.haftreibung = 0.02;
+        this.questiontexturdistanz = 2;
+        this.questiontexturtextcolor = "white";
+        this.questiontexturtextstroke = "orange";
+        this.ro = 0;
+        this.questiontexturcolor = "yellow";
+        this.questiontexturpointcolor = "gray";
+        this.questiontexturtext = "?";
+        createobj.pos.call(this,opt)
+        this.fillstr=this.fill;
+        createobj.check.call(this,arr,defaultarr)
+    },
+/**@type {createobjfunc}*/
+    Feuer:function(arr,...opt) {
+        let defaultarr=myFire;
+        this.x = 0;
+        this.y = 0;
+        this.w = 10;
+        this.h = 10;
+        this.owner = myRect[0];
+        this.winkel = 0;
+        this.speed = 32;
+        this.static = false;
+        this.bounce = 0;
+        this.bouncemax = 10;
+        this.bouncelast = -1;
+        this.havcoll = false;
+        this.fill = "red";
+        createobj.pos.call(this,opt)
+        this.fillstr=this.fill;
+        setTimeout(()=>{myFire[loadmap].splice(myFire[loadmap].indexOf(this),1);if(renderer==3)updatescene=true},10000);
+        createobj.check.call(this,arr,defaultarr)
+    },
+/**@type {createobjfunc}*/
+    Finish:function(arr,...opt) {
+        let defaultarr=myRect;
+        this.x = 0;
+        this.y = 0;
+        this.w = 0;
+        this.h = 0;
+        this.type = "finish";
+        this.havcoll = true;
+        this.fill = "URL";
+        this.fillpic = "img/Haus.svg";
+        this.fillbackup = "orange";
+        this.static = true;
+        this.reibung = 0.05;
+        this.haftreibung = 0.02;
+        createobj.pos.call(this,opt)
+        this.fillstr=this.fill;
+        createobj.check.call(this,arr,defaultarr)
+    },
+/**@type {createobjfunc}*/
+    Gravi:function(arr,...opt) {
+        let defaultarr=myGravi;
+        this.x = 0;
+        this.y = 5000;
+        this.w = 3000;
+        this.h = 1;
+        this.stärke = 10;
+        this.abfac = 0.05;
+        createobj.pos.call(this,opt)
+        createobj.check.call(this,arr,defaultarr)
+    },
+/**@type {createobjfunc}*/
+    Dead:function(arr,...opt){
+        let defaultarr=myRect;
+        this.nodraw = true;
+        this.x = 0;
+        this.y = 0;
+        this.w = 0;
+        this.h = 0;
+        this.havcoll = false;
+        this.fill = "rgba(0,0,0,0)";
+        this.md = 1;
+        this.dest = false ;
+        this.static = true;
+        this.damage={
+            t:this,
+            jump:function(me){
+                if (me.dmg>0){
+                    console.log("kill")
+                    me.x=me.sx
+                    me.y=me.sy
+                    me.dmg--
+                    me.nokill=1
+                    if(renderer==3)updatescene=true
+                }else{
+                    console.log("kill no live")
+                    me.x=me.sx=me.dx
+                    me.y=me.sy=me.dy
+                    me.dmg=5
+                    me.nokill=1
+                    if(renderer==0)renderbackground=true
+                    if(renderer==3)updatescene=true
+                }
+            },
+            collide:function(me){
+                if (me.dmg>0){
+                    console.log("kill")
+                    me.x=me.sx
+                    me.y=me.sy
+                    me.dmg--
+                    me.nokill=1
+                    if(renderer==3)updatescene=true
+                }else{
+                    console.log("kill no live")
+                    me.x=me.sx=me.dx
+                    me.y=me.sy=me.dy
+                    me.dmg=5
+                    me.nokill=1
+                    if(renderer==0)renderbackground=true
+                    if(renderer==3)updatescene=true
+                }
+            }
+        };
+        createobj.pos.call(this,opt)
+        this.fillstr=this.fill;
+        createobj.check.call(this,arr,defaultarr)
+    }
+}
+Object.freeze(createobj)
+function checkprop(obj){
+    let fehlerteil
+    let typeofrec=b=>Array.isArray(b)?"["+b.map(a=>typeofrec(a))+"]":typeof(b)
+    let bool=Object.getOwnPropertyNames(obj).some(prop=>{
+        let match=Array.isArray(createobj[obj.construck].type[prop])?createobj[obj.construck].type[prop][0]:createobj[obj.construck].type[prop]
+        let conv=typeofrec(obj[prop])
+        let numberregcheck
+        let regexcheck=false
+        let convregexcheck=""
+        if(Array.isArray(createobj[obj.construck].type[prop])&&createobj[obj.construck].type[prop].length==3){
+            if(createobj[obj.construck].type[prop][2] instanceof RegExp){
+                convregexcheck=JSON.stringify(prop)
+                numberregcheck=convregexcheck.match(createobj[obj.construck].type[prop][2])
+                regexcheck=true
+            }
+        }
+        let type=conv.match(match)
+        if(type==null||type.index!==0||!createobj[obj.construck].type.hasOwnProperty(prop)||(regexcheck&&(numberregcheck==null||numberregcheck.index!==0))){
+            fehlerteil=regexcheck?[prop,obj[prop],typeof(match)=="object"?match.source:match,conv,type,createobj[obj.construck].type[prop][2],convregexcheck,numberregcheck]:[prop,obj[prop],typeof(match)=="object"?match.source:match,conv,type]
+            return true
+        }
+        return false
+    })
+    if(typeof(obj.fill)!=="undefined"&&!obj.fill.constructor.name.match("OffscreenCanvas|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement|ImageData")&&typeof(colorobj)!="undefined"&&!Object.getOwnPropertyNames(colorobj).includes(obj.fill)){
+        let e=document.createElement('div');
+        e.style.borderColor="";
+        e.style.borderColor=obj.fill;
+        if ((e.style.borderColor).length==0){bool=true;fehlerteil="fill"}
+    }
+    if(typeof(colorobj)!="undefined"&&typeof(obj.fillstr)!=="undefined"&&!Object.getOwnPropertyNames(colorobj).includes(obj.fillstr)){
+        let e=document.createElement('div');
+        e.style.borderColor="";
+        e.style.borderColor=obj.fillstr;
+        if ((e.style.borderColor).length==0){bool=true;fehlerteil="fillstr"}
+    }
+    if(bool){
+        console.log(obj)
+        if(typeof(fehlerteil)=="string"){
+            console.error(new SyntaxError(
+                "values are not corect:"+
+                "\nprop:"+fehlerteil+
+                "\n"+new Error().stack))
+        }else if(fehlerteil.length==5){
+            console.error(new SyntaxError(
+                "values are not corect:"+
+                "\nprop:"+fehlerteil[0]+
+                "\nzeile:"+fehlerteil[1]+
+                "\nmatchstr:"+fehlerteil[2]+
+                "\nconv:"+fehlerteil[3]+
+                "\ntype:"+fehlerteil[4]+
+                "\n"+new Error().stack))
+        }else if(fehlerteil.length==8){
+            console.error(new SyntaxError(
+                "values are not corect:"+
+                "\nprop:"+fehlerteil[0]+
+                "\nzeile:"+fehlerteil[1]+
+                "\nmatchstr:"+fehlerteil[2]+
+                "\nconv:"+fehlerteil[3]+
+                "\ntype:"+fehlerteil[4]+
+                "\nmatchstr:"+fehlerteil[5]+
+                "\nconv:"+fehlerteil[6]+
+                "\ntype:"+fehlerteil[7]+
+                "\n"+new Error().stack
+                ))
+        }
+    }else{return true}
+}
+const webglbuffer={
+    createbuffer:function(groupname,opt){
+        let group
+        if(webglbuffers.hasOwnProperty(groupname))group=webglbuffers[groupname]
+        if(group==undefined){console.warn("nogroup");return}
+        this.group=group
+        this.buffername="coordinates"
+        this.bufferlength=2
+        this.divisor=0
+        this.drawtype=group.gl.DYNAMIC_DRAW
+        this.buffertype=group.gl.ARRAY_BUFFER
+        this.numbertype=group.gl.FLOAT
+        this.normalized=false
+        this.stride=0
+        this.offset=0
+        webglbuffer.addpro.call(this,opt)
+        this.pointer=group.gl.getAttribLocation(group.shader, this.buffername)
+        this.buffer=group.gl.createBuffer()
+        group.gl.bindBuffer(group.gl.ARRAY_BUFFER,this.buffer);
+        group.gl.bufferData(this.buffertype,group.buffersize*bpe*this.bufferlength,this.drawtype)
+        group.gl.bindBuffer(group.gl.ARRAY_BUFFER,null)
+        group.buffer[this.buffername]=this
+    },
+    createfeedbackbuffer:function(groupname,opt){
+        let group
+        if(webglbuffers.hasOwnProperty(groupname))group=webglbuffers[groupname]
+        if(group==undefined){console.warn("nogroup");return}
+        let this0={}
+        let this1={}
+        this.group=group
+        this.buffername="coordinates"
+        this.bufferlength=2
+        this.divisor=0
+        this.drawtype=group.gl.DYNAMIC_DRAW
+        this.buffertype=group.gl.TRANSFORM_FEEDBACK_BUFFER
+        this.numbertype=group.gl.FLOAT
+        this.normalized=false
+        this.stride=0
+        this.offset=0
+        webglbuffer.addpro.call(this,opt)
+        this.pointer=group.gl.getAttribLocation(group.shader, this.buffername)//man solte jetzt kucken wen da1 in name steht
+        webglbuffer.addproall.call(this0,this)
+        webglbuffer.addproall.call(this1,this)
+        this0.buffer=group.gl.createBuffer()
+        group.gl.bindBuffer(group.gl.TRANSFORM_FEEDBACK_BUFFER,this0.buffer);
+        group.gl.bufferData(group.gl.TRANSFORM_FEEDBACK_BUFFER,group.buffersize*bpe*this.bufferlength,this.drawtype)
+        group.gl.bindBuffer(group.gl.TRANSFORM_FEEDBACK_BUFFER,null)
+        group.feedbackbuffer[this.buffername]=this0
+
+        this1.buffer=group.gl.createBuffer()
+        group.gl.bindBuffer(group.gl.TRANSFORM_FEEDBACK_BUFFER,this1.buffer);
+        group.gl.bufferData(group.gl.TRANSFORM_FEEDBACK_BUFFER,group.buffersize*bpe*this.bufferlength,this.drawtype)
+        group.gl.bindBuffer(group.gl.TRANSFORM_FEEDBACK_BUFFER,null)
+        group.feedbackbuffer[this.buffername+"1"]=this1
+    },
+    creategroup:function(opt){
+        this.name="newBuffer"
+        if(typeof(opt.name)=="string")this.name=opt.name
+        this.gl=ctx
+        this.shader=shaderProgram[0]
+        this.buffersize=500//500000
+        webglbuffer.addpro.call(this,opt)
+        webglbuffers[this.name]=this
+        webglbuffers[this.name].buffer={}
+        webglbuffers[this.name].feedbackbuffer={}
+        webglbuffers[this.name].uniform={}
+        webglbuffers[this.name].framebuffer={}
+        webglbuffers[this.name].renderbuffer={}
+    },
+    createuniform:function(groupname,name){
+        let group
+        if(webglbuffers.hasOwnProperty(groupname))group=webglbuffers[groupname]
+        if(group==undefined){console.warn("nogroup");return}
+        group.uniform[name]=group.gl.getUniformLocation(group.shader,name)
+    },
+    createframebuffer:function(groupname,name){
+        let group
+        if(webglbuffers.hasOwnProperty(groupname))group=webglbuffers[groupname]
+        if(group==undefined){console.warn("nogroup");return}
+        group.framebuffer[name]=group.gl.createFramebuffer()
+    },
+    createrenderbuffer:function(groupname,name){
+        let group
+        if(webglbuffers.hasOwnProperty(groupname))group=webglbuffers[groupname]
+        if(group==undefined){console.warn("nogroup");return}
+        group.renderbuffer[name]=group.gl.createRenderbuffer()
+    },
+
+    addvaotogroup:function(groupname){
+        let group
+        if(webglbuffers.hasOwnProperty(groupname))group=webglbuffers[groupname]
+        if(group==undefined){console.warn("nogroup");return}
+        for(let i of Object.keys(group.buffer)){
+            group.gl.bindBuffer(group.gl.ARRAY_BUFFER,group.buffer[i].buffer);
+            group.gl.bufferData(group.buffer[i].buffertype,group.buffersize*bpe*group.buffer[i].bufferlength,group.buffer[i].drawtype)
+        }
+        if(webgl2){
+            group.vao=group.gl.createVertexArray();
+            group.gl.bindVertexArray(group.vao)
+        }else if(WEBGLoes){
+            group.vao=WEBGLoes.createVertexArrayOES();
+            WEBGLoes.bindVertexArrayOES(group.vao)
+        }else{
+            console.log("novao")
+            return
+        }
+        for(let i of Object.keys(group.buffer)){
+            group.gl.bindBuffer(group.gl.ARRAY_BUFFER,group.buffer[i].buffer);
+            group.gl.enableVertexAttribArray(group.buffer[i].pointer)
+            group.gl.vertexAttribPointer(group.buffer[i].pointer,group.buffer[i].bufferlength,group.buffer[i].numbertype,group.buffer[i].normalized,group.buffer[i].stride,group.buffer[i].offset);
+        }
+        for(let i of Object.keys(group.feedbackbuffer)){
+            group.gl.enableVertexAttribArray(group.feedbackbuffer[i].pointer)
+        }
+        if(webgl2){
+            group.gl.bindVertexArray(null)
+        }else if(WEBGLoes){
+            WEBGLoes.bindVertexArrayOES(null)
+        }
+    },
+    bindvertexarray:function(groupname){
+        let group
+        if(webglbuffers.hasOwnProperty(groupname))group=webglbuffers[groupname]
+        if(group==undefined){console.warn("nogroup");return}
+        if(webgl2){
+            group.gl.bindVertexArray(group.vao)
+        }else if(WEBGLoes){
+            WEBGLoes.bindVertexArrayOES(group.vao)
+        }else{
+            for(let i of Object.keys(group.buffer)){
+                group.gl.bindBuffer(group.gl.ARRAY_BUFFER,group.buffer[i].buffer);
+                group.gl.enableVertexAttribArray(group.buffer[i].pointer)
+                group.gl.vertexAttribPointer(group.buffer[i].pointer,group.buffer[i].bufferlength,group.buffer[i].numbertype,group.buffer[i].normalized,group.buffer[i].stride,group.buffer[i].offset);
+            }
+        }
+    },
+    bindandpointbuffer:function(obj){
+        obj.group.gl.bindBuffer(obj.buffertype,obj.buffer)
+        obj.group.gl.vertexAttribPointer(obj.pointer,obj.bufferlength,obj.numbertype,obj.normalized,obj.stride,obj.offset);
+    },
+    addproall:function(opt){
+        for(let i of Object.keys(opt)){
+            if(!this.hasOwnProperty(i))this[i]=opt[i]
+        }
+    },
+    addpro:function(opt){
+        for(let i of Object.keys(this)){
+            if(opt.hasOwnProperty(i))this[i]=opt[i]
+        }
+    },
+    testbufferoverflow:function(groupname,objlength){
+        //suche welche buffer enabled sind
+        let group
+        if(webglbuffers.hasOwnProperty(groupname))group=webglbuffers[groupname]
+        if(group==undefined){console.warn("nogroup");return}
+    
+        if(group.buffersize<objlength*bpe+100){
+            const buffersizeold=group.buffersize
+            let multi=Math.pow(10,(Math.log(objlength*bpe)*Math.LOG10E+1|0)-1)
+            if(group.buffersize==Math.ceil((objlength*bpe)/multi)*multi)return
+            group.buffersize=Math.ceil((objlength*bpe)/multi)*multi
+    
+            if(debug){
+                console.groupCollapsed("bufferresize")
+                console.info("buffer to smal update size\nfrom: "+Number((buffersizeold).toFixed(1)).toLocaleString()+"\nto: "+Number((group.buffersize).toFixed(1)).toLocaleString()+"\nname: "+group.name)
+                console.groupEnd()
+            }
+    
+            for(let i of Object.keys(group.buffer)){
+                group.gl.bindBuffer(group.buffer[i].buffertype, group.buffer[i].buffer);
+                if(webgl2){
+                    var arrBuffer = new ArrayBuffer(buffersizeold*bpe*group.buffer[i].bufferlength);
+                    gl.getBufferSubData(group.buffer[i].buffertype, 0, new Int8Array(arrBuffer));
+                }
+                group.gl.bufferData(group.buffer[i].buffertype, group.buffersize*bpe*group.buffer[i].bufferlength, group.buffer[i].drawtype);
+                if(webgl2){
+                    group.gl.bufferSubData(group.buffer[i].buffertype,0, arrBuffer)
+                }
+            }
+            for(let i of Object.keys(group.feedbackbuffer)){
+                group.gl.bindBuffer(group.feedbackbuffer[i].buffertype, group.feedbackbuffer[i].buffer);
+                if(webgl2){
+                    var arrBuffer = new ArrayBuffer(buffersizeold*bpe*group.feedbackbuffer[i].bufferlength);
+                    gl.getBufferSubData(group.feedbackbuffer[i].buffertype, 0, new Int8Array(arrBuffer));
+                }
+                group.gl.bufferData(group.feedbackbuffer[i].buffertype, group.buffersize*bpe*group.feedbackbuffer[i].bufferlength,group.feedbackbuffer[i].drawtype)
+                if(webgl2){
+                    group.gl.bufferSubData(group.feedbackbuffer[i].buffertype,0, arrBuffer)
+                }
+            }
+        }
+    }
+}
+const skelett={
+    Mario:function(){
         this.bones=
             [
                 {
@@ -905,425 +1555,247 @@ const createobj={
                 },
             }
         ]
-        this.controls = {w:87,a:65,s:83,d:68,r:82};
-        this.x = 0;
-        this.y = 0;
-        this.w = 0;
-        this.h = 0;
-        this.havcoll = true;
-        this.fill = "blue";
-        this.rotate = 0;
-        this.fishtoattack = true;
-
-        //wen bild geladen fügs in animation rein
-        //fillconfig schreibt dan was wan ausgefürt wird
-        //dadurch picturesort usw entfernen
-        //vorteil modularer
-        //bild trigger
-        this.animation={
-            //frames (auch komma werte), bildurl img
-            //trigger sol return [bool,importance,this]
-            fillpicwl:{
-                pic:new Map([
-                    [0,["img/wl(0).png"]],
-                    [1,["img/wl(1).png"]],
-                ]),
-                get trigger(){
-                    return [this.t.velo[0]<-1,0,this]
+    },
+    Luigi:function(){
+        this.bones=
+            [
+                {
+                phy:true,
+                bewegung:-1,
+                get fussklippe(){return this.t.inwater&&this.t.falldist>10?16:18},
+                origin:{
+                    get x(){
+                        if(this.t.inwater&&this.t.falldist>10){
+                            if(this.t.velo[0]>0)return this.t.x
+                            if(this.t.velo[0]<0)return this.t.x+this.t.w
+                        }else{
+                            if(typeof(this.t.rich4arr)=="undefined")return this.t.x
+                            if(this.t.rich4arr[0]==0)return this.t.x+this.t.w/2-2
+                            if(this.t.rich4arr[0]==1)return this.t.x
+                            if(this.t.rich4arr[0]==2)return this.t.x+this.t.w/2-2
+                            if(this.t.rich4arr[0]==3)return this.t.x+this.t.w
+                        }
+                    },
+                    get y(){
+                        if(this.t.inwater&&this.t.falldist>10){
+                            return this.t.y+this.t.h/2-4
+                        }else{
+                            if(typeof(this.t.rich4arr)=="undefined")return this.t.y+(this.t.h/4)*3
+                            if(this.t.rich4arr[0]==0)return this.t.y+(this.t.h/4)*3
+                            //if(this.t.rich4arr[0]==1)return this.t.y+this.t.h/2-4
+                            //if(this.t.rich4arr[0]==2)return this.t.y+this.t.h
+                            //if(this.t.rich4arr[0]==3)return this.t.y+this.t.h/2-4
+                        }
+                    }
                 },
-                mode:"loopback",
-                aniframe:0
-            },
-            fillpicwr:{
-                pic:new Map([
-                    [0,["img/wr(0).png"]],
-                    [1,["img/wr(1).png"]]
-                ]),
-                get trigger(){
-                    return [this.t.velo[0]>1,0,this]
+                pointer:{
+                    get x(){
+                        if(this.t.inwater&&this.t.falldist>10){
+                            if(this.t.velo[0]<0)return this.t.x+this.t.w+20
+                            if(this.t.velo[0]>0)return this.t.x-20
+                        }else{
+                            return this.t.x+this.t.w/2-2
+                        }
+                    },
+                    get y(){
+                        if(this.t.inwater&&this.t.falldist>10){
+                            return this.t.y+this.t.h/2-4
+                        }else{
+                            return this.t.y+this.t.h
+                        }
+                    }
                 },
-                aniframe:0
-            },
-        }
-        createobj.animation.call(this)
-        this.environment = true;
-        this.playerphysik = true;
-        this.fillbackup = "blue";
-        this.dmg = 5;
-        this.statsnum = 0;
-        this.nokill = 0;
-        this.graviins = [0,0];
-        this.static = false;
-        this.dir = 1;
-        this.masse = 300;
-        this.velo = [0,0];
-        this.falldist = 0;
-        this.inwater = false;
-        this.umgebung = [[,0],[,0],[,0],[,0]];
-        this.stats = stats;
-        createobj.pos.call(this,opt)
-        this.sx = this.x;
-        this.sy = this.y;
-        this.dx = this.x;
-        this.dy = this.y;
-        this.fillstr=this.fill;
-        this.shift=false;
-        Object.defineProperties(this,{getstats:{get:function(){return this.stats[this.inwater|0][this.shift|0][this.statsnum|0]}}})
-        //console.log(this)
-        //this.getstats=function(){return this.stats[this.inwater][this.shift][this.statsnum]}
-        createobj.bones.call(this)
-        createobj.check.call(this,arr,defaultarr)
-    },
-/**@type {createobjfunc}*/
-    Sun:function(arr,...opt) {
-        let defaultarr=mySun;
-        this.x = 0;
-        this.y = 0;
-        this.w = 0;
-        this.h = 0;
-        this.havcoll = false;
-        this.fill = "yellow";
-        this.static = true;
-        this.blur=5;
-        this.blurcolor="yellow";
-        createobj.pos.call(this,opt)
-        this.fillstr=this.fill;
-        createobj.check.call(this,arr,defaultarr)
-    },
-/**@type {createobjfunc}*/
-    Questionblock:function(arr,...opt) {
-        let defaultarr=myRect;
-        this.x = 0;
-        this.y = 0;
-        this.w = 0;
-        this.h = 0;
-        this.havcoll = true;
-        this.fill = "Question";
-        this.fillbackup = "orange";
-        this.option = [["Powerup",{dmg:0,md:1,type:"ki",kitype:0,dir:1}],["Shape",{fill:"black"}]];
-        //summonobj(type) summonobj(optionen) summonobj(arr) replaceobj(type) replaceobj(optionen)  replaceobj(arr)
-        this.static = true;
-        this.dir = 0;
-        this.reibung = 0.06;
-        this.haftreibung = 0.02;
-        this.questiontexturdistanz = 2;
-        this.questiontexturtextcolor = "white";
-        this.questiontexturtextstroke = "orange";
-        this.ro = 0;
-        this.questiontexturcolor = "yellow";
-        this.questiontexturpointcolor = "gray";
-        this.questiontexturtext = "?";
-        createobj.pos.call(this,opt)
-        this.fillstr=this.fill;
-        createobj.check.call(this,arr,defaultarr)
-    },
-/**@type {createobjfunc}*/
-    Feuer:function(arr,...opt) {
-        let defaultarr=myFire;
-        this.x = 0;
-        this.y = 0;
-        this.w = 10;
-        this.h = 10;
-        this.owner = myRect[0];
-        this.winkel = 0;
-        this.speed = 32;
-        this.static = false;
-        this.bounce = 0;
-        this.bouncemax = 10;
-        this.bouncelast = -1;
-        this.havcoll = false;
-        this.fill = "red";
-        createobj.pos.call(this,opt)
-        this.fillstr=this.fill;
-        setTimeout(()=>{myFire[loadmap].splice(myFire[loadmap].indexOf(this),1);if(renderer==3)updatescene=true},10000);
-        createobj.check.call(this,arr,defaultarr)
-    },
-/**@type {createobjfunc}*/
-    Finish:function(arr,...opt) {
-        let defaultarr=myRect;
-        this.x = 0;
-        this.y = 0;
-        this.w = 0;
-        this.h = 0;
-        this.type = "finish";
-        this.havcoll = true;
-        this.fill = "URL";
-        this.fillpic = "img/Haus.svg";
-        this.fillbackup = "orange";
-        this.static = true;
-        this.reibung = 0.05;
-        this.haftreibung = 0.02;
-        createobj.pos.call(this,opt)
-        this.fillstr=this.fill;
-        createobj.check.call(this,arr,defaultarr)
-    },
-/**@type {createobjfunc}*/
-    Gravi:function(arr,...opt) {
-        let defaultarr=myGravi;
-        this.x = 0;
-        this.y = 5000;
-        this.w = 3000;
-        this.h = 1;
-        this.stärke = 10;
-        this.abfac = 0.05;
-        createobj.pos.call(this,opt)
-        createobj.check.call(this,arr,defaultarr)
-    },
-/**@type {createobjfunc}*/
-    Dead:function(arr,...opt){
-        let defaultarr=myRect;
-        this.nodraw = true;
-        this.x = 0;
-        this.y = 0;
-        this.w = 0;
-        this.h = 0;
-        this.havcoll = false;
-        this.fill = "rgba(0,0,0,0)";
-        this.md = 1;
-        this.dest = false ;
-        this.static = true;
-        this.damage={
-            t:this,
-            jump:function(me){
-                if (me.dmg>0){
-                    console.log("kill")
-                    me.x=me.sx
-                    me.y=me.sy
-                    me.dmg--
-                    me.nokill=1
-                    if(renderer==3)updatescene=true
-                }else{
-                    console.log("kill no live")
-                    me.x=me.sx=me.dx
-                    me.y=me.sy=me.dy
-                    me.dmg=5
-                    me.nokill=1
-                    if(renderer==0)renderbackground=true
-                    if(renderer==3)updatescene=true
+                segment0:{
+                    phy:true,
+                    get next(){return this.t.bones[0].segment1},
+                    get origin(){return this.t.bones[0].origin},
+                    get finish(){return this},
+                    width:2.5,
+                    fillpic0:"img/Luigi/LuigiLBein.svg",
+                    fillpic1:"img/Luigi/LuigiRBein.svg",
+                    get fillconfig(){return this.t.dir==1?this.fill0:this.fill1},
+                    get len(){return this.t.h/8+1}
+                },
+                segment1:{
+                    phy:true,
+                    get origin(){return this.t.bones[0].segment0},
+                    get finish(){return this},
+                    width:2.5,
+                    fillpic0:"img/Luigi/LuigiLBein.svg",
+                    fillpic1:"img/Luigi/LuigiRBein.svg",
+                    get fillconfig(){return this.t.dir==1?this.fill0:this.fill1},
+                    get len(){return this.t.h/8}
                 }
-            },
-            collide:function(me){
-                if (me.dmg>0){
-                    console.log("kill")
-                    me.x=me.sx
-                    me.y=me.sy
-                    me.dmg--
-                    me.nokill=1
-                    if(renderer==3)updatescene=true
-                }else{
-                    console.log("kill no live")
-                    me.x=me.sx=me.dx
-                    me.y=me.sy=me.dy
-                    me.dmg=5
-                    me.nokill=1
-                    if(renderer==0)renderbackground=true
-                    if(renderer==3)updatescene=true
+            },{
+                phy:true,
+                bewegung:-6,
+                get fussklippe(){return this.t.inwater&&this.t.falldist>10?16:8},
+                origin:{
+                    get x(){
+                        if(this.t.inwater&&this.t.falldist>10){
+                            if(this.t.velo[0]>0)return this.t.x
+                            if(this.t.velo[0]<0)return this.t.x+this.t.w
+                        }else{
+                            if(typeof(this.t.rich4arr)=="undefined")return this.t.x
+                            if(this.t.rich4arr[0]==0)return this.t.x+this.t.w/2+2
+                            if(this.t.rich4arr[0]==1)return this.t.x
+                            if(this.t.rich4arr[0]==2)return this.t.x+this.t.w/2+2
+                            if(this.t.rich4arr[0]==3)return this.t.x+this.t.w
+                        }
+                    },
+                    get y(){
+                        if(this.t.inwater&&this.t.falldist>10){
+                            return this.t.y+this.t.h/2+4
+                        }else{
+                            if(typeof(this.t.rich4arr)=="undefined")return this.t.y+(this.t.h/4)*3
+                            if(this.t.rich4arr[0]==0)return this.t.y+(this.t.h/4)*3
+                            //if(this.t.rich4arr[0]==1)return this.t.y+this.t.h/2+4
+                            //if(this.t.rich4arr[0]==2)return this.t.y+this.t.h
+                            //if(this.t.rich4arr[0]==3)return this.t.y+this.t.h/2+4
+                        }
+                    }
+                },
+                pointer:{
+                    get x(){
+                        if(this.t.inwater&&this.t.falldist>10){
+                            if(this.t.velo[0]<0)return this.t.x+this.t.w+20
+                            if(this.t.velo[0]>0)return this.t.x-20
+                        }else{
+                            return this.t.x+this.t.w/2+2
+                        }
+                    },
+                    get y(){
+                        if(this.t.inwater&&this.t.falldist>10){
+                            return this.t.y+this.t.h/2-4
+                        }else{
+                            return this.t.y+this.t.h
+                        }
+                    }
+                },
+                segment0:{
+                    phy:true,
+                    get next(){return this.t.bones[1].segment1},
+                    get origin(){return this.t.bones[1].origin},
+                    get finish(){return this},
+                    width:2.5,
+                    fillpic0:"img/Luigi/LuigiLBein.svg",
+                    fillpic1:"img/Luigi/LuigiRBein.svg",
+                    get fillconfig(){return this.t.dir==1?this.fill0:this.fill1},
+                    get len(){return this.t.h/8+1},
+                },
+                segment1:{
+                    phy:true,
+                    get origin(){return this.t.bones[1].segment0},
+                    get finish(){return this},
+                    width:2.5,
+                    fillpic0:"img/Luigi/LuigiLBein.svg",
+                    fillpic1:"img/Luigi/LuigiRBein.svg",
+                    get fillconfig(){return this.t.dir==1?this.fill0:this.fill1},
+                    get len(){return this.t.h/8}
                 }
-            },
-        };
-        createobj.pos.call(this,opt)
-        this.fillstr=this.fill;
-        createobj.check.call(this,arr,defaultarr)
-    }
-}
-Object.freeze(createobj)
-function checkprop(obj){
-    let fehlerteil
-    let typeofrec=b=>Array.isArray(b)?"["+b.map(a=>typeofrec(a))+"]":typeof(b)
-    let bool=Object.getOwnPropertyNames(obj).some(prop=>{
-        let match=Array.isArray(createobj[obj.construck].type[prop])?createobj[obj.construck].type[prop][0]:createobj[obj.construck].type[prop]
-        let conv=typeofrec(obj[prop])
-        let numberregcheck
-        let regexcheck=false
-        let convregexcheck=""
-        if(Array.isArray(createobj[obj.construck].type[prop])&&createobj[obj.construck].type[prop].length==3){
-            if(createobj[obj.construck].type[prop][2] instanceof RegExp){
-                convregexcheck=JSON.stringify(prop)
-                numberregcheck=convregexcheck.match(createobj[obj.construck].type[prop][2])
-                regexcheck=true
+            },{
+                phy:false,
+                segment0:{
+                    phy:false,
+                    get origin(){
+                        if(this.t.inwater&&this.t.falldist>10)return {x:this.t.bones[0].segment1.x+((this.t.dir==1)?2:-2),y:this.t.bones[0].segment1.y} 
+                        return {x:this.t.bones[0].segment1.x+((this.t.dir==1)?0.5:-0.5),y:this.t.bones[0].segment1.y+((this.t.dir==1)?0.5:-0.5)-2}
+                    },
+                    get finish(){
+                        if(this.t.inwater&&this.t.falldist>10)return {x:this.t.bones[0].segment1.x,y:this.t.bones[0].segment1.y} 
+                        return {x:this.t.bones[0].segment1.x+((this.t.dir==1)?0.5:-0.5),y:this.t.bones[0].segment1.y}
+                    },
+                    width:5,
+                    fillpic0:"img/Luigi/LuigiRFuß.svg",
+                    fillpic1:"img/Luigi/LuigiLFuß.svg",
+                    get fillconfig(){return this.t.dir==1?this.fill0:this.fill1},
+                    len:7,
+                },
+                segment1:{
+                    phy:false,
+                    get origin(){
+                        if(this.t.inwater&&this.t.falldist>10)return {x:this.t.bones[1].segment1.x+((this.t.dir==1)?2:-2),y:this.t.bones[1].segment1.y} 
+                        return {x:this.t.bones[1].segment1.x+((this.t.dir==1)?0.5:-0.5),y:this.t.bones[1].segment1.y+((this.t.dir==1)?0.5:-0.5)-2}
+                    },
+                    get finish(){
+                        if(this.t.inwater&&this.t.falldist>10)return {x:this.t.bones[1].segment1.x,y:this.t.bones[1].segment1.y} 
+                        return {x:this.t.bones[1].segment1.x+((this.t.dir==1)?0.5:-0.5),y:this.t.bones[1].segment1.y}
+                    },
+                    width:5,
+                    fillpic0:"img/Luigi/LuigiRFuß.svg",
+                    fillpic1:"img/Luigi/LuigiLFuß.svg",
+                    get fillconfig(){return this.t.dir==1?this.fill0:this.fill1},
+                    len:7,
+                },
+                segment2:{
+                    phy:false,
+                    get origin(){//umdrehn von körpr mit dir
+                        if(this.t.inwater&&this.t.falldist>10)return {x:this.t.bones[0].segment0.x+(this.t.dir==1?10:-10),y:this.t.y+this.t.h/2}
+                        return {x:this.t.x+this.t.w/2,y:this.t.y+this.t.h/3}
+                    },
+                    get finish(){
+                        if(this.t.inwater&&this.t.falldist>10)return {x:this.t.bones[0].segment0.x,y:this.t.y+this.t.h/2}
+                        return {x:this.t.x+this.t.w/2,y:this.t.y+(this.t.h/4)*3}
+                    },
+                    width:10,
+                    fillpic0:"img/Luigi/LuigiKörper.svg",
+                    get fillconfig(){return this.fill0},
+                    len:7,
+                },
+                segment3:{
+                    phy:false,
+                    get origin(){
+                        if(this.t.inwater&&this.t.falldist>10)return {x:this.t.x+(this.t.dir==1?this.t.w:0),y:this.t.y+this.t.h/2}
+                        return {x:this.t.x+this.t.w/2+1*Math.sin(this.winkel),y:this.t.y}
+                    },
+                    get finish(){
+                        return this.t.bones[2].segment2.origin
+                    },
+                    width:10,
+                    fillpic0:"img/Luigi/LuigiRKopf.svg",
+                    fillpic1:"img/Luigi/LuigiLKopf.svg",
+                    get fillconfig(){return this.t.dir==1?this.fill0:this.fill1},
+                    len:7,
+                    winkel:0
+                },
+                segment4:{
+                    phy:false,
+                    get origin(){return {x:this.t.x+this.t.w/2-this.t.bones[2].segment2.width/2,y:this.t.bones[2].segment2.origin.y}},
+                    get finish(){return {x:this.t.x+this.t.w/2-this.t.bones[2].segment2.width/2,y:this.t.y+this.t.h*(2.5/4)}},
+                    width:2,
+                    fillpic0:"img/Luigi/LuigiLArm.svg",
+                    get fillconfig(){return this.fill0},
+                    len:7,
+                },
+                segment5:{
+                    phy:false,
+                    get origin(){return {x:this.t.x+this.t.w/2+this.t.bones[2].segment2.width/2,y:this.t.bones[2].segment2.origin.y}},
+                    get finish(){return {x:this.t.x+this.t.w/2+this.t.bones[2].segment2.width/2,y:this.t.y+this.t.h*(2.5/4)}},
+                    width:2,
+                    fillpic0:"img/Luigi/LuigiRArm.svg",
+                    get fillconfig(){return this.fill0},
+                    len:7,
+                },
+                segment6:{
+                    phy:false,
+                    get origin(){return {x:this.t.bones[2].segment4.finish.x,y:this.t.bones[2].segment4.finish.y-2}},
+                    get finish(){return {x:this.t.bones[2].segment4.finish.x,y:this.t.bones[2].segment4.finish.y+2}},
+                    width:2,
+                    fillpic0:"img/Luigi/LuigiLHand.svg",
+                    get fillconfig(){return this.fill0},
+                    len:7,
+                },
+                segment7:{
+                    phy:false,
+                    get origin(){return {x:this.t.bones[2].segment5.finish.x,y:this.t.bones[2].segment5.finish.y-2}},
+                    get finish(){return {x:this.t.bones[2].segment5.finish.x,y:this.t.bones[2].segment5.finish.y+2}},
+                    width:2,
+                    fillpic0:"img/Luigi/LuigiRHand.svg",
+                    get fillconfig(){return this.fill0},
+                    len:7,
+                },
             }
-        }
-        let type=conv.match(match)
-        if(type==null||type.index!==0||!createobj[obj.construck].type.hasOwnProperty(prop)||(regexcheck&&(numberregcheck==null||numberregcheck.index!==0))){
-            fehlerteil=regexcheck?[prop,obj[prop],typeof(match)=="object"?match.source:match,conv,type,createobj[obj.construck].type[prop][2],convregexcheck,numberregcheck]:[prop,obj[prop],typeof(match)=="object"?match.source:match,conv,type]
-            return true
-        }
-        return false
-    })
-    if(typeof(obj.fill)!=="undefined"&&!obj.fill.constructor.name.match("OffscreenCanvas|HTMLImageElement|HTMLCanvasElement|ImageData")&&typeof(colorobj)!="undefined"&&!Object.getOwnPropertyNames(colorobj).includes(obj.fill)){
-        let e=document.createElement('div');
-        e.style.borderColor="";
-        e.style.borderColor=obj.fill;
-        if ((e.style.borderColor).length==0){bool=true;fehlerteil="fill"}
-    }
-    if(typeof(colorobj)!="undefined"&&typeof(obj.fillstr)!=="undefined"&&!Object.getOwnPropertyNames(colorobj).includes(obj.fillstr)){
-        let e=document.createElement('div');
-        e.style.borderColor="";
-        e.style.borderColor=obj.fillstr;
-        if ((e.style.borderColor).length==0){bool=true;fehlerteil="fillstr"}
-    }
-    if(bool){
-        console.log(obj)
-        if(typeof(fehlerteil)=="string"){
-            console.error(new SyntaxError(
-                "values are not corect:"+
-                "\nprop:"+fehlerteil+
-                "\n"+new Error().stack))
-        }else if(fehlerteil.length==5){
-            console.error(new SyntaxError(
-                "values are not corect:"+
-                "\nprop:"+fehlerteil[0]+
-                "\nzeile:"+fehlerteil[1]+
-                "\nmatchstr:"+fehlerteil[2]+
-                "\nconv:"+fehlerteil[3]+
-                "\ntype:"+fehlerteil[4]+
-                "\n"+new Error().stack))
-        }else if(fehlerteil.length==8){
-            console.error(new SyntaxError(
-                "values are not corect:"+
-                "\nprop:"+fehlerteil[0]+
-                "\nzeile:"+fehlerteil[1]+
-                "\nmatchstr:"+fehlerteil[2]+
-                "\nconv:"+fehlerteil[3]+
-                "\ntype:"+fehlerteil[4]+
-                "\nmatchstr:"+fehlerteil[5]+
-                "\nconv:"+fehlerteil[6]+
-                "\ntype:"+fehlerteil[7]+
-                "\n"+new Error().stack
-                ))
-        }
-    }else{return true}
-}
-const webglbuffer={
-    createbuffer:function(groupname,opt){
-        let group
-        if(webglbuffers.hasOwnProperty(groupname))group=webglbuffers[groupname]
-        if(group==undefined){console.warn("nogroup");return}
-        this.group=group
-        this.buffername="coordinates"
-        this.bufferlength=2
-        this.divisor=0
-        this.drawtype=group.gl.DYNAMIC_DRAW
-        this.buffertype=group.gl.ARRAY_BUFFER
-        this.numbertype=group.gl.FLOAT
-        this.normalized=false
-        this.stride=0
-        this.offset=0
-        webglbuffer.addpro.call(this,opt)
-        this.pointer=group.gl.getAttribLocation(group.shader, this.buffername)
-        this.buffer=group.gl.createBuffer()
-        group.gl.bindBuffer(group.gl.ARRAY_BUFFER,this.buffer);
-        group.gl.bufferData(this.buffertype,group.buffersize*bpe*this.bufferlength,this.drawtype)
-        group.gl.bindBuffer(group.gl.ARRAY_BUFFER,null)
-        group.buffer[this.buffername]=this
-    },
-    createfeedbackbuffer:function(groupname,opt){
-        let group
-        if(webglbuffers.hasOwnProperty(groupname))group=webglbuffers[groupname]
-        if(group==undefined){console.warn("nogroup");return}
-        let this0={}
-        let this1={}
-        this.group=group
-        this.buffername="coordinates"
-        this.bufferlength=2
-        this.divisor=0
-        this.drawtype=group.gl.DYNAMIC_DRAW
-        this.buffertype=group.gl.TRANSFORM_FEEDBACK_BUFFER
-        this.numbertype=group.gl.FLOAT
-        this.normalized=false
-        this.stride=0
-        this.offset=0
-        webglbuffer.addpro.call(this,opt)
-        this.pointer=group.gl.getAttribLocation(group.shader, this.buffername)//man solte jetzt kucken wen da1 in name steht
-        webglbuffer.addproall.call(this0,this)
-        webglbuffer.addproall.call(this1,this)
-        this0.buffer=group.gl.createBuffer()
-        group.gl.bindBuffer(group.gl.TRANSFORM_FEEDBACK_BUFFER,this0.buffer);
-        group.gl.bufferData(group.gl.TRANSFORM_FEEDBACK_BUFFER,group.buffersize*bpe*this.bufferlength,this.drawtype)
-        group.gl.bindBuffer(group.gl.TRANSFORM_FEEDBACK_BUFFER,null)
-        group.feedbackbuffer[this.buffername]=this0
-
-        this1.buffer=group.gl.createBuffer()
-        group.gl.bindBuffer(group.gl.TRANSFORM_FEEDBACK_BUFFER,this1.buffer);
-        group.gl.bufferData(group.gl.TRANSFORM_FEEDBACK_BUFFER,group.buffersize*bpe*this.bufferlength,this.drawtype)
-        group.gl.bindBuffer(group.gl.TRANSFORM_FEEDBACK_BUFFER,null)
-        group.feedbackbuffer[this.buffername+"1"]=this1
-    },
-    creategroup:function(opt){
-        this.name="newBuffer"
-        if(typeof(opt.name)=="string")this.name=opt.name
-        this.gl=ctx
-        this.shader=shaderProgram[0]
-        this.buffersize=500//500000
-        webglbuffer.addpro.call(this,opt)
-        webglbuffers[this.name]=this
-        webglbuffers[this.name].buffer={}
-        webglbuffers[this.name].feedbackbuffer={}
-        webglbuffers[this.name].uniform={}
-    },
-    createuniform:function(groupname,name){
-        let group
-        if(webglbuffers.hasOwnProperty(groupname))group=webglbuffers[groupname]
-        if(group==undefined){console.warn("nogroup");return}
-        group.uniform[name]=group.gl.getUniformLocation(group.shader,name)
-    },
-    addvaotogroup:function(groupname){
-        let group
-        if(webglbuffers.hasOwnProperty(groupname))group=webglbuffers[groupname]
-        if(group==undefined){console.warn("nogroup");return}
-        for(let i of Object.keys(group.buffer)){
-            group.gl.bindBuffer(group.gl.ARRAY_BUFFER,group.buffer[i].buffer);
-            group.gl.bufferData(group.buffer[i].buffertype,group.buffersize*bpe*group.buffer[i].bufferlength,group.buffer[i].drawtype)
-        }
-        group.vao=group.gl.createVertexArray();
-        group.gl.bindVertexArray(group.vao)
-        for(let i of Object.keys(group.buffer)){
-            group.gl.bindBuffer(group.gl.ARRAY_BUFFER,group.buffer[i].buffer);
-            group.gl.enableVertexAttribArray(group.buffer[i].pointer)
-            group.gl.vertexAttribPointer(group.buffer[i].pointer,group.buffer[i].bufferlength,group.buffer[i].numbertype,group.buffer[i].normalized,group.buffer[i].stride,group.buffer[i].offset);
-        }
-        for(let i of Object.keys(group.feedbackbuffer)){
-            group.gl.enableVertexAttribArray(group.feedbackbuffer[i].pointer)
-        }
-        group.gl.bindVertexArray(null);
-    },
-    bindandpointbuffer:function(obj){
-        obj.group.gl.bindBuffer(obj.buffertype,obj.buffer)
-        obj.group.gl.vertexAttribPointer(obj.pointer,obj.bufferlength,obj.numbertype,obj.normalized,obj.stride,obj.offset);
-    },
-    addproall:function(opt){
-        for(let i of Object.keys(opt)){
-            if(!this.hasOwnProperty(i))this[i]=opt[i]
-        }
-    },
-    addpro:function(opt){
-        for(let i of Object.keys(this)){
-            if(opt.hasOwnProperty(i))this[i]=opt[i]
-        }
-    },
-    testbufferoverflow:function(groupname,objlength){
-        //suche welche buffer enabled sind
-        let group
-        if(webglbuffers.hasOwnProperty(groupname))group=webglbuffers[groupname]
-        if(group==undefined){console.warn("nogroup");return}
-    
-        if(group.buffersize<objlength*bpe+100){
-            const buffersizeold=group.buffersize
-            let multi=Math.pow(10,(Math.log(objlength*bpe)*Math.LOG10E+1|0)-1)
-            group.buffersize=Math.ceil((objlength*bpe)/multi)*multi
-    
-            if(group.name=="obj")updatescene=true
-            if(debug)console.log("buffer to smal update size\nfrom: "+Number((buffersizeold).toFixed(1)).toLocaleString()+"\nto: "+Number((group.buffersize).toFixed(1)).toLocaleString()+"\nname: "+group.name)
-    
-            for(let i of Object.keys(group.buffer)){
-                group.gl.bindBuffer(group.buffer[i].buffertype, group.buffer[i].buffer);
-                group.gl.bufferData(group.buffer[i].buffertype, group.buffersize*bpe*group.buffer[i].bufferlength, group.buffer[i].drawtype);
-            }
-            for(let i of Object.keys(group.feedbackbuffer)){
-                group.gl.bindBuffer(group.feedbackbuffer[i].buffertype, group.feedbackbuffer[i].buffer);
-                group.gl.bufferData(group.feedbackbuffer[i].buffertype, group.buffersize*bpe*group.feedbackbuffer[i].bufferlength,group.feedbackbuffer[i].drawtype)
-            }
-        }
+        ]
     }
 }
 promallres[1]()

@@ -8,20 +8,20 @@
 
 const aiobj={
     /**@type {aiobjfunc}*/
-    ki:function(me,me1,first) {
+    ki:function(me,me1,first){
         if(fps+10<fpsav)return
         if(first==false)return
         let tlaki=true,traki=true,colayki=Infinity
         const maxdistcol=10
         const maxdistcolground=15
-        for(let i=0,i1=0;i<maxdistcol&&tlaki;i++,i1=Math.trunc(me1.y+1-miny)*(maxx-minx)+Math.trunc(me1.x+1)-i-minx)if(objcolmap[i1]>1)tlaki=false
-        for(let i=0,i1=0;i<maxdistcol&&tlaki;i++,i1=Math.trunc(me1.y+me1.h-1-miny)*(maxx-minx)+Math.trunc(me1.x+1)-i-minx)if(objcolmap[i1]>1)tlaki=false
+        for(let i=0,i1=0;i<maxdistcol&&tlaki;i++,i1=Math.trunc(me1.y+1-miny)*(maxx-minx)+Math.trunc(me1.x+1)-i-minx)if(objcolmap[i1]>0)tlaki=false
+        for(let i=0,i1=0;i<maxdistcol&&tlaki;i++,i1=Math.trunc(me1.y+me1.h-1-miny)*(maxx-minx)+Math.trunc(me1.x+1)-i-minx)if(objcolmap[i1]>0)tlaki=false
     
-        for(let i=0,i1=0;i<maxdistcolground;i++,i1=Math.trunc(me1.y+me1.h-1+i-miny)*(maxx-minx)+Math.trunc(me1.x+me1.w-1)-minx)if(objcolmap[i1]>1){colayki=i;break}
-        for(let i=0,i1=0;i<maxdistcolground;i++,i1=Math.trunc(me1.y+me1.h-1+i-miny)*(maxx-minx)+Math.trunc(me1.x+1)-minx)if(objcolmap[i1]>1){colayki=i;break}
+        for(let i=0,i1=0;i<maxdistcolground;i++,i1=Math.trunc(me1.y+me1.h-1+i-miny)*(maxx-minx)+Math.trunc(me1.x+me1.w-1)-minx)if(objcolmap[i1]>0){colayki=i;break}
+        for(let i=0,i1=0;i<maxdistcolground;i++,i1=Math.trunc(me1.y+me1.h-1+i-miny)*(maxx-minx)+Math.trunc(me1.x+1)-minx)if(objcolmap[i1]>0){colayki=i;break}
     
-        for(let i=0,i1=0;i<maxdistcol&&traki;i++,i1=Math.trunc(me1.y+1-miny)*(maxx-minx)+Math.trunc(me1.x+me1.w-1)+i-minx)if(objcolmap[i1]>1)traki=false
-        for(let i=0,i1=0;i<maxdistcol&&traki;i++,i1=Math.trunc(me1.y+me1.h-1-miny)*(maxx-minx)+Math.trunc(me1.x+me1.w-1)+i-minx)if(objcolmap[i1]>1)traki=false
+        for(let i=0,i1=0;i<maxdistcol&&traki;i++,i1=Math.trunc(me1.y+1-miny)*(maxx-minx)+Math.trunc(me1.x+me1.w-1)+i-minx)if(objcolmap[i1]>0)traki=false
+        for(let i=0,i1=0;i<maxdistcol&&traki;i++,i1=Math.trunc(me1.y+me1.h-1-miny)*(maxx-minx)+Math.trunc(me1.x+me1.w-1)+i-minx)if(objcolmap[i1]>0)traki=false
     
         if (colayki==Infinity&&me1.kitype){
             //console.log("richtungswechsel")
@@ -34,16 +34,32 @@ const aiobj={
         if (me1.dir==-1){me1.dir=tlaki?-1:traki?1:0}
         if (me1.dir==1){me1.dir=traki?1:tlaki?-1:0}
         me1.x+=me1.dir
-        toupdateshadow.add(me1)
+
+        if(multiplayerstartet&&me1.managefromplayernum==multiplayerid)postMessage({act:"update obj",data:{x:me1.x,y:me1.y,w:me1.w,h:me1.h},id:multiplayerid,managefromplayerobjnum:me1.managefromplayerobjnum})
+        if(shadows)toupdateshadow.add(me1)
     },
     /**@type {aiobjfunc}*/
-    movingblock:function(me,me1,first) {//sol auch für dreiecke...
-        if (typeof(me1.x)=="object")return
+    movingblock:function(me,me1,first){//sol auch für dreiecke...
+        if(typeof(me1.x)=="object")return
+        const menum=colobjarr.findIndex(i=>i==me1)+1
         if(first){
-            const x=Math.sign(me1.x-me1.option[Math.abs(me1.dir)>>1<<1])
-            const y=Math.sign(me1.y-me1.option[1+(Math.abs(me1.dir)>>1<<1)])
+            for(let i=me1.x-2;i<=me1.x+me1.w+2;i++)for(let i1=me1.y-2;i1<=me1.y+me1.h+2;i1++){
+                let i2=Math.trunc(i1-miny)*(maxx-minx)+Math.trunc(i)-minx
+                if(objcolmap[i2]==menum)objcolmap[i2]=0
+            }
+        }
+        const x=Math.sign(me1.x-me1.option[Math.abs(me1.dir)>>1<<1])
+        const y=Math.sign(me1.y-me1.option[1+(Math.abs(me1.dir)>>1<<1)])
+        if(first){
             me1.x-=x
             me1.y-=y
+            if(multiplayerstartet&&me1.managefromplayernum==multiplayerid){
+                me1.kimultiplayertimer-=60/fps
+                if(me1.kimultiplayertimer<=0){
+                    me1.kimultiplayertimer+=me1.kimultiplayertimerreset
+                    postMessage({act:"update obj",data:{x:me1.x,y:me1.y,dir:me1.dir},id:multiplayerid,managefromplayerobjnum:me1.managefromplayerobjnum})
+                }
+            }
             if(x==0&&y==0&&!(me1.dir&1)){me1.dir=(me1.dir+2)%(me1.option.length)}
             if(x==0&&y==0&&me1.dir&1){
                me1.dir+=2
@@ -52,40 +68,68 @@ const aiobj={
                    me1.dir+=2
                }
             }
-            toupdateshadow.add(me1)
+            if(shadows)toupdateshadow.add(me1)
         }
         if (me1==me.umgebung[2][0]&&me1.y>=(me.y+me.h)-5&&me1.y<=me.y+me.h+5){//achtung gravi
             me.x-=x
             me.y-=y
+            if(multiplayerstartet&&multiplayer&&!listenforplayer)postMessage({act:"player stats update",data:{x:me.x,y:me.y},playersendid:me.playersendid,id:multiplayerid})
         }
+        if(first){
+            for(let i=me1.x;i<me1.x+me1.w;i++)for(let i1=me1.y;i1<me1.y+me1.h;i1++){
+                let i2=Math.trunc(i1-miny)*(maxx-minx)+Math.trunc(i)-minx
+                if(objcolmap[i2]==0)objcolmap[i2]=menum
+            }
+        }
+        //mache in collarray wen da 0 ist und ich da bin mache da 1 
     },
     /**@type {aiobjfunc}*/
-    breakingblock:function(me,me1,first) {
-        if(me.umgebung[me.rich4arr[2]][0]==me1){
-            if(timeout!==""){return}
-            timeout=setTimeout(()=>{
-                const telem=me1
-                setTimeout(()=>{
-                    myRect[loadmap].push(telem)
-                    needcolmap=true
-                    if(typeof(telem.shadowadd)!="undefined")for(let i of me1.shadowadd)toupdateshadow.add(i)
-                    if(typeof(telem.shadowadd)!="undefined"&&me1.static){
-                        if(renderer==3)updatescene=true
-                        if(renderer==0)renderbackground=true
-                    }
-                    timeout=""
-                },me1.option[1]*1e3)
-                if(typeof(me1.shadowadd)!="undefined")for(let i of me1.shadowadd)toupdateshadow.add(i)
-                if(typeof(me1.shadowadd)!="undefined"&&me1.static){
-                    if(renderer==3)updatescene=true
-                    if(renderer==0)renderbackground=true
+    breakingblock:function(me,me1,first){
+        if(me1.invisible&&me1.timeout1==null)makevisible()//wen anderer spieler obj unsichtbar gemacht hat dan mach es nach zeit sichtbar
+        function makevisible(){
+            me1.timeout1=setTimeout(()=>{
+                const menum=colobjarr.findIndex(i=>i==me1)+1
+                for(let i=me1.x;i<me1.x+me1.w;i++)for(let i1=me1.y;i1<me1.y+me1.h;i1++){
+                    let i2=Math.trunc(i1-miny)*(maxx-minx)+Math.trunc(i)-minx
+                    if(objcolmap[i2]==0)objcolmap[i2]=menum
                 }
-                myRect[loadmap].splice(myRect[loadmap].findIndex(it=>it==me1),1)
-                needcolmap=true
+                me1.invisible=false
+                if(renderer==0){
+                    if(typeof(me1.shadowadd)!="undefined")for(let i of me1.shadowadd)toupdateshadow.add(i)
+                    if(typeof(me1.shadowadd)!="undefined"&&me1.static)renderbackground=true
+                }
+                if(renderer==3)updatetextur=true
+                me1.timeout=null
+                me1.timeout1=null
+            },me1.option[1]*1e3)
+        }
+
+
+        if(first){//del timer if nobody stands on it
+            if(me1.playeronobj==0&&me1.timeout!==null){
+                clearTimeout(me1.timeout)
+                me1.timeout=null
+            }
+            me1.playeronobj=0
+        }
+        if(me.umgebung[me.rich4arr[2]][0]==me1){
+            me1.playeronobj++
+            if(me1.timeout!==null||me1.invisible)return
+            me1.timeout=setTimeout(()=>{
+                makevisible()
+                const menum=colobjarr.findIndex(i=>i==me1)+1
+                for(let i=me1.x-2;i<=me1.x+me1.w+2;i++)for(let i1=me1.y-2;i1<=me1.y+me1.h+2;i1++){
+                    let i2=Math.trunc(i1-miny)*(maxx-minx)+Math.trunc(i)-minx
+                    if(objcolmap[i2]==menum)objcolmap[i2]=0
+                }//das ist nur das bisle schneller geht
+                me1.invisible=true
+                if(renderer==0){
+                    if(typeof(me1.shadowadd)!="undefined")for(let i of me1.shadowadd)toupdateshadow.add(i)
+                    if(typeof(me1.shadowadd)!="undefined"&&me1.static)renderbackground=true
+                }
+                if(renderer==3)updatetextur=true
+                if(multiplayerstartet&&(me1.managefromplayernum==multiplayerid||me1.sync))postMessage({act:"update obj",data:{invisible:true},id:multiplayerid,managefromplayerobjnum:me1.managefromplayerobjnum})
             },me1.option[0]*1e3)
-        }else if(timeout!==""){
-            clearTimeout(timeout)
-            timeout=""
         }
     },
     /**@type {aiobjfunc}*/
@@ -139,6 +183,7 @@ const aiobj={
             if(i1[0]==me1&&i1[1]<=5){
                 console.log("finish")
                 stopmain=false;
+                if(multiplayerstartet&&me1.managefromplayernum==multiplayerid)postMessage({act:"winscreen",id:multiplayerid})
                 winscreen()
             }
         }
@@ -187,8 +232,8 @@ async function bounce(me){
     me.y-=Math.sign(me.speed)*Math.sin(me.winkel)
 }
 /**@param {Array.<myRect>} me */
-async function pathki(me){
-    if(me.x-minx<0||me.y-miny<0||me.x-minx>maxx||me.y-miny>maxx){canfishmap=true;return}
+async function pathki(me=false){
+    if(me!=false&&me.x-minx<0||me.y-miny<0||me.x-minx>maxx||me.y-miny>maxx){canfishmap=true;return}
     let test=[]
     for(let i of myRect[loadmap]){
         if(i.construck=="Wasser"){

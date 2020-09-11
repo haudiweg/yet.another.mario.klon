@@ -48,6 +48,8 @@ function savetopreset(event,obj){
     delete temp.rich4arr
     delete temp.rich2
     delete temp.rich2arr
+    delete temp.minx
+    delete temp.miny
     //mit null überschreiben
     let temp1=new createobj[temp.construck]("return")
     for(let i in Object.keys(temp1)){
@@ -349,6 +351,23 @@ function resizeobj(i,between,winkelt){
         i.y[between[1]]+=(mouseyc-movedcordy)*Math.abs(Math.sin(winkelt))
         i.w=Math.max(...i.x)-Math.min(...i.x)
         i.h=Math.max(...i.y)-Math.min(...i.y)
+
+        if(typeof(this.x)=="object"){
+            let minx=Infinity
+            let minxnum=0
+            for(let i in this.x)if(minx>this.x[i]){minx=this.x[i];minxnum=i}
+            Object.defineProperty(this, 'minx', {get:()=>{return this.x[minxnum]}});
+        }else{
+            Object.defineProperty(this, 'minx', {get:()=>{return this.x}});
+        }
+        if(typeof(this.y)=="object"){
+            let miny=Infinity
+            let minynum=0
+            for(let i in this.y)if(miny>this.y[i]){miny=this.y[i];minynum=i}
+            Object.defineProperty(this, 'miny', {get:()=>{return this.y[minynum]}});
+        }else{
+            Object.defineProperty(this, 'miny', {get:()=>{return this.y}});
+        }
     }else{
         if(between[0]==0){
             i.y+=mouseyc-movedcordy
@@ -503,6 +522,8 @@ function spawnmenü(i){
         input.style.width="-moz-available";
         input.style.width="-webkit-fill-available";
         input.style.width="fill-available";
+        input.onfocus=()=>menuallowedtomove=false
+        input.onblur=()=>menuallowedtomove=true
         div.appendChild(span)
         div.appendChild(document.createElement("BR"))
         div.appendChild(input)

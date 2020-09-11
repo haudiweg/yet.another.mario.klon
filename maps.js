@@ -9,7 +9,7 @@ function defaultarrload(num="all"){
         namemap(0,"debug")
         new createobj.Gravi(myGravi,-2000, 5000, 4800, 1);
         new createobj.Sun(mySun,300, 10, 500, 10);
-        new createobj.Player(myRect,20,660, 25, 25);
+        new createobj.Player(myRect,20,660, 10, 15);
         //new createobj.Player(myRect,-100,660, 25, 25,{controls:{w:73,a:74,s:75,d:76}});
 
         new createobj.Grass(myRect,[1000,1100,1200], [720,400,720],{texturrichtung:[0,1,2]})
@@ -74,7 +74,7 @@ function defaultarrload(num="all"){
         new createobj.Pipe(myRect,50,2100,30,20,{wx:0,wy:1340,ro:2});
 
 
-        new createobj.Specialblock(myRect,-1500, 690, 100, 10, {type:"breakingblock",static:false,option:[5,5]});
+        new createobj.Specialblock(myRect,-1500, 690, 100, 10, {type:"breakingblock",static:false,option:[5,20]});
         new createobj.Specialblock(myRect,-1300, 690, 100, 10, {type:"movingblock",static:false,option:[-1300, 690,-1100, 690]});
         console.info("loaded map 0")
     }
@@ -151,6 +151,8 @@ function defaultarrload(num="all"){
         new createobj.Grass(myRect,0, 710, 200, 10);
         new createobj.Grassani(myRect,0, 709, 200, 1);
 
+        new createobj.Shape(myRect,100, 600,50,50,{fill:"URLvideo",fillvideo:"img/BadApple.mp4"});
+
         new createobj.Grass(myRect,200, 690, 500, 30);
         new createobj.Grassani(myRect,200, 689, 500, 1);
         new createobj.Grass(myRect,700, 710, 300, 10);
@@ -160,8 +162,8 @@ function defaultarrload(num="all"){
         new createobj.Grass(myRect,1000, 710, 100, 10);
         new createobj.Grassani(myRect,1000, 709, 100, 1);
 
-        new createobj.Grass(myRect,[1100,1100,1150,1400,1500,1500,1100], [720,710,705,500,500,720,720],{texturrichtung:[0,1,2,3,4]})
-        new createobj.Grassani(myRect,[1100,1100,1150,1400,1500,1500], [720,710,705,500,500,720],{texturrichtung:[0,1,2,3,4]});
+        new createobj.Grass(myRect,[1150,1400,1500,1500,1100,1100,1100], [705,500,500,720,720,720,710],{texturrichtung:[0,1,2,6]})
+        new createobj.Grassani(myRect,[1150,1400,1500,1500,1100,1100,1100], [705,500,500,720,720,720,710],{texturrichtung:[0,1,2,6]});
         new createobj.Specialblock(myRect,1500, 500, 100, 10, {type:"breakingblock",static:false,option:[5,5]});
         new createobj.Grass(myRect,1600,500,100,10);
         new createobj.Grassani(myRect,1600, 499, 100, 1);

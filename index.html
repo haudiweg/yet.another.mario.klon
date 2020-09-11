@@ -15,8 +15,9 @@
 <noscript>Your browser does not support JavaScript!</noscript>
 <script id="shader-webgl2-vs-grass" type="x-shader/x-vertex">#version 300 es
 //do code of script edit in js to make that the shader use a version that is suportet
+#line 19
 precision highp float;
- 
+
 in vec4 coordinates1;     //point from were the grass rotate
 
 in float grassrotation;     //default position were grass look att
@@ -24,28 +25,34 @@ in float grassnum;
 in vec2 grassstartcord;
 
 in vec2 aVelo;              //grass.velo[0]   grass.velo[1]
-in vec2 aWindopt;           //grass.windsmove grass.range
-in vec3 aWind;             //input from wind of every grass
+in vec3 aWindopt;           //grass.strengthgwind grass.strengthiwind grass.strengthvelo   mach struct daraus das settings beinhaltet
+in vec2 aWind;             //input from wind of every grass
+in vec4 aWindrandtimer;
 in vec4 grasscolor;
 
 uniform vec2 canvashwwebgl;
 uniform vec4 offsgl;
-uniform vec2 translation;
 uniform int rendermode;
 uniform float fps;
-uniform float globalwind;   //is the global wind
+uniform vec2 globalwind;   //is the global wind
 uniform vec4 objectspos[MAX_NUM_TOTAL_OBJECTS];
 uniform vec2 objectsvel[MAX_NUM_TOTAL_OBJECTS];
 uniform int objectslength;
 
 out vec4 grasscolor1;
 out vec2 aVelo1;      //output from velo of every grass
-out vec3 aWind1;     //output from wind of every grass
-flat out int debug;
-out vec4 debugc;
+out vec2 aWind1;     //output from wind of every grass
+out vec4 aWindrandtimer1;  //randomx  randomy
 
+#define timetogrow 800.0
+#define velomulti 0.9
+#define randtimer 30.0
+#define grasswalkmaxdist 2.0
+#define grasswalkshrink 0.0001
+#define grasswalkmaxdistv 5.0
+#define grasswalkmaxv 0.5
+#define maxvelo 0.5
 
-const float maxnumber=float(~uint(0));
 
 float mindistpointtofloat(vec2 point,vec4 rectangle){
     vec2 nearestpoint=vec2(0,0);
@@ -69,70 +76,94 @@ float mindistpointtofloat(vec2 point,vec4 rectangle){
 vec2 conv2(vec2 cord) {return (vec2((cord.x/canvashwwebgl.x)*2.0-1.0,((canvashwwebgl.y-cord.y)/canvashwwebgl.y)*2.0-1.0));}
 vec4 conv4(vec4 cord) {return (vec4((cord.x/canvashwwebgl.x)*2.0-1.0,((canvashwwebgl.y-cord.y)/canvashwwebgl.y)*2.0-1.0,0.0,1.0));}
 void main(void) {
-    float hoenabhaenigkeit=min(max(1.0,distance(coordinates1.xy,grassstartcord)/20.0),30.0);
-    grasscolor1=grasscolor;
     if(rendermode==1){
-        float roatation=atan(
-            (
-                sin(globalwind*grassnum*hoenabhaenigkeit)+
-                sin(aWind.x*grassnum*hoenabhaenigkeit)+
-                sin(grassrotation)+
-                (max(abs(aVelo.x),0.5)*grassnum)*sign(aVelo.x)
-            )/(
-                cos(globalwind*grassnum*hoenabhaenigkeit)+
-                cos(aWind.x*grassnum*hoenabhaenigkeit)+
-                cos(grassrotation)+
-                (max(abs(aVelo.y),0.5)*grassnum)*sign(aVelo.y)
-            ));
-
+        float hoenabhaenigkeit=min(max(1.0,distance(coordinates1.xy,grassstartcord)/20.0),30.0)*grassnum;
+        float grassrotc=abs(cos(grassrotation));
+        float grassrots=abs(sin(grassrotation));
+        grasscolor1=grasscolor;
+        float roatation=-atan(
+            globalwind.x*grassrotc*hoenabhaenigkeit*aWindopt[0]+
+            mix(aWind.x,aWindrandtimer.x,aWindrandtimer.z)*grassrotc*hoenabhaenigkeit*aWindopt[1]+
+            sin(grassrotation)+
+            (max(abs(aVelo.x),maxvelo)*sign(aVelo.x))*grassrotc*hoenabhaenigkeit*aWindopt[2]+
+            0.0
+            ,
+            globalwind.y*grassrots*hoenabhaenigkeit*aWindopt[0]+
+            mix(aWind.y,aWindrandtimer.y,aWindrandtimer.z)*grassrots*hoenabhaenigkeit*aWindopt[1]+
+            cos(grassrotation)+
+            (max(abs(aVelo.y),maxvelo)*sign(aVelo.y))*grassrots*hoenabhaenigkeit*aWindopt[2]+
+            0.0
+        );
 
         vec4 rotatedPosition = vec4(
-            cos(-roatation) * (coordinates1.x-grassstartcord.x) - sin(-roatation) * (coordinates1.y-grassstartcord.y) + grassstartcord.x,
-            sin(-roatation) * (coordinates1.x-grassstartcord.x) + cos(-roatation) * (coordinates1.y-grassstartcord.y) + grassstartcord.y,
+            cos(roatation) * mix(0.0,coordinates1.x-grassstartcord.x,aWindrandtimer.w) - sin(roatation) * mix(0.0,coordinates1.y-grassstartcord.y,aWindrandtimer.w) + grassstartcord.x,
+            sin(roatation) * mix(0.0,coordinates1.x-grassstartcord.x,aWindrandtimer.w) + cos(roatation) * mix(0.0,coordinates1.y-grassstartcord.y,aWindrandtimer.w) + grassstartcord.y,
             coordinates1.z,coordinates1.w
         );
         
-        gl_Position = conv4((rotatedPosition+vec4(translation.xy,0,0))/offsgl.w-vec4(offsgl.xy,0,0));
+        gl_Position = conv4((rotatedPosition)/offsgl.w-vec4(offsgl.xy,0,0));
     }else if(rendermode==0){
-        aWind1.y=aWind.y+60.0/fps;
-        aWind1.z=aWind.z;
-        if(aWind1.y>=30.0){
-            aWind1.y-=30.0;
-            aWind1.z=float(
-                uint(translation.x                  *maxnumber)^
-                uint(translation.y                  *maxnumber)^
-                uint(((grassrotation+1.)/2.)        *maxnumber)^
-                uint(((globalwind+1.)/2.)           *maxnumber)^
-                uint((fps-float(uint(fps)))         *maxnumber)^           //get just the decimal portion
-                uint(((aWindopt.x+1.)/2.)           *maxnumber)^
-                uint(aWindopt.y                     *maxnumber)^
-                uint(aWind.z                        *maxnumber)
-                )/maxnumber;
+        float hoenabhaenigkeit=min(max(1.0,distance(coordinates1.xy,grassstartcord)/20.0),30.0)*grassnum;
+        float grassrotc=abs(cos(grassrotation));
+        float grassrots=abs(sin(grassrotation));
+        aWind1=aWind;
+        aVelo1=aVelo*velomulti*(fps/60.0);
+        aWindrandtimer1=aWindrandtimer;
+        aWindrandtimer1.w=min(1.0,aWindrandtimer1.w+(60.0/fps)/timetogrow);
+
+        
+        //man könnte mit seperaten feedback arbeiten um ds zu setzen immer wieder zu vermeiden
+        if(abs(coordinates1.x)<=1.0||abs(coordinates1.y)<=1.0)aWindrandtimer1.z+=(60.0/fps)/randtimer;  //jede 30 sek geht wert +1
+        if(aWindrandtimer1.z>=1.0){
+            aWind1=aWindrandtimer.xy;  //alter random wind neuer wind
+            aWindrandtimer1.z-=1.0;  //was pasiert wen werd -1 oder mehr ist
+            //besserer randomgen baun
+            float maxnumber=float(~uint(0));
+            //mache alle numbern in range von 0-1  und dan in 32 bit range
+            uint random=(
+                uint(((grassrotation+1.)/2.)                *maxnumber)^
+                uint(((normalize(globalwind).x+1.)/2.)      *maxnumber)^
+                uint(((normalize(globalwind).y+1.)/2.)      *maxnumber)^
+                uint(fract(fps)                             *maxnumber)^
+                uint(aWindopt.x                             *maxnumber)^
+                uint(aWindopt.y                             *maxnumber)^
+                uint(aWindopt.z                             *maxnumber)^
+                uint(grasscolor.x                           *maxnumber)^
+                uint(grasscolor.y                           *maxnumber)^
+                uint(grasscolor.z                           *maxnumber)^
+                uint(grasscolor.w                           *maxnumber)^
+                uint(((normalize(aWind).x+1.)/2.)           *maxnumber)^
+                uint(((normalize(aWind).y+1.)/2.)           *maxnumber)^
+                uint(((normalize(aWindrandtimer).x+1.)/2.)  *maxnumber)^
+                uint(((normalize(aWindrandtimer).y+1.)/2.)  *maxnumber)
+            );
+
+            aWindrandtimer1.xy=vec2(sin(float(random)),sin(float(~random)));
         }
-        //randomwert jede par frames nehmen und wind langram draf anpasen lassen
-        aWind1.x=aWind.x*pow(aWindopt.x,60.0/fps)+(aWind.z*2.0-1.0)*aWindopt.y*(1.0-pow(aWindopt.x,60.0/fps));
-        aVelo1=vec2(aVelo.x*0.9*(fps/60.0),aVelo.y*0.9*(fps/60.0));
-
-        float roatation=atan(
-            (
-                sin(globalwind*grassnum*hoenabhaenigkeit)+
-                sin(aWind1.x*grassnum*hoenabhaenigkeit)+
+        if(abs(coordinates1.x)>=1.0&&abs(coordinates1.y)>=1.0){
+            float roatation=-atan(
+                globalwind.x*grassrotc*hoenabhaenigkeit*aWindopt[0]+
+                mix(aWind.x,aWindrandtimer.x,aWindrandtimer.z)*grassrotc*hoenabhaenigkeit*aWindopt[1]+
                 sin(grassrotation)+
-                (max(abs(aVelo1.x),0.5)*grassnum)*sign(aVelo1.x)
-            )/(
-                cos(globalwind*grassnum*hoenabhaenigkeit)+
-                cos(aWind1.x*grassnum*hoenabhaenigkeit)+
+                (max(abs(aVelo.x),maxvelo)*sign(aVelo.x))*grassrotc*hoenabhaenigkeit*aWindopt[2]+
+                0.0
+                ,
+                globalwind.y*grassrots*hoenabhaenigkeit*aWindopt[0]+
+                mix(aWind.y,aWindrandtimer.y,aWindrandtimer.z)*grassrots*hoenabhaenigkeit*aWindopt[1]+
                 cos(grassrotation)+
-                (max(abs(aVelo1.y),0.5)*grassnum)*sign(aVelo1.y)
-            ));
+                (max(abs(aVelo.y),maxvelo)*sign(aVelo.y))*grassrots*hoenabhaenigkeit*aWindopt[2]+
+                0.0
+            );
 
-        vec2 rotatedPosition = vec2(
-            cos(-roatation) * (coordinates1.x-grassstartcord.x) - sin(-roatation) * (coordinates1.y-grassstartcord.y) + grassstartcord.x,
-            sin(-roatation) * (coordinates1.x-grassstartcord.x) + cos(-roatation) * (coordinates1.y-grassstartcord.y) + grassstartcord.y
-        );
+            vec2 rotatedPosition = vec2(
+                cos(roatation) * (coordinates1.x-grassstartcord.x) - sin(roatation) * (coordinates1.y-grassstartcord.y) + grassstartcord.x,
+                sin(roatation) * (coordinates1.x-grassstartcord.x) + cos(roatation) * (coordinates1.y-grassstartcord.y) + grassstartcord.y
+            );
 
-        for(int i=0;i<objectslength;i++){
-            aVelo1-=objectsvel[i]*min(max(5.0-mindistpointtofloat(rotatedPosition.xy+translation.xy,objectspos[i]),0.0),0.5);
+            for(int i=0;i<objectslength;i++){
+                aVelo1-=vec2(objectsvel[i].x,-objectsvel[i].y)*min(max(grasswalkmaxdistv-mindistpointtofloat(rotatedPosition.xy,objectspos[i]),0.0),grasswalkmaxv);
+                aWindrandtimer1.w=max(0.0,aWindrandtimer1.w-min(1.0,abs(objectsvel[i].x)+abs(objectsvel[i].y))*min(max(grasswalkmaxdist-mindistpointtofloat(rotatedPosition.xy,objectspos[i]),0.0),grasswalkshrink*(60.0/fps)));
+            }
         }
     }
 }
@@ -155,10 +186,10 @@ uniform vec2 canvashwwebgl;
 uniform vec4 offsgl;
 uniform vec2 translation;
 uniform vec4 aColor;
-uniform int aPicture;
+uniform float aPicture;
 
 out vec2 vTexCoord;
-flat out int vPicture;
+flat out float vPicture;
 out vec4 vColor;
 
 vec2 conv2(vec2 cord) {return (vec2((cord.x/canvashwwebgl.x)*2.0-1.0,((canvashwwebgl.y-cord.y)/canvashwwebgl.y)*2.0-1.0));}
@@ -173,26 +204,63 @@ void main(void) {
 <script id="shader-webgl2-fs" type="x-shader/x-fragment">#version 300 es
 precision mediump float;
 in vec4 vColor;
-flat in int vPicture;
+flat in float vPicture;
 in vec2 vTexCoord;
 uniform sampler2D uSampler;
 out vec4 fragColor;
 void main(void) {
-    if(vPicture == 0){
+    if(int(vPicture) == 0){
         fragColor = vColor;
     }
-    if(vPicture == 1){
+    if(int(vPicture) == 1){
         fragColor = texture(uSampler, vTexCoord);
     }
 }
 </script>
+<script id="shader-vs" type="x-shader/x-vertex">
+attribute vec4 coordinates;
+attribute vec2 aTexCoord;
 
+uniform vec2 canvashwwebgl;
+uniform vec2 translation;
+uniform vec4 offsgl;
+uniform vec4 aColor;
+uniform float aPicture;
+
+varying vec2 vTexCoord;
+varying float vPicture;
+varying vec4 vColor;
+
+vec2 conv2(vec2 cord) {return (vec2((cord.x/canvashwwebgl.x)*2.0-1.0,((canvashwwebgl.y-cord.y)/canvashwwebgl.y)*2.0-1.0));}
+vec4 conv4(vec4 cord) {return (vec4((cord.x/canvashwwebgl.x)*2.0-1.0,((canvashwwebgl.y-cord.y)/canvashwwebgl.y)*2.0-1.0,0.0,1.0));}
+void main(void) {
+    vColor=aColor;
+    vTexCoord=aTexCoord;
+    vPicture=aPicture;
+    gl_Position = conv4((coordinates+vec4(translation.xy,0,0))/offsgl.w-vec4(offsgl.xy,0,0));
+}
+</script>
+<script id="shader-fs" type="x-shader/x-fragment">
+precision mediump float;
+varying vec4 vColor;
+varying float vPicture;
+varying vec2 vTexCoord;
+uniform sampler2D uSampler;
+void main(void) {
+    if(int(vPicture) == 0){
+        gl_FragColor = vColor;
+    }
+    if(int(vPicture) == 1){
+        gl_FragColor = texture2D(uSampler, vTexCoord);
+    }
+}
+</script>
 <script src="config.js"></script>
 <script id="manage">
 'use strict';
 console.groupCollapsed("starting");
 console.info("selftest start")
-let totest=["Worker","Performance","crypto","requestAnimationFrame","JSON","Float64Array","Set","Path2D","CanvasRenderingContext2D","URL","IdleDeadline","Image","FileReader","Blob","OffscreenCanvas"]
+let totest=["Worker","Performance","crypto","requestAnimationFrame","JSON","Float64Array","Set","Path2D","CanvasRenderingContext2D","URL","IdleDeadline","Image","FileReader","Blob","OffscreenCanvas","AudioContext"]
 let vendors=["webkit","moz","o","ms"]
 for(let i of totest){
     if(!(i in window)){
@@ -210,9 +278,10 @@ for(let i of totest){
 console.info("selftest finished")
 console.info("backupfunction load")
 if(!("requestAnimationFrame" in window)){window.requestAnimationFrame=function(callback){window.setTimeout(callback, 1000 / 60)};console.log("use setTimeout")}
-if(!("OffscreenCanvas" in window)){//kucke
+if(!("OffscreenCanvas" in window)){
     console.warn("use canvas as offscreencanvas")
     window.OffscreenCanvas=function(w=0,h=0){
+/** @type {HTMLCanvasElement} a */
         let a=document.createElement("Canvas")
         a.width=w
         a.height=h
@@ -224,6 +293,7 @@ if(!("OffscreenCanvas" in window)){//kucke
     }catch{
         console.warn("offscreencanvas context 2d dont work")
         window.OffscreenCanvas=function(w=0,h=0){
+/** @type {HTMLCanvasElement} a */
         let a=document.createElement("Canvas")
         a.width=w
         a.height=h
@@ -233,10 +303,7 @@ if(!("OffscreenCanvas" in window)){//kucke
 console.info("backupfunction finished")
 
 console.info("Promises start")
-let promall=[]
-let promallres=[]
-let promallrej=[]
-for(let i=0;i<=9;i++){
+for(let i=0;i<=10;i++){
     promall[i]=new Promise((r,j)=>[promallres[i],promallrej[i]]=[r,j]);
     promall[i].res=false
 }
@@ -251,16 +318,23 @@ promall[6].then(()=>{promall[6].res=true;console.info("6loaded game")},()=>{cons
 promall[7].then(()=>{promall[7].res=true;console.info("7loaded events")},()=>{console.warn("7couldnt load events")})
 promall[8].then(()=>{promall[8].res=true;console.info("8loaded maps")},()=>{console.warn("8couldnt load maps")})
 promall[9].then(()=>{promall[9].res=true;console.info("9loaded language")},()=>{console.warn("9couldnt load language")})
+promall[10].then(()=>{promall[10].res=true;console.info("10loaded multiplayer")},()=>{console.warn("9couldnt load multiplayer")})
+//function for that that i dont need to make the same code over and over
 
-Promise.all([promall[1],promall[8]]).then(()=>{defaultarrload();})
+Promise.all([promall[0],promall[1],promall[8]]).then(()=>{defaultarrload();})
 Promise.all(promall).then(()=>{console.info("all loaded")},()=>{console.warn("couldnt load all")})
 
 document.addEventListener('DOMContentLoaded',()=>{
     Promise.all([promall[0]]).then(()=>{
+        if(window.Worker&&!collmapnowebworker){//das nur starten wen man freie zeit hat oder bei start
+            workerpk=new Worker(window.URL.createObjectURL(new Blob([document.querySelector('#worker1').textContent], { type: "text/javascript" })));
+            workercol=new Worker(window.URL.createObjectURL(new Blob([document.querySelector('#worker2').textContent], { type: "text/javascript" })));
+        }
         document.getElementById("start").onclick=()=>{start('ani')};
         document.getElementById("keymap").onclick=()=>{menu(),mswitch()};
         document.getElementById("save").onclick=()=>{loadandsave(),mswitch()};
         document.getElementById("settings").onclick=()=>{setting(),mswitch()};
+        document.getElementById("webrtc").onclick=()=>{webrtcgui();mswitch()}
         document.getElementById("build").onclick=()=>{start('build')};
 
         document.getElementById("keymap").disabled=false;
@@ -268,31 +342,41 @@ document.addEventListener('DOMContentLoaded',()=>{
         if(!disablemenucontrolls)menucontrolls()
     })
     Promise.all([promall[0],promall[1],promall[8]]).then(()=>{
-        document.getElementById("save").disabled=false
+        if(document.getElementById("save"))document.getElementById("save").disabled=false
     })
     Promise.all([promall[0],promall[1],promall[6],promall[8]]).then(()=>{
-        canvasstart()
-        document.getElementById("start").disabled=false
+        if(document.getElementById("start"))document.getElementById("start").disabled=false
+        urlparams()
     })
     Promise.all([promall[0],promall[1],promall[5],promall[8]]).then(()=>{
-        document.getElementById("build").disabled=false
+        if(document.getElementById("build"))document.getElementById("build").disabled=false
+    })
+    Promise.all([promall[0],promall[10]]).then(()=>{
+        if(typeof(multiplayerid)=="undefined")genid()
+        if(document.getElementById("webrtc"))document.getElementById("webrtc").disabled=false
     })
     Promise.all([promall[0],promall[9]]).then(()=>{
-        document.getElementById("keymap").title=tooltips.hasOwnProperty("buttom")&&tooltips.buttom.hasOwnProperty("keymap")?tooltips.buttom.keymap:""
-        document.getElementById("settings").title=tooltips.hasOwnProperty("buttom")&&tooltips.buttom.hasOwnProperty("settings")?tooltips.buttom.settings:""
+        if(document.getElementById("keymap"))document.getElementById("keymap").title=tooltips.hasOwnProperty("buttom")&&tooltips.buttom.hasOwnProperty("keymap")?tooltips.buttom.keymap:""
+        if(document.getElementById("settings"))document.getElementById("settings").title=tooltips.hasOwnProperty("buttom")&&tooltips.buttom.hasOwnProperty("settings")?tooltips.buttom.settings:""
     })
     Promise.all([promall[0],promall[1],promall[8],promall[9]]).then(()=>{
-        document.getElementById("save").title=tooltips.hasOwnProperty("buttom")&&tooltips.buttom.hasOwnProperty("save")?tooltips.buttom.save:""
+        if(document.getElementById("save"))document.getElementById("save").title=tooltips.hasOwnProperty("buttom")&&tooltips.buttom.hasOwnProperty("save")?tooltips.buttom.save:""
     })
     Promise.all([promall[0],promall[1],promall[6],promall[8],promall[9]]).then(()=>{
-        document.getElementById("start").title=tooltips.hasOwnProperty("buttom")&&tooltips.buttom.hasOwnProperty("start")?tooltips.buttom.start:""
+        if(document.getElementById("start"))document.getElementById("start").title=tooltips.hasOwnProperty("buttom")&&tooltips.buttom.hasOwnProperty("start")?tooltips.buttom.start:""
     })
     Promise.all([promall[0],promall[1],promall[5],promall[8],promall[9]]).then(()=>{
-        document.getElementById("build").title=tooltips.hasOwnProperty("buttom")&&tooltips.buttom.hasOwnProperty("build")?tooltips.buttom.build:""
+        if(document.getElementById("build"))document.getElementById("build").title=tooltips.hasOwnProperty("buttom")&&tooltips.buttom.hasOwnProperty("build")?tooltips.buttom.build:""
+    })
+    Promise.all([promall[0],promall[10],promall[9]]).then(()=>{
+        if(document.getElementById("webrtc"))document.getElementById("webrtc").title=tooltips.hasOwnProperty("buttom")&&tooltips.buttom.hasOwnProperty("webrtc")?tooltips.buttom.webrtc:""
+    })
+    Promise.all([promall[0],promall[1],promall[8],promall[10]]).then(()=>{
+        if(!multiplayerjustlisten&&multiplayer&&!multiplayerstartet)multiplayerconnect()
     })
     Promise.all(promall).then(()=>{//brauch da net jede
-        urlparams()
         specialevents()
+        if(!multiplayerjustlisten&&multiplayer&&!multiplayerstartet)postMessage({act:"hi?!"});
     })
     Promise.all([promall[0],promall[9]]).then(()=>{
         for(let i of document.querySelectorAll(".menu")){
@@ -310,6 +394,7 @@ Promise.allSettled(promall).then(()=>{console.groupEnd();console.info("Promises 
 //}
 
 </script>
+<!--<script src="http://webrtc.github.io/adapter/adapter-latest.js"></script><!--fixes bugs in browser that they dont follow specs-->
 <script src="main.js" importance="high" async onerror="promallrej[0]()"></script>
 <script src="createobj.js" importance="high" async onerror="promallrej[1]()"></script>
 <script src="ai.js" async onerror="promallrej[2]()"></script>
@@ -320,6 +405,7 @@ Promise.allSettled(promall).then(()=>{console.groupEnd();console.info("Promises 
 <script src="events.js" async onerror="promallrej[7]()"></script>
 <script src="maps.js" importance="high" async onerror="promallrej[8]()"></script>
 <script src="language.js" async onerror="promallrej[9]()"></script>
+<script src="multiplayer.js" async onerror="promallrej[10]()"></script>
 <script id="worker1" async type="javascript/worker">
 self.onmessage=(e)=>{//wasser map erstelln
     pathmap(e.data[0],e.data[1],e.data[2],e.data[3],e.data[4])
@@ -380,17 +466,37 @@ function pathmap(minx,miny,maxx,maxy,test){
 }
 </script>
 <script id="worker2" async type="javascript/worker">
+let canvasgl,
+    gl,
+    shaderProgram,
+    WEBGLmultidraw,
+    WEBGLcbufferfloat,
+    coordinates2,
+    num,
+    midle,
+    max,
+    frame,
+    render,
+    vao,
+    enablewebgl=true
+
+
 self.onmessage=(e)=>{
-    const minx=e.data[0],miny=e.data[1],maxx=e.data[2],maxy=e.data[3],myRect=e.data[4]
-    const col=new Uint32Array((maxy-miny)*(maxx-minx))
-    const colobj=new Uint8Array((maxy-miny)*(maxx-minx))
-    work(minx,miny,maxx,maxy,myRect,col,colobj)
+    let col=new Uint32Array((e.data[3]-e.data[1])*(e.data[2]-e.data[0]))
+    let colobj=new Uint8Array((e.data[3]-e.data[1])*(e.data[2]-e.data[0]))
+    //teste noch ob shader alles geht
+    if(enablewebgl&&e.data[5]){
+        gpuwork(e.data[0],e.data[1],e.data[2],e.data[3],e.data[4],col,colobj)
+    }else{
+        work(e.data[0],e.data[1],e.data[2],e.data[3],e.data[4],col,colobj)
+    }
     const colb=col.buffer
     const colbobj=colobj.buffer
     postMessage([colb,colbobj],[colb,colbobj]);//transferobj nehmen
     //postMessage(colb,[colb]);//transferobj nehmen
 }
 function work(minx,miny,maxx,maxy,myRect,col,colobj){
+    
     let offscall=false
     if(typeof(OffscreenCanvas)=="function"){
         offscall=true
@@ -403,6 +509,7 @@ function work(minx,miny,maxx,maxy,myRect,col,colobj){
     }
     for (let num in myRect){
         let i=myRect[num]
+        if(i.invisible)continue
         //wen ich im array bin dan mach mir tiefe werte geben
         if(typeof(i.x)=="object"){
             if(offscall||typeof(Canvas)=="function"){
@@ -472,6 +579,177 @@ function work(minx,miny,maxx,maxy,myRect,col,colobj){
         }
     }
 }
+function gpusetup(){
+    try{
+        canvasgl=new OffscreenCanvas(1,1)
+        gl=canvasgl.getContext("webgl2")
+    }catch(e){enablewebgl=false;return}
+
+    WEBGLmultidraw=gl.getExtension("WEBGL_multi_draw")
+
+
+    let vertex=`#version 300 es
+        precision highp float;
+
+        in vec4 coordinates2;
+        in vec4 midle;
+        in float num;
+        out vec4 coordinates2o;
+        flat out vec4 midleo;
+        out float vnum;
+        uniform vec2 max;
+        flat out float maxo;
+        void main(void) {
+            gl_Position=vec4((coordinates2.x/max.x)*2.0-1.0,(coordinates2.y/max.y)*2.0-1.0,coordinates2.zw);
+            coordinates2o=coordinates2;
+            midleo=midle;
+            vnum=num;
+            maxo=max.x*max.y;
+        }
+    `
+    let fragment=`#version 300 es
+        precision highp float;
+        in float vnum;
+        out ivec4 fragColor;
+        in vec4 coordinates2o;
+        flat in vec4 midleo;
+        flat in float maxo;
+        void main(void) {
+            fragColor = ivec4(maxo+distance(coordinates2o,midleo),vnum,0,1);
+        }
+    `
+
+    let vertShader=gl.createShader(gl.VERTEX_SHADER);
+    gl.shaderSource(vertShader, vertex);
+    gl.compileShader(vertShader);
+    let fragShader=gl.createShader(gl.FRAGMENT_SHADER);
+    gl.shaderSource(fragShader, fragment);
+    gl.compileShader(fragShader);
+    if (!gl.getShaderParameter(vertShader,gl.COMPILE_STATUS)) {
+        console.log("An error occurred compiling the shaders: " +  gl.getShaderInfoLog(vertShader));
+    }
+    if (!gl.getShaderParameter(fragShader,gl.COMPILE_STATUS)) {
+        console.log("An error occurred compiling the shaders: " +  gl.getShaderInfoLog(fragShader));
+    }
+    shaderProgram=gl.createProgram();
+    gl.attachShader(shaderProgram, vertShader);
+    gl.attachShader(shaderProgram, fragShader);
+    gl.linkProgram(shaderProgram)
+    if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
+        console.log("Error linking shaders:" + gl.getProgramInfoLog(shaderProgram));
+    }
+
+
+    coordinates2=gl.createBuffer()
+    num=gl.createBuffer()
+    midle=gl.createBuffer()
+    max=gl.getUniformLocation(shaderProgram,"max")
+    frame=gl.createFramebuffer()
+    render=gl.createRenderbuffer()
+
+    vao=gl.createVertexArray();
+    gl.bindVertexArray(vao);
+    gl.bindBuffer(gl.ARRAY_BUFFER, coordinates2);
+    gl.vertexAttribPointer(gl.getAttribLocation(shaderProgram,"coordinates2"), 2, gl.FLOAT,false,0,0)
+    gl.enableVertexAttribArray(gl.getAttribLocation(shaderProgram,"coordinates2"))
+    gl.bindBuffer(gl.ARRAY_BUFFER, num);
+    gl.vertexAttribPointer(gl.getAttribLocation(shaderProgram,"num"), 1, gl.FLOAT,false,0,0)
+    gl.enableVertexAttribArray(gl.getAttribLocation(shaderProgram,"num"))
+    gl.bindBuffer(gl.ARRAY_BUFFER, midle);
+    gl.vertexAttribPointer(gl.getAttribLocation(shaderProgram,"midle"), 2, gl.FLOAT,false,0,0)
+    gl.enableVertexAttribArray(gl.getAttribLocation(shaderProgram,"midle"))
+    gl.bindVertexArray(null);
+}
+function gpuwork(minx,miny,maxx,maxy,myRect,col,colobj){
+    gl.useProgram(shaderProgram);
+    
+    let cordinaten=[]
+    let midlearr=[]
+    let numbers=[]
+    let num1=0
+    let firstst=[]
+    let countst=[]
+    colobjarr=[]
+    for(let i of myRect){
+        num1++
+        if(i.invisible)continue
+        colobjarr.push(i)
+        firstst.push(numbers.length)
+        let counter=0
+        if(typeof(i.x)=="object"){
+            const firstx=Math.min(...i.x)
+            const firsty=Math.min(...i.y)
+            for (let i1=0;i1<i.x.length;i1++){
+                cordinaten.push(i.x[i1]-minx,i.y[i1]-miny)
+                numbers.push(num1)
+                midlearr.push(firstx+i.w/2-minx,firsty+i.h/2-miny)
+                counter++
+            }
+        }else{
+            cordinaten.push(
+                i.x-minx,i.y-miny,
+                i.x+i.w-minx,i.y-miny,
+                i.x+i.w-minx,i.y+i.h-miny,
+                i.x-minx,i.h+i.y-miny
+            )
+            midlearr.push(
+                i.x+i.w/2-minx,i.y+i.h/2-miny,
+                i.x+i.w/2-minx,i.y+i.h/2-miny,
+                i.x+i.w/2-minx,i.y+i.h/2-miny,
+                i.x+i.w/2-minx,i.y+i.h/2-miny
+            )
+            numbers.push(
+                num1,
+                num1,
+                num1,
+                num1
+            )
+            counter+=4
+        }
+        countst.push(counter)
+    }
+    const firsts=new Int32Array(firstst)
+    const counts=new Int32Array(countst)
+
+    gl.uniform2f(max,maxx-minx,maxy-miny);
+    gl.bindVertexArray(vao)
+    gl.bindBuffer(gl.ARRAY_BUFFER, coordinates2);
+    gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(cordinaten),gl.STREAM_DRAW);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, midle);
+    gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(midlearr),gl.STREAM_DRAW);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, num);			
+    gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(numbers),gl.STREAM_DRAW);
+
+    gl.viewport(0,0,maxx-minx,maxy-miny)
+    
+
+    gl.bindFramebuffer(gl.FRAMEBUFFER, frame);
+    gl.bindRenderbuffer(gl.RENDERBUFFER, render);
+    
+    gl.renderbufferStorage(gl.RENDERBUFFER, gl.RG32I,maxx-minx,maxy-miny)
+    
+    gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.RENDERBUFFER, render);
+    
+    if(WEBGLmultidraw){
+        WEBGLmultidraw.multiDrawArraysWEBGL(gl.TRIANGLE_FAN, firsts, 0, counts, 0, firsts.length);
+    }else{
+        for(let i2=0;i2<firsts.length;i2++)gl.drawArrays(gl.TRIANGLE_FAN,firsts[i2],counts[i2])
+    }
+    gl.flush()
+    let arr=new Int32Array((maxy-miny)*(maxx-minx)*2)
+    gl.readPixels(0,0,maxx-minx,maxy-miny, gl.RG_INTEGER, gl.INT, arr);
+    for(let i=0;i<arr.length;i+=2){
+        col[i/2]=arr[i]
+        colobj[i/2]=arr[i+1]
+    }
+
+    gl.bindVertexArray(null)
+    gl.bindFramebuffer(gl.FRAMEBUFFER,null);
+    gl.bindRenderbuffer(gl.RENDERBUFFER,null);
+}
+gpusetup()
 </script>
 <style>
 body,html,canvas{
@@ -507,6 +785,14 @@ img{display:none}
     z-index:1;
     }
 .menu:focus{
+    border: 1px solid;
+}
+.presetask{
+    margin-left:30vw;
+    margin-right:30vw;
+    z-index:2;
+    }
+.presetask:focus{
     border: 1px solid;
 }
 #buildmenu{
@@ -551,7 +837,6 @@ h1,h2,h3{
     <button accesskey="k" title="need main" disabled="true" class="menu" id="keymap">Keymap</button>
     <button accesskey="l" title="need main (save) and createobj" disabled="true" class="menu" id="save">Load&Save</button>
     <button accesskey="o" title="need main" disabled="true" class="menu" id="settings">Setting</button>
+    <button accesskey="w" title="need main and multiplayer" disabled="true" class="menu" id="webrtc">Webrtc</button>
     <button accesskey="b" title="need main createobj and build" disabled="true" class="menu" id="build">Build</button>
-    <canvas id="canvas">Sorry, your browser cannot display this game.</canvas>
-    <canvas id="canvasb"></canvas>
 </body>
