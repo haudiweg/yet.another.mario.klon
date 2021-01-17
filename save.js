@@ -1,25 +1,43 @@
 // @ts-check
 'use strict';
-async function getsha(text){
-    const digestHex = await digestMessage(text);
-    console.log("sha-256 key lautet:")
-    console.log(digestHex);
-    console.log("bitte vergleiche key mit key den man dir gegeben hat\n wen keys nicht gleich sind probiere datei neu runterzuladen bzw überprüffe datei")
-    return digestHex
-}
 function loadarr(me,mode=false){
     let temp
-    let cha=getsha(me)
+    let cha=digestMessage(me)
+    console.log("bitte vergleiche key mit key den man dir gegeben hat\n wen keys nicht gleich sind probiere datei neu runterzuladen bzw überprüffe datei")
     if(!mode){
-        if(!(/^[a-zA-Z0-9\:\,\.\"\{\[\]\}\/\-#öäü%]*$/.test(me))){console.log("not allowed carackter");return}
-        let check="[^a-zA-Z0-9](function|this|self|window|set|get)[^a-zA-Z0-9]"
-        for(let i in this) {try {if((typeof this[i]).toString()=="function"){check+="|"+i}}catch(e){}}//alle functionen sind nicht erlaubt
-        if(RegExp(check).test(me)){console.log("not allowed name");return}
+        try{if(!(/^[a-zA-Z0-9\:\,\.\"\{\[\]\}\-#öäü]*$/.test(me))){
+            console.log("not allowed carackter")
+            console.log(/[^a-zA-Z0-9\:\,\.\"\{\[\]\}\/\-#öäü]/.exec(me))
+            return
+        }}catch(e){console.log("to big for regex: "+e);return}
+        let check="[^a-zA-Z0-9](function|this|self|window|set|get|javascript|undefined|html|document"
+        for(let i in this)if((typeof this[i])=="function"||(typeof this[i])=="symbol"||(typeof this[i])=="object")check+="|"+i//alle functionen sind nicht erlaubt
+        for(let i in document)check+="|"+i //alle propertys von document (damit onclick usw rausgefiltert wird)
+        check=check.replace("|myRect","").replace("|mySun","").replace("|myGravi","").replace("|dir","")
+        check+=")[^a-zA-Z0-9]"//das forne und dahinter macht das zb amath erlaubt ist aber  Math.a net
+        try{if(RegExp(check).test(me)){
+            console.log("not allowed name")
+            console.log(RegExp(check).exec(me))
+            return
+        }}catch(e){console.log("to big for regex: "+e);return}
+        //wen ein punkt vorkommt und dafor oder dahinter kein num kommt
+        //wen man auf string zugreift
+        //array zugreifen
+        //#bei keiner farbe
+        //kein :: (wen das gibt ist irgendwas wierd)
+        //da ist was wierd
+        //lehrer string
+        //array das sofort string hat ohne " dafor
+        let checkjsfun=/([^0-9]\.[^0-9])|(\"\[)|(\]\[)|(#[^0-9a-fA-F])|::|:,|""|\[[^0-9\[\{\]\-"]/
+        try{if(checkjsfun.test(me)){
+            console.log("not allowed name (jsfun)")
+            console.log(checkjsfun.exec(me))
+            return
+        }}catch(e){console.log("to big for regex: "+e);return}
     }
     try {
         temp=mode?JSON.parse(me,(k,v)=>{if(typeof(v)==="string"&&v.startsWith("/Function(")&&v.endsWith(")/")){v=v.substring(10,v.length-2);return (0,eval)("("+v+")");}return v;}):JSON.parse(me)
     }catch(e){console.log("broken dateierror");return}
-    myFire[loadmap]=[]
     myRect[loadmap]=[]
     mySun[loadmap]=[]
     myGravi[loadmap]=[]
@@ -34,7 +52,7 @@ function loadarr(me,mode=false){
         }else{
             for(let i1 in temp[i]){
                 if(typeof(createobj[temp[i][i1].construck])!=="function"||typeof(window[temp[i][i1].construckarr])!=="object")continue
-                new (createobj[temp[i][i1].construck])(window[temp[i][i1].construckarr],0,0,0,0,temp[i][i1])
+                new (createobj[temp[i][i1].construck])(window[temp[i][i1].construckarr],temp[i][i1])
             }
         }
     }
@@ -49,7 +67,7 @@ async function savearr(mode=0){
         modes=confirm("unsecure save?")
         if(prom=="")return
     }
-    const temp=[myFire[loadmap],myRect[loadmap],mySun[loadmap],myGravi[loadmap]]
+    const temp=[myRect[loadmap],mySun[loadmap],myGravi[loadmap]]
     let temp1=[]
     for(let i in temp){
         temp1[i]=temp[i].map(a=>({...a}))
@@ -67,6 +85,18 @@ async function savearr(mode=0){
                 if(key=="construck")continue
                 if(JSON.stringify(temp1[i][i1][key])==JSON.stringify(temp2[key]))delete temp1[i][i1][key]
             }
+            if(
+                typeof(temp1[i][i1].fill)=="string"&&
+                /rgba\((25[0-5]|2[0-4][0-9]|[0-1]?[0-9]?[0-9]),(25[0-5]|2[0-4][0-9]|[0-1]?[0-9]?[0-9]),(25[0-5]|2[0-4][0-9]|[0-1]?[0-9]?[0-9]),(0\.[0-9]*|0|1)\)/.test(temp1[i][i1].fill)
+            ){temp1[i][i1].fill=temp1[i][i1].fill.replace("(","[").replace(")","]")}
+            if(
+                typeof(temp1[i][i1].fillstr)=="string"&&
+                /rgba\((25[0-5]|2[0-4][0-9]|[0-1]?[0-9]?[0-9]),(25[0-5]|2[0-4][0-9]|[0-1]?[0-9]?[0-9]),(25[0-5]|2[0-4][0-9]|[0-1]?[0-9]?[0-9]),(0\.[0-9]*|0|1)\)/.test(temp1[i][i1].fillstr)
+            ){temp1[i][i1].fillstr=temp1[i][i1].fillstr.replace("(","[").replace(")","]")}
+            if(
+                typeof(temp1[i][i1].fillbackup)=="string"&&
+                /rgba\((25[0-5]|2[0-4][0-9]|[0-1]?[0-9]?[0-9]),(25[0-5]|2[0-4][0-9]|[0-1]?[0-9]?[0-9]),(25[0-5]|2[0-4][0-9]|[0-1]?[0-9]?[0-9]),(0\.[0-9]*|0|1)\)/.test(temp1[i][i1].fillbackup)
+            ){temp1[i][i1].fillbackup=temp1[i][i1].fillbackup.replace("(","[").replace(")","]")}
 
         }
     }
@@ -94,12 +124,6 @@ async function savearr(mode=0){
     if(mode==2){
         return text
     }
-}
-async function digestMessage(message) {
-    const msgUint8 = new TextEncoder().encode(message);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
-    const hashHex = Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
-    return hashHex;
 }
 function allfiles(me){
     let promises=[]

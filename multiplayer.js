@@ -1,40 +1,65 @@
 function genid(){
-    const num="abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!#$%&()*+-;<=>?@^_`{|}~"
-    let str=""
-    let times=64
-    for(let i=0;i<times;i++)str+=num[Math.round(Math.random()*(num.length-1))]
+    let str
+    while(true){
+        str=""
+        for(let i=0;i<idlength;i++)str+=randomcaracterid[Math.round(Math.random()*(randomcaracterid.length-1))]
+        if(checkids(str))break//mache id gen bis id valid ist
+    }
     multiplayerid=str
 }
+function checkids(id){
+    if(id.length!=idlength){console.log("length from id is false");return}
+    if(RegExp("[^"+randomcaracterid+"]").test(id)){console.log("not allowed carackter in id");return}
 
+    let check="(function|this|self|window|set|get"
+    for(let i in this)if((typeof this[i])=="function"||(typeof this[i])=="symbol"||(typeof this[i])=="object")check+="|"+i//alle functionen sind nicht erlaubt
+    for(let i in document)check+="|"+i
+    check+=")"
+    if(RegExp(check).test(id)){console.log("not allowed name in id");return}
 
-function webrtcmessage(e){
-    let temp=JSON.parse(e.data)
-    if(typeof(temp.toid)!=="undefined"&&temp.toid!=multiplayerid)return
-    temp.con=e.currentTarget
-    multiplayermain(temp)
+    return true //wen erlaubt
 }
-bc.onmessage=e=>{
-    //console.log(e)
-    if(typeof(e.data.toid)!=="undefined"&&e.data.toid!=multiplayerid){console.log("del");return}
-    e.data.con=e.currentTarget
-    multiplayermain(e.data)
-}
+
+ 
 function postMessage(message,direct=null){
+    //console.log("send:"+JSON.stringify(message))
     //multiplayermapplayer
     //direct nachrichten zulassen
+    let origin=""
     message.id=multiplayerid//pakete kryptografisch unterschreiben
     if(direct==null){
-        bc.postMessage(message)
-        const messagestr=JSON.stringify(message)
-        for(i of webrtcChannel){i.send(messagestr)}
+        if(enablemultiplayer[0]&&conectionpromise[0].res){
+            bc.postMessage(message,origin)
+        }
+        if(enablemultiplayer[1]&&conectionpromise[1].res){//promise beachten
+            const messagestr=JSON.stringify(message)
+            for(i of webrtcChannel){i.send(messagestr)}
+        }
+        if(enablemultiplayer[2]&&conectionpromise[2].res){
+            const messagestr1=JSON.stringify({
+                //chat_user:"bot<3 ",
+                chat_user:"bot<3 "+multiplayerid,
+                chat_message:"@bot<3 "+JSON.stringify(message)
+            })
+            websocket.send(messagestr1);
+        }
     }else{
         const temp=multiplayermapplayer.get(direct)
         if(typeof(temp)=="undefined"){console.log(direct)}
+
         if(temp.webrtc){
             const messagestr=JSON.stringify(message)
-            webrtcChannel[temp.webrtcid].send(messagestr)
+            webrtcChannel[temp.webrtcid].send(messagestr,origin)
         }else if(temp.bc){
-            try{bc.postMessage(message)}catch(e){console.warn(e);console.log(message)}
+            try{bc.postMessage(message,origin)}catch(e){console.warn(e);console.log(message)}
+        }else if(temp.ws){
+            const messagestr1=JSON.stringify({
+                //chat_user:"bot<3 ",
+                chat_user:"bot<3 "+multiplayerid,
+                chat_message:"@bot<3 "+JSON.stringify(message)
+            })
+            websocket.send(messagestr1,origin)
+        
         }else{
             console.log("no route to player id:"+direct)
         }
@@ -52,21 +77,16 @@ function resetmultiplayer(){
     console.log("resetet multiplayer")
     managefromplayer()
 }
-function multiplayerconnect(start){
-    if(multiplayerstartet&&start){
+function multiplayerconnect(){
+    postMessage({act:"hi?!",id:multiplayerid});
+    setTimeout(()=>{
         postMessage({act:"give me friends",id:multiplayerid});
-    }
-    if(!multiplayerstartet){
-        postMessage({act:"hi?!",id:multiplayerid});
-        if(start){
-            setTimeout(()=>{
-                postMessage({act:"give me friends",id:multiplayerid});
-                //frage wer wie andere verbunden sind
-                //und frage spieler ob man mit einen unbekannten connecten möchte
-            },5000)//5sek
-        }
-    }
+        //frage wer wie andere verbunden sind
+        //und frage spieler ob man mit einen unbekannten connecten möchte
+    },5000)//5sek
 }
+
+//mache verbinden starten und protokolire von wo was war
 function multiplayerconnecting(a){
     multiplayerstartet=true
     //id collision
@@ -83,8 +103,10 @@ function multiplayerconnecting(a){
         let temp=multiplayermapplayer.get(a.id)
         temp.webrtc=false
         temp.bc=false
-        temp.webrtcid
-        temp.bcid
+        temp.ws=false
+        temp.webrtcid=""
+        temp.bcid=""
+        temp.wsid=""
     }
     //schreibe con wo spieler connectet ist  (später mal noch mehr connection methoden machen)
     let temp=multiplayermapplayer.get(a.id)
@@ -92,16 +114,32 @@ function multiplayerconnecting(a){
         temp.bc=true
         temp.bcid=a.con.name  //nice to have pfals mal multi chanel suport eingebaut wird
     }
+    if(a.con.constructor.name=="WebSocket"){
+        temp.ws=true
+        temp.wsid=a.con.url  //nice to have pfals mal multi chanel suport eingebaut wird
+    }
     if(a.con.constructor.name=="RTCDataChannel"){
         temp.webrtc=true
         temp.webrtcid=webrtcChannel.findIndex(i=>i==a.con)  //voll unperformant geht das net besser in dem man webrtc chanel jeden chanel ein param namenns webrtcid gibt
+    }
 
-        //wen spieler beides hat disconnecte webrtp chanel
-        if(temp.webrtc&&temp.bc){
+    //finde was am höchten ist und activirt ist
+    let imp=-1
+    for(let i=0;i<preferemultiplayer.length;i++)if(temp[preferemultiplayershortcut[i]])imp=Math.max(imp,preferemultiplayer[i])
+    //mache alle wo von priorität drunter sind deactiviren
+    for(let i=0;i<preferemultiplayer.length;i++)if(preferemultiplayer[i]<imp&&temp[preferemultiplayershortcut[i]]){
+        if(preferemultiplayershortcut[i]=="bc"){
+            temp.bc=false
+        }
+        if(preferemultiplayershortcut[i]=="webrtc"){
             let num=webrtcChannel.findIndex(i=>i==a.con)
             webrtcChannel[num].close()
             webrtcConnection[num].close()
             temp.webrtc=false
+        }
+        if(preferemultiplayershortcut[i]=="ws"){
+            temp.ws=false
+            console.log("deactivate ws for player")
         }
     }
 
@@ -129,6 +167,7 @@ function multiplayerconnecting(a){
     }
     if(a.act=="give me friends details pls"&&a.toid==multiplayerid){//connecten lassen
         //wen nicht beide bc verbunden sind mach conection
+        console.log(a.friends)
         for (let i of a.friends)if(!multiplayermapplayer.get(a.id).bc||!multiplayermapplayer.get(i).bc)multiplayertoconnect.push([a.id,i])
         console.log(multiplayertoconnect)
         webrtcfriendsconnect()
@@ -154,117 +193,6 @@ function multiplayerdisconect(channel){
     }
     webrtcChannel[num].close()
     webrtcConnection[num].close()
-}
-function multiplayeraction(a){
-    if(a.act=="spawn obj"){
-        if(createobj.multiplayerallowedspawn.includes(a.data.construck)){
-            a.data.construck
-            let prop=[]
-            for(let i1 of createobj.multiplayerallowedobjprop)if(a.data.hasOwnProperty(i1))prop[i1]=a.data[i1]
-            new createobj[a.data.construck](myRect,{onlineplayernum:a.data.playerid,onlineplayer:a.id,...prop})
-        }
-        return
-    }
-    if(a.act=="update obj"){
-        for(let i of myRect[loadmap]){
-            if(i.managefromplayerobjnum==a.managefromplayerobjnum&&(i.managefromplayernum==a.id||i.sync)){
-                visibilityandcol(i,a.data)
-                for(let i1 of createobj.multiplayerallowedobjprop)if(a.data.hasOwnProperty(i1))i[i1]=a.data[i1]
-                break
-            }
-        }
-        return
-    }
-    if(a.act=="remove obj"){
-        for(let i of myRect[loadmap]){
-            if(i.managefromplayerobjnum==a.managefromplayerobjnum&&((i.managefromplayernum==a.id||i.sync)|(i.managefromplayernum==a.data.id||!i.sync))){
-
-            }
-        }
-        return
-    }
-    if(stopmain&&a.act=="winscreen"){
-        console.log("finish (multiplayer)")
-        stopmain=false;
-        winscreen()
-        return
-    }
-    if(a.act=="sendmap"){//recive map
-        if(multiplayerblacklist.has(a.id))return//wen id auf blacklist dan return
-        if(multiplayerwhitelist.has(a.id)||multiplayeracceptallmaps){// wen auf whitelist dan accepte
-            loadarr(a.obj)
-            return
-        }
-        if(!multiplayerignorenotwitelistet)askfor(1,a)
-        return
-    }
-
-    if(stopmain&&a.act=="player stats update"){
-        for(let i of myRect[loadmap]){
-            if(i.onlineplayernum==a.playersendid&&i.onlineplayer==a.id){
-                if(renderer==3&&((typeof(a.w)=="number"&&i.w!=a.w)||(typeof(a.h)=="number"&&i.h!=a.h))){updatescene=true}
-                for(let i1 of createobj.multiplayerallowedprop)if(a.data.hasOwnProperty(i1)&&i.hasOwnProperty(i1))i[i1]=a.data[i1]
-                return
-            }
-        }
-    }
-    if(a.act=="player join"||a.act=="player join2"){
-        if(multiplayerblacklistgame.has(a.id))return//wen id auf blacklist dan return
-        // wen auf whitelist schon da oder man alle accepten sol dan accepte 
-        if(multiplayerwhitelistgame.has(a.id)||multiplayeracceptallplayer||myRect[loadmap].some(i=>i.onlineplayernum==a.data.playerid&&i.onlineplayer==a.id)){
-            join(a)
-            return
-        }
-        if(!myRect[loadmap].some(i=>i.onlineplayernum==a.data.playerid&&i.onlineplayer==a.id)&&!multiplayerignorenotwitelistetgame)askfor(0,a)
-        return
-    }
-
-    if(a.act=="player leave"){
-        for(let i in myRect[loadmap]){
-            if(myRect[loadmap][i].onlineplayernum==a.data.playerid&&myRect[loadmap][i].onlineplayer==a.id){
-                myRect[loadmap].splice(i,1);
-                break
-            }
-        }
-        if(renderer==3)updatescene=true
-        return
-    }
-
-    if(a.act=="is player away?"&&a.awayid==multiplayerid){
-        postMessage({act:"im not away",id:multiplayerid})
-        return
-    }
-
-    if(a.act=="bye"){
-        for(let i in myRect[loadmap]){
-            if(myRect[loadmap][i].onlineplayer==a.id)myRect[loadmap].splice(i,1);
-        }
-        multiplayermapplayer.delete(a.id)
-        multiplayerafk.delete(a.id)
-        managefromplayer()
-        return
-    }
-    if(a.act=="dont answered (disconnect)"){
-        for(let i in myRect[loadmap]){
-            if(myRect[loadmap][i].onlineplayer==a.awayid)myRect[loadmap].splice(i,1);
-        }
-        multiplayermapplayer.delete(a.awayid)
-        multiplayerafk.delete(a.awayid)
-        managefromplayer()
-        return
-    }
-    if(a.act=="player afk"){
-        multiplayerafk.add(a.id)
-        managefromplayer()
-        return
-    }
-    if(a.act=="player not afk"){
-        multiplayerafk.delete(a.id)
-        managefromplayer()
-        return
-    }
-
-    return 1
 }
 
 
@@ -295,6 +223,9 @@ function multiplayermain(a){
     if(!multiplayermapplayer.has(a.id))return
     if(multiplayeraction(a)!=1)return
 }
+
+
+
 function playergotafk(id){
     if(multiplayerafk.has(id))return
     postMessage({act:"is player away?",awayid:id,id:multiplayerid})
@@ -327,6 +258,7 @@ function visibilityandcol(me,a){
 }
 function join(a){
     if(!myRect[loadmap].some(i=>i.onlineplayernum==a.data.playerid&&i.onlineplayer==a.id)){
+        if(multiplayeridcheckingonspawn&&!checkids(a.id))return
         let i={}
         for(let i1 of createobj.multiplayerallowedprop)if(a.data.hasOwnProperty(i1))i[i1]=a.data[i1]
         new createobj.Multiplayer(myRect,{onlineplayernum:a.data.playerid,onlineplayer:a.id,...i})
@@ -367,6 +299,7 @@ function managefromplayer(){
  * @param {*} a
  */
 function askfor(mode,a){
+    if(multiplayeridcheckingonsdisplay&&!checkids(a.id))return
     [...document.getElementsByClassName("ask")].forEach(me=>me.style.display="none");
     let main=document.createElement("div")
     main.className="ask"
@@ -379,8 +312,8 @@ function askfor(mode,a){
     main.setAttribute('mode',""+mode)
     let but=[]
     but.push(document.createElement("SPAN"))
-    if(mode==0)but[but.length-1].textContent=(tooltips.hasOwnProperty("multiplayer")&&tooltips.multiplayer.hasOwnProperty("playerwanttojoin")?tooltips.multiplayer.playerwanttojoin:"player want to join:\n")+a.id
-    if(mode==1)but[but.length-1].textContent=(tooltips.hasOwnProperty("multiplayer")&&tooltips.multiplayer.hasOwnProperty("downloadmapfromplayer")?tooltips.multiplayer.downloadmapfromplayer:"download map from player:\n")+a.id
+    if(mode==0)but[but.length-1].textContent=(tooltips.hasOwnProperty("multiplayer")&&tooltips.multiplayer.hasOwnProperty("playerwanttojoin")?tooltips.multiplayer.playerwanttojoin:"player want to join:")+"\n"+a.id
+    if(mode==1)but[but.length-1].textContent=(tooltips.hasOwnProperty("multiplayer")&&tooltips.multiplayer.hasOwnProperty("downloadmapfromplayer")?tooltips.multiplayer.downloadmapfromplayer:"download map from player:")+"\n"+a.id
     but[but.length-1].style.backgroundColor="white"
     but[but.length-1].style.display="flex"
     but[but.length-1].style.alignItems="center"
@@ -492,6 +425,7 @@ function multiplayerfriendsconect(a){
                 toid1:a.sender,
             },a.hopid)
         })
+        conectionpromiseres[1]()
         webrtcConnection.push(multiplayertoconnectmode.con)
         webrtcChannel.push(multiplayertoconnectmode.dc)
         return
@@ -861,5 +795,6 @@ function webrtcgui(){
     document.body.appendChild(main)
 }
 //fange mit localan danach remote und das immer hin und her
+
 
 promallres[10]()

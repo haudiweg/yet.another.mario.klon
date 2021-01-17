@@ -13,254 +13,17 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>yet another mario klon</title>
 <noscript>Your browser does not support JavaScript!</noscript>
-<script id="shader-webgl2-vs-grass" type="x-shader/x-vertex">#version 300 es
-//do code of script edit in js to make that the shader use a version that is suportet
-#line 19
-precision highp float;
-
-in vec4 coordinates1;     //point from were the grass rotate
-
-in float grassrotation;     //default position were grass look att
-in float grassnum;
-in vec2 grassstartcord;
-
-in vec2 aVelo;              //grass.velo[0]   grass.velo[1]
-in vec3 aWindopt;           //grass.strengthgwind grass.strengthiwind grass.strengthvelo   mach struct daraus das settings beinhaltet
-in vec2 aWind;             //input from wind of every grass
-in vec4 aWindrandtimer;
-in vec4 grasscolor;
-
-uniform vec2 canvashwwebgl;
-uniform vec4 offsgl;
-uniform int rendermode;
-uniform float fps;
-uniform vec2 globalwind;   //is the global wind
-uniform vec4 objectspos[MAX_NUM_TOTAL_OBJECTS];
-uniform vec2 objectsvel[MAX_NUM_TOTAL_OBJECTS];
-uniform int objectslength;
-
-out vec4 grasscolor1;
-out vec2 aVelo1;      //output from velo of every grass
-out vec2 aWind1;     //output from wind of every grass
-out vec4 aWindrandtimer1;  //randomx  randomy
-
-#define timetogrow 800.0
-#define velomulti 0.9
-#define randtimer 30.0
-#define grasswalkmaxdist 2.0
-#define grasswalkshrink 0.0001
-#define grasswalkmaxdistv 5.0
-#define grasswalkmaxv 0.5
-#define maxvelo 0.5
-
-
-float mindistpointtofloat(vec2 point,vec4 rectangle){
-    vec2 nearestpoint=vec2(0,0);
-    if(point.x<=rectangle.x){
-        nearestpoint.x=rectangle.x;
-    }else if(point.x>=rectangle.x+rectangle.z){
-        nearestpoint.x=rectangle.x+rectangle.z;
-    }else{
-        nearestpoint.x=point.x;
-    }
-    if(point.y<=rectangle.y){
-        nearestpoint.y=rectangle.y;
-    }else if(point.y>=rectangle.y+rectangle.w){
-        nearestpoint.y=rectangle.y+rectangle.w;
-    }else{
-        nearestpoint.y=point.y;
-    }
-    //negativ w h beachen vieleicht
-    return distance(point,nearestpoint);
-}
-vec2 conv2(vec2 cord) {return (vec2((cord.x/canvashwwebgl.x)*2.0-1.0,((canvashwwebgl.y-cord.y)/canvashwwebgl.y)*2.0-1.0));}
-vec4 conv4(vec4 cord) {return (vec4((cord.x/canvashwwebgl.x)*2.0-1.0,((canvashwwebgl.y-cord.y)/canvashwwebgl.y)*2.0-1.0,0.0,1.0));}
-void main(void) {
-    if(rendermode==1){
-        float hoenabhaenigkeit=min(max(1.0,distance(coordinates1.xy,grassstartcord)/20.0),30.0)*grassnum;
-        float grassrotc=abs(cos(grassrotation));
-        float grassrots=abs(sin(grassrotation));
-        grasscolor1=grasscolor;
-        float roatation=-atan(
-            globalwind.x*grassrotc*hoenabhaenigkeit*aWindopt[0]+
-            mix(aWind.x,aWindrandtimer.x,aWindrandtimer.z)*grassrotc*hoenabhaenigkeit*aWindopt[1]+
-            sin(grassrotation)+
-            (max(abs(aVelo.x),maxvelo)*sign(aVelo.x))*grassrotc*hoenabhaenigkeit*aWindopt[2]+
-            0.0
-            ,
-            globalwind.y*grassrots*hoenabhaenigkeit*aWindopt[0]+
-            mix(aWind.y,aWindrandtimer.y,aWindrandtimer.z)*grassrots*hoenabhaenigkeit*aWindopt[1]+
-            cos(grassrotation)+
-            (max(abs(aVelo.y),maxvelo)*sign(aVelo.y))*grassrots*hoenabhaenigkeit*aWindopt[2]+
-            0.0
-        );
-
-        vec4 rotatedPosition = vec4(
-            cos(roatation) * mix(0.0,coordinates1.x-grassstartcord.x,aWindrandtimer.w) - sin(roatation) * mix(0.0,coordinates1.y-grassstartcord.y,aWindrandtimer.w) + grassstartcord.x,
-            sin(roatation) * mix(0.0,coordinates1.x-grassstartcord.x,aWindrandtimer.w) + cos(roatation) * mix(0.0,coordinates1.y-grassstartcord.y,aWindrandtimer.w) + grassstartcord.y,
-            coordinates1.z,coordinates1.w
-        );
-        
-        gl_Position = conv4((rotatedPosition)/offsgl.w-vec4(offsgl.xy,0,0));
-    }else if(rendermode==0){
-        float hoenabhaenigkeit=min(max(1.0,distance(coordinates1.xy,grassstartcord)/20.0),30.0)*grassnum;
-        float grassrotc=abs(cos(grassrotation));
-        float grassrots=abs(sin(grassrotation));
-        aWind1=aWind;
-        aVelo1=aVelo*velomulti*(fps/60.0);
-        aWindrandtimer1=aWindrandtimer;
-        aWindrandtimer1.w=min(1.0,aWindrandtimer1.w+(60.0/fps)/timetogrow);
-
-        
-        //man könnte mit seperaten feedback arbeiten um ds zu setzen immer wieder zu vermeiden
-        if(abs(coordinates1.x)<=1.0||abs(coordinates1.y)<=1.0)aWindrandtimer1.z+=(60.0/fps)/randtimer;  //jede 30 sek geht wert +1
-        if(aWindrandtimer1.z>=1.0){
-            aWind1=aWindrandtimer.xy;  //alter random wind neuer wind
-            aWindrandtimer1.z-=1.0;  //was pasiert wen werd -1 oder mehr ist
-            //besserer randomgen baun
-            float maxnumber=float(~uint(0));
-            //mache alle numbern in range von 0-1  und dan in 32 bit range
-            uint random=(
-                uint(((grassrotation+1.)/2.)                *maxnumber)^
-                uint(((normalize(globalwind).x+1.)/2.)      *maxnumber)^
-                uint(((normalize(globalwind).y+1.)/2.)      *maxnumber)^
-                uint(fract(fps)                             *maxnumber)^
-                uint(aWindopt.x                             *maxnumber)^
-                uint(aWindopt.y                             *maxnumber)^
-                uint(aWindopt.z                             *maxnumber)^
-                uint(grasscolor.x                           *maxnumber)^
-                uint(grasscolor.y                           *maxnumber)^
-                uint(grasscolor.z                           *maxnumber)^
-                uint(grasscolor.w                           *maxnumber)^
-                uint(((normalize(aWind).x+1.)/2.)           *maxnumber)^
-                uint(((normalize(aWind).y+1.)/2.)           *maxnumber)^
-                uint(((normalize(aWindrandtimer).x+1.)/2.)  *maxnumber)^
-                uint(((normalize(aWindrandtimer).y+1.)/2.)  *maxnumber)
-            );
-
-            aWindrandtimer1.xy=vec2(sin(float(random)),sin(float(~random)));
-        }
-        if(abs(coordinates1.x)>=1.0&&abs(coordinates1.y)>=1.0){
-            float roatation=-atan(
-                globalwind.x*grassrotc*hoenabhaenigkeit*aWindopt[0]+
-                mix(aWind.x,aWindrandtimer.x,aWindrandtimer.z)*grassrotc*hoenabhaenigkeit*aWindopt[1]+
-                sin(grassrotation)+
-                (max(abs(aVelo.x),maxvelo)*sign(aVelo.x))*grassrotc*hoenabhaenigkeit*aWindopt[2]+
-                0.0
-                ,
-                globalwind.y*grassrots*hoenabhaenigkeit*aWindopt[0]+
-                mix(aWind.y,aWindrandtimer.y,aWindrandtimer.z)*grassrots*hoenabhaenigkeit*aWindopt[1]+
-                cos(grassrotation)+
-                (max(abs(aVelo.y),maxvelo)*sign(aVelo.y))*grassrots*hoenabhaenigkeit*aWindopt[2]+
-                0.0
-            );
-
-            vec2 rotatedPosition = vec2(
-                cos(roatation) * (coordinates1.x-grassstartcord.x) - sin(roatation) * (coordinates1.y-grassstartcord.y) + grassstartcord.x,
-                sin(roatation) * (coordinates1.x-grassstartcord.x) + cos(roatation) * (coordinates1.y-grassstartcord.y) + grassstartcord.y
-            );
-
-            for(int i=0;i<objectslength;i++){
-                aVelo1-=vec2(objectsvel[i].x,-objectsvel[i].y)*min(max(grasswalkmaxdistv-mindistpointtofloat(rotatedPosition.xy,objectspos[i]),0.0),grasswalkmaxv);
-                aWindrandtimer1.w=max(0.0,aWindrandtimer1.w-min(1.0,abs(objectsvel[i].x)+abs(objectsvel[i].y))*min(max(grasswalkmaxdist-mindistpointtofloat(rotatedPosition.xy,objectspos[i]),0.0),grasswalkshrink*(60.0/fps)));
-            }
-        }
-    }
-}
-</script>
-<script id="shader-webgl2-fs-grass" type="x-shader/x-fragment">#version 300 es
-precision mediump float;
-in vec4 grasscolor1;
-out vec4 fragColor;
-void main(void) {
-    fragColor = grasscolor1;
-}
-</script>
-<script id="shader-webgl2-vs" type="x-shader/x-vertex">#version 300 es
-//do code of script edit in js to make that the shader use a version that is suportet
-precision highp float;
-in vec4 coordinates;        
-in vec2 aTexCoord;          //textur cordinates
-
-uniform vec2 canvashwwebgl;
-uniform vec4 offsgl;
-uniform vec2 translation;
-uniform vec4 aColor;
-uniform float aPicture;
-
-out vec2 vTexCoord;
-flat out float vPicture;
-out vec4 vColor;
-
-vec2 conv2(vec2 cord) {return (vec2((cord.x/canvashwwebgl.x)*2.0-1.0,((canvashwwebgl.y-cord.y)/canvashwwebgl.y)*2.0-1.0));}
-vec4 conv4(vec4 cord) {return (vec4((cord.x/canvashwwebgl.x)*2.0-1.0,((canvashwwebgl.y-cord.y)/canvashwwebgl.y)*2.0-1.0,0.0,1.0));}
-void main(void) {
-    vColor=aColor;
-    vTexCoord=aTexCoord;
-    vPicture=aPicture;
-    gl_Position = conv4((coordinates+vec4(translation.xy,0,0))/offsgl.w-vec4(offsgl.xy,0,0));
-}
-</script>
-<script id="shader-webgl2-fs" type="x-shader/x-fragment">#version 300 es
-precision mediump float;
-in vec4 vColor;
-flat in float vPicture;
-in vec2 vTexCoord;
-uniform sampler2D uSampler;
-out vec4 fragColor;
-void main(void) {
-    if(int(vPicture) == 0){
-        fragColor = vColor;
-    }
-    if(int(vPicture) == 1){
-        fragColor = texture(uSampler, vTexCoord);
-    }
-}
-</script>
-<script id="shader-vs" type="x-shader/x-vertex">
-attribute vec4 coordinates;
-attribute vec2 aTexCoord;
-
-uniform vec2 canvashwwebgl;
-uniform vec2 translation;
-uniform vec4 offsgl;
-uniform vec4 aColor;
-uniform float aPicture;
-
-varying vec2 vTexCoord;
-varying float vPicture;
-varying vec4 vColor;
-
-vec2 conv2(vec2 cord) {return (vec2((cord.x/canvashwwebgl.x)*2.0-1.0,((canvashwwebgl.y-cord.y)/canvashwwebgl.y)*2.0-1.0));}
-vec4 conv4(vec4 cord) {return (vec4((cord.x/canvashwwebgl.x)*2.0-1.0,((canvashwwebgl.y-cord.y)/canvashwwebgl.y)*2.0-1.0,0.0,1.0));}
-void main(void) {
-    vColor=aColor;
-    vTexCoord=aTexCoord;
-    vPicture=aPicture;
-    gl_Position = conv4((coordinates+vec4(translation.xy,0,0))/offsgl.w-vec4(offsgl.xy,0,0));
-}
-</script>
-<script id="shader-fs" type="x-shader/x-fragment">
-precision mediump float;
-varying vec4 vColor;
-varying float vPicture;
-varying vec2 vTexCoord;
-uniform sampler2D uSampler;
-void main(void) {
-    if(int(vPicture) == 0){
-        gl_FragColor = vColor;
-    }
-    if(int(vPicture) == 1){
-        gl_FragColor = texture2D(uSampler, vTexCoord);
-    }
-}
-</script>
 <script src="config.js"></script>
+<script src="settingsconfig.js"></script>
+<script src="stats.js"></script>
+<script src="keys.js"></script>
+<!--<script id="neat" src="./lib/NEAT_browser.js"></script>-->
 <script id="manage">
+//getting all functions of loadet script
 'use strict';
 console.groupCollapsed("starting");
 console.info("selftest start")
-let totest=["Worker","Performance","crypto","requestAnimationFrame","JSON","Float64Array","Set","Path2D","CanvasRenderingContext2D","URL","IdleDeadline","Image","FileReader","Blob","OffscreenCanvas","AudioContext"]
+let totest=["Worker","Performance","crypto","requestAnimationFrame","JSON","Float64Array","Set","Path2D","CanvasRenderingContext2D","URL","IdleDeadline","Image","FileReader","Blob","OffscreenCanvas","AudioContext","SharedArrayBuffer"]
 let vendors=["webkit","moz","o","ms"]
 for(let i of totest){
     if(!(i in window)){
@@ -277,6 +40,13 @@ for(let i of totest){
 }
 console.info("selftest finished")
 console.info("backupfunction load")
+//https://stackoverflow.com/questions/2116558/fastest-method-to-replace-all-instances-of-a-character-in-a-string
+if(!("requestAnimationFrame" in window)){
+    String.prototype.replaceAll = function(str1, str2, ignore){
+        return this.replace(new RegExp(str1.replace(/([\/\,\!\\\^\$\{\}\[\]\(\)\.\*\+\?\|\<\>\-\&])/g,"\\$&"),(ignore?"gi":"g")),(typeof(str2)=="string")?str2.replace(/\$/g,"$$$$"):str2);
+    } 
+    console.log("use use replaceAll")
+}
 if(!("requestAnimationFrame" in window)){window.requestAnimationFrame=function(callback){window.setTimeout(callback, 1000 / 60)};console.log("use setTimeout")}
 if(!("OffscreenCanvas" in window)){
     console.warn("use canvas as offscreencanvas")
@@ -300,28 +70,24 @@ if(!("OffscreenCanvas" in window)){
         return a}
     }
 }
+if(!("SharedArrayBuffer" in window)){
+    console.warn("use ArrayBuffer as SharedArrayBuffer")
+    window.SharedArrayBuffer=ArrayBuffer
+}
 console.info("backupfunction finished")
 
 console.info("Promises start")
-for(let i=0;i<=10;i++){
+for(let i=0;i<scriptload.length;i++){
     promall[i]=new Promise((r,j)=>[promallres[i],promallrej[i]]=[r,j]);
     promall[i].res=false
+    promall[i].then(()=>{promall[i].res=true;console.info(i+"loaded "+scriptload[i])},()=>{console.warn(i+"couldnt load "+scriptload[i])})
 }
 console.group("Promises")
-promall[0].then(()=>{promall[0].res=true;console.info("0loaded mainscript")},()=>{console.warn("0couldnt load mainscript")})
-promall[1].then(()=>{promall[1].res=true;console.info("1loaded createobj")},()=>{console.warn("1couldnt load createobj")})
-promall[2].then(()=>{promall[2].res=true;console.info("2loaded ai")},()=>{console.warn("2couldnt load ai")})
-promall[3].then(()=>{promall[3].res=true;console.info("3loaded textur")},()=>{console.warn("3couldnt load textur")})
-promall[4].then(()=>{promall[4].res=true;console.info("4loaded save")},()=>{console.warn("4couldnt load save")})
-promall[5].then(()=>{promall[5].res=true;console.info("5loaded build")},()=>{console.warn("5couldnt load build")})
-promall[6].then(()=>{promall[6].res=true;console.info("6loaded game")},()=>{console.warn("6couldnt load game")})
-promall[7].then(()=>{promall[7].res=true;console.info("7loaded events")},()=>{console.warn("7couldnt load events")})
-promall[8].then(()=>{promall[8].res=true;console.info("8loaded maps")},()=>{console.warn("8couldnt load maps")})
-promall[9].then(()=>{promall[9].res=true;console.info("9loaded language")},()=>{console.warn("9couldnt load language")})
-promall[10].then(()=>{promall[10].res=true;console.info("10loaded multiplayer")},()=>{console.warn("9couldnt load multiplayer")})
+
+
 //function for that that i dont need to make the same code over and over
 
-Promise.all([promall[0],promall[1],promall[8]]).then(()=>{defaultarrload();})
+Promise.all([promall[0],promall[1],promall[8],promall[22],promall[23]]).then(()=>{defaultarrload();})
 Promise.all(promall).then(()=>{console.info("all loaded")},()=>{console.warn("couldnt load all")})
 
 document.addEventListener('DOMContentLoaded',()=>{
@@ -336,22 +102,25 @@ document.addEventListener('DOMContentLoaded',()=>{
         document.getElementById("settings").onclick=()=>{setting(),mswitch()};
         document.getElementById("webrtc").onclick=()=>{webrtcgui();mswitch()}
         document.getElementById("build").onclick=()=>{start('build')};
+        document.getElementById("close").onclick=()=>{websiteclose()};
 
         document.getElementById("keymap").disabled=false;
         document.getElementById("settings").disabled=false;
+        document.getElementById("close").disabled=false;
         if(!disablemenucontrolls)menucontrolls()
+        if(weather)getweather()
     })
-    Promise.all([promall[0],promall[1],promall[8]]).then(()=>{
+    Promise.all([promall[0],promall[1],promall[8],promall[22],promall[23]]).then(()=>{
         if(document.getElementById("save"))document.getElementById("save").disabled=false
     })
-    Promise.all([promall[0],promall[1],promall[6],promall[8]]).then(()=>{
+    Promise.all([promall[0],promall[1],promall[6],promall[8],promall[15],promall[16],promall[22],promall[23],promall[24]]).then(()=>{
         if(document.getElementById("start"))document.getElementById("start").disabled=false
         urlparams()
     })
-    Promise.all([promall[0],promall[1],promall[5],promall[8]]).then(()=>{
+    Promise.all([promall[0],promall[1],promall[5],promall[8],promall[22],promall[23]]).then(()=>{
         if(document.getElementById("build"))document.getElementById("build").disabled=false
     })
-    Promise.all([promall[0],promall[10]]).then(()=>{
+    Promise.all([promall[0],promall[10],promall[11],promall[12]]).then(()=>{
         if(typeof(multiplayerid)=="undefined")genid()
         if(document.getElementById("webrtc"))document.getElementById("webrtc").disabled=false
     })
@@ -359,24 +128,23 @@ document.addEventListener('DOMContentLoaded',()=>{
         if(document.getElementById("keymap"))document.getElementById("keymap").title=tooltips.hasOwnProperty("buttom")&&tooltips.buttom.hasOwnProperty("keymap")?tooltips.buttom.keymap:""
         if(document.getElementById("settings"))document.getElementById("settings").title=tooltips.hasOwnProperty("buttom")&&tooltips.buttom.hasOwnProperty("settings")?tooltips.buttom.settings:""
     })
-    Promise.all([promall[0],promall[1],promall[8],promall[9]]).then(()=>{
+    Promise.all([promall[0],promall[1],promall[8],promall[9],promall[22],promall[23]]).then(()=>{
         if(document.getElementById("save"))document.getElementById("save").title=tooltips.hasOwnProperty("buttom")&&tooltips.buttom.hasOwnProperty("save")?tooltips.buttom.save:""
     })
-    Promise.all([promall[0],promall[1],promall[6],promall[8],promall[9]]).then(()=>{
+    Promise.all([promall[0],promall[1],promall[6],promall[8],promall[9],promall[22],promall[23]]).then(()=>{
         if(document.getElementById("start"))document.getElementById("start").title=tooltips.hasOwnProperty("buttom")&&tooltips.buttom.hasOwnProperty("start")?tooltips.buttom.start:""
     })
-    Promise.all([promall[0],promall[1],promall[5],promall[8],promall[9]]).then(()=>{
+    Promise.all([promall[0],promall[1],promall[5],promall[8],promall[9],promall[22],promall[23]]).then(()=>{
         if(document.getElementById("build"))document.getElementById("build").title=tooltips.hasOwnProperty("buttom")&&tooltips.buttom.hasOwnProperty("build")?tooltips.buttom.build:""
     })
-    Promise.all([promall[0],promall[10],promall[9]]).then(()=>{
+    Promise.all([promall[0],promall[9],promall[10],promall[11],promall[12]]).then(()=>{
         if(document.getElementById("webrtc"))document.getElementById("webrtc").title=tooltips.hasOwnProperty("buttom")&&tooltips.buttom.hasOwnProperty("webrtc")?tooltips.buttom.webrtc:""
     })
-    Promise.all([promall[0],promall[1],promall[8],promall[10]]).then(()=>{
-        if(!multiplayerjustlisten&&multiplayer&&!multiplayerstartet)multiplayerconnect()
+    Promise.all([promall[0],promall[1],promall[8],promall[10],promall[11],promall[12],promall[22],promall[23]]).then(()=>{
+        if(!multiplayerjustlisten&&multiplayer&&!multiplayerstartet)initializeconnections()
     })
     Promise.all(promall).then(()=>{//brauch da net jede
         specialevents()
-        if(!multiplayerjustlisten&&multiplayer&&!multiplayerstartet)postMessage({act:"hi?!"});
     })
     Promise.all([promall[0],promall[9]]).then(()=>{
         for(let i of document.querySelectorAll(".menu")){
@@ -392,22 +160,29 @@ Promise.allSettled(promall).then(()=>{console.groupEnd();console.info("Promises 
 //        }
 //    } catch(e){}
 //}
-
+for(let i=0;i<scriptload.length;i++){
+    var script = document.createElement("script");
+    script.src = scriptload[i]
+    if(scriptloadinportant.includes(scriptload[i]))script.importance="high"
+    script.async=true
+    script.onerror="promallrej["+i+"]()"
+    document.head.appendChild(script);
+}
 </script>
 <!--<script src="http://webrtc.github.io/adapter/adapter-latest.js"></script><!--fixes bugs in browser that they dont follow specs-->
-<script src="main.js" importance="high" async onerror="promallrej[0]()"></script>
-<script src="createobj.js" importance="high" async onerror="promallrej[1]()"></script>
-<script src="ai.js" async onerror="promallrej[2]()"></script>
-<script src="textur.js" async onerror="promallrej[3]()"></script>
-<script src="save.js" async onerror="promallrej[4]()"></script>
-<script src="build.js" async onerror="promallrej[5]()"></script>
-<script src="game.js" importance="high" async onerror="promallrej[6]()"></script>
-<script src="events.js" async onerror="promallrej[7]()"></script>
-<script src="maps.js" importance="high" async onerror="promallrej[8]()"></script>
-<script src="language.js" async onerror="promallrej[9]()"></script>
-<script src="multiplayer.js" async onerror="promallrej[10]()"></script>
+
 <script id="worker1" async type="javascript/worker">
+//js
 self.onmessage=(e)=>{//wasser map erstelln
+    if("debugchanel" in e.data){
+        e.data.debugchanel.onmessage=e1=>{
+            let str=""
+            console.log("%cwebworker run: "+e1.data,'color: orange')
+            try{str=eval(e1.data);console.log(str)}catch(e1){e.data.debugchanel.postMessage(e1)}
+            try{e.data.debugchanel.postMessage(str)}catch(e1){e.data.debugchanel.postMessage(e1)}
+        }
+        return
+    }
     pathmap(e.data[0],e.data[1],e.data[2],e.data[3],e.data[4])
 }
 function pathmap(minx,miny,maxx,maxy,test){
@@ -464,8 +239,12 @@ function pathmap(minx,miny,maxx,maxy,test){
         }
     }
 }
+//!js
 </script>
+
+
 <script id="worker2" async type="javascript/worker">
+//js
 let canvasgl,
     gl,
     shaderProgram,
@@ -474,28 +253,56 @@ let canvasgl,
     coordinates2,
     num,
     midle,
+    objnum,
     max,
     frame,
     render,
     vao,
-    enablewebgl=true
+    enablewebgl=true,
+    shared=false,
+    col,
+    colobj,
+    objnumout
 
 
 self.onmessage=(e)=>{
-    let col=new Uint32Array((e.data[3]-e.data[1])*(e.data[2]-e.data[0]))
-    let colobj=new Uint8Array((e.data[3]-e.data[1])*(e.data[2]-e.data[0]))
+    if("debugchanel" in e.data){
+        e.data.debugchanel.onmessage=e1=>{
+            let str=""
+            console.log("%cwebworker run: "+e1.data,'color: orange')
+            try{str=eval(e1.data);console.log(str)}catch(e1){e.data.debugchanel.postMessage(e1)}
+            try{e.data.debugchanel.postMessage(str)}catch(e1){e.data.debugchanel.postMessage(e1)}
+        }
+        return
+    }
+    if(e.data.length==3){
+        col=new Uint32Array(e.data[0])
+        colobj=new Uint8Array(e.data[1])
+        objnumout=new Uint8Array(e.data[2])
+        shared=true
+    }
+    if(!shared){
+        col=new Uint32Array((e.data[3]-e.data[1])*(e.data[2]-e.data[0]))
+        colobj=new Uint8Array((e.data[3]-e.data[1])*(e.data[2]-e.data[0]))
+        objnumout=new Uint8Array((e.data[3]-e.data[1])*(e.data[2]-e.data[0]))
+    }
     //teste noch ob shader alles geht
     if(enablewebgl&&e.data[5]){
-        gpuwork(e.data[0],e.data[1],e.data[2],e.data[3],e.data[4],col,colobj)
+        gpuwork(e.data[0],e.data[1],e.data[2],e.data[3],e.data[4],col,colobj,objnumout)
     }else{
-        work(e.data[0],e.data[1],e.data[2],e.data[3],e.data[4],col,colobj)
+        work(e.data[0],e.data[1],e.data[2],e.data[3],e.data[4],col,colobj,objnumout)
     }
-    const colb=col.buffer
-    const colbobj=colobj.buffer
-    postMessage([colb,colbobj],[colb,colbobj]);//transferobj nehmen
+    if(shared){
+        postMessage("finish");
+    }else{
+        const colb=col.buffer
+        const colbobj=colobj.buffer
+        const objnumoutb=objnumout.buffer
+        postMessage([colb,colbobj,objnumoutb],[colb,colbobj,objnumoutb]);//transferobj nehmen
+    }
     //postMessage(colb,[colb]);//transferobj nehmen
 }
-function work(minx,miny,maxx,maxy,myRect,col,colobj){
+function work(minx,miny,maxx,maxy,myRect,col,colobj,objnumout){
     
     let offscall=false
     if(typeof(OffscreenCanvas)=="function"){
@@ -530,15 +337,16 @@ function work(minx,miny,maxx,maxy,myRect,col,colobj){
                 for (let i1=1;i1<i.x.length;i1++){
                     ctx.lineTo(i.x[i1]-minxs,i.y[i1]-minys)
                 }
-                for (let y=0;y<=maxys-minys;y++) {
+                for (let y=0;y<=maxys-minys;y++) {//draw obj with canvas
                     for (let x=0;x<=maxxs-minxs;x++) {
                         if(ctx.isPointInPath(x,y)){
                             col[(y+minys-miny)*(maxx-minx)+x+minxs-minx]=((maxx-minx)*(maxy-miny)+Math.min(y-minys,maxys-y,x-minxs,maxxs-x))|0
                             colobj[(y+minys-miny)*(maxx-minx)+x+minxs-minx]=(+num+1)
+                            objnumout[(y+minys-miny)*(maxx-minx)+x+minxs-minx]=i.objnum
                         }
                     }
                 }
-            }else{
+            }else{//if there is no canvas suport render it with math
                 const minxs=Math.min(...i.x)
                 const minys=Math.min(...i.y)
                 const maxxs=Math.max(...i.x)+1
@@ -551,6 +359,7 @@ function work(minx,miny,maxx,maxy,myRect,col,colobj){
                         colobj1[(Math.round(iy)-minys-1)*(maxxs-minxs)+Math.round(ix)-minxs]=1
                         col[(Math.round(iy)+minys-miny)-1*(maxx-minx)+Math.round(ix)+minxs-minx]=((maxx-minx)*(maxy-miny)+Math.min(iy,maxys-(iy+minys),ix,maxxs-(ix+minxs)))|0
                         colobj[(Math.round(iy)+minys-miny-1)*(maxx-minx)+Math.round(ix)+minxs-minx]=(+num+1)
+                        objnumout[(Math.round(iy)+minys-miny-1)*(maxx-minx)+Math.round(ix)+minxs-minx]=i.objnum
                     }
                 }
                 for(let iy=0;iy<maxys-minys;iy++){
@@ -564,22 +373,24 @@ function work(minx,miny,maxx,maxy,myRect,col,colobj){
                             for(let ix1=ix+1;ix1<(maxxs-minxs)&&colobj1[iy*(maxxs-minxs)+ix1]==0;ix1++){
                                 col[(iy+minys-miny)*(maxx-minx)+ix1+minxs-minx]=((maxx-minx)*(maxy-miny)+Math.min(iy,maxys-(iy+minys),ix1,maxxs-(ix1+minxs)))|0
                                 colobj[(iy+minys-miny)*(maxx-minx)+ix1+minxs-minx]=(+num+1)
+                                objnumout[(iy+minys-miny)*(maxx-minx)+ix1+minxs-minx]=i.objnum
                             }
                         }
                     }
                 }
             }
-        }else{
+        }else{//for rectangle
             for (let y=i.y|0;y<=i.y+i.h;y++) {
                 for (let x=i.x|0;x<=i.x+i.w;x++) {
                     col[(y-miny)*(maxx-minx)+x-minx]=((maxx-minx)*(maxy-miny)+Math.min(y-i.y,i.y+i.h-y,x-i.x,i.x+i.w-x))|0
                     colobj[(y-miny)*(maxx-minx)+x-minx]=(+num+1)
+                    objnumout[(y-miny)*(maxx-minx)+x-minx]=i.objnum
                 }
             }
         }
     }
 }
-function gpusetup(){
+function gpusetup(){//render it with gpu
     try{
         canvasgl=new OffscreenCanvas(1,1)
         gl=canvasgl.getContext("webgl2")
@@ -594,17 +405,20 @@ function gpusetup(){
         in vec4 coordinates2;
         in vec4 midle;
         in float num;
+        in float objnum;
         out vec4 coordinates2o;
         flat out vec4 midleo;
         out float vnum;
         uniform vec2 max;
         flat out float maxo;
+        flat out float objnumo;
         void main(void) {
             gl_Position=vec4((coordinates2.x/max.x)*2.0-1.0,(coordinates2.y/max.y)*2.0-1.0,coordinates2.zw);
             coordinates2o=coordinates2;
             midleo=midle;
             vnum=num;
             maxo=max.x*max.y;
+            objnumo=objnum;
         }
     `
     let fragment=`#version 300 es
@@ -614,8 +428,9 @@ function gpusetup(){
         in vec4 coordinates2o;
         flat in vec4 midleo;
         flat in float maxo;
+        flat in float objnumo;
         void main(void) {
-            fragColor = ivec4(maxo+distance(coordinates2o,midleo),vnum,0,1);
+            fragColor = ivec4(maxo+distance(coordinates2o,midleo),vnum,objnumo,1);
         }
     `
 
@@ -643,6 +458,7 @@ function gpusetup(){
     coordinates2=gl.createBuffer()
     num=gl.createBuffer()
     midle=gl.createBuffer()
+    objnum=gl.createBuffer()
     max=gl.getUniformLocation(shaderProgram,"max")
     frame=gl.createFramebuffer()
     render=gl.createRenderbuffer()
@@ -658,13 +474,17 @@ function gpusetup(){
     gl.bindBuffer(gl.ARRAY_BUFFER, midle);
     gl.vertexAttribPointer(gl.getAttribLocation(shaderProgram,"midle"), 2, gl.FLOAT,false,0,0)
     gl.enableVertexAttribArray(gl.getAttribLocation(shaderProgram,"midle"))
+    gl.bindBuffer(gl.ARRAY_BUFFER, objnum);
+    gl.vertexAttribPointer(gl.getAttribLocation(shaderProgram,"objnum"), 1, gl.FLOAT,false,0,0)
+    gl.enableVertexAttribArray(gl.getAttribLocation(shaderProgram,"objnum"))
     gl.bindVertexArray(null);
 }
-function gpuwork(minx,miny,maxx,maxy,myRect,col,colobj){
+function gpuwork(minx,miny,maxx,maxy,myRect,col,colobj,objnumout){
     gl.useProgram(shaderProgram);
     
     let cordinaten=[]
     let midlearr=[]
+    let objnumarr=[]
     let numbers=[]
     let num1=0
     let firstst=[]
@@ -684,6 +504,7 @@ function gpuwork(minx,miny,maxx,maxy,myRect,col,colobj){
                 numbers.push(num1)
                 midlearr.push(firstx+i.w/2-minx,firsty+i.h/2-miny)
                 counter++
+                objnumarr.push(i.objnum)
             }
         }else{
             cordinaten.push(
@@ -704,10 +525,17 @@ function gpuwork(minx,miny,maxx,maxy,myRect,col,colobj){
                 num1,
                 num1
             )
+            objnumarr.push(
+                i.objnum,
+                i.objnum,
+                i.objnum,
+                i.objnum
+            )
             counter+=4
         }
         countst.push(counter)
     }
+    //generate buffers with values to draw
     const firsts=new Int32Array(firstst)
     const counts=new Int32Array(countst)
 
@@ -722,13 +550,19 @@ function gpuwork(minx,miny,maxx,maxy,myRect,col,colobj){
     gl.bindBuffer(gl.ARRAY_BUFFER, num);			
     gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(numbers),gl.STREAM_DRAW);
 
+    gl.bindBuffer(gl.ARRAY_BUFFER, objnum);			
+    gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(objnumarr),gl.STREAM_DRAW);
+
     gl.viewport(0,0,maxx-minx,maxy-miny)
     
 
     gl.bindFramebuffer(gl.FRAMEBUFFER, frame);
     gl.bindRenderbuffer(gl.RENDERBUFFER, render);
     
-    gl.renderbufferStorage(gl.RENDERBUFFER, gl.RG32I,maxx-minx,maxy-miny)
+    //gl.renderbufferStorage(gl.RENDERBUFFER, gl.RG32I,maxx-minx,maxy-miny)
+    //gl.RGBA32I
+    //gl.renderbufferStorage(gl.RENDERBUFFER, gl.RGB32I,maxx-minx,maxy-miny)
+    gl.renderbufferStorage(gl.RENDERBUFFER, gl.RGBA32I,maxx-minx,maxy-miny)
     
     gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.RENDERBUFFER, render);
     
@@ -738,18 +572,803 @@ function gpuwork(minx,miny,maxx,maxy,myRect,col,colobj){
         for(let i2=0;i2<firsts.length;i2++)gl.drawArrays(gl.TRIANGLE_FAN,firsts[i2],counts[i2])
     }
     gl.flush()
-    let arr=new Int32Array((maxy-miny)*(maxx-minx)*2)
-    gl.readPixels(0,0,maxx-minx,maxy-miny, gl.RG_INTEGER, gl.INT, arr);
-    for(let i=0;i<arr.length;i+=2){
-        col[i/2]=arr[i]
-        colobj[i/2]=arr[i+1]
-    }
+    //let arr=new Int32Array((maxy-miny)*(maxx-minx)*2)
+    //gl.readPixels(0,0,maxx-minx,maxy-miny, gl.RG_INTEGER, gl.INT, arr);
+    //for(let i=0;i<arr.length;i+=2){
+    //    col[i/2]=arr[i]
+    //    colobj[i/2]=arr[i+1]
+    //}
 
+    //let arr=new Int32Array((maxy-miny)*(maxx-minx)*3)
+    //gl.readPixels(0,0,maxx-minx,maxy-miny, gl.RGB_INTEGER, gl.INT, arr);
+    //for(let i=0;i<arr.length;i+=3){
+    //    col[i/3]=arr[i]
+    //    colobj[i/3]=arr[i+1]
+    //    objnumout[i/3]=arr[i+2]
+    //}
+    let arr=new Int32Array((maxy-miny)*(maxx-minx)*4)
+    gl.readPixels(0,0,maxx-minx,maxy-miny, gl.RGBA_INTEGER, gl.INT, arr);
+    for(let i=0;i<arr.length;i+=4){
+        col[i/4]=arr[i]
+        colobj[i/4]=arr[i+1]
+        objnumout[i/4]=arr[i+2]
+    }
     gl.bindVertexArray(null)
     gl.bindFramebuffer(gl.FRAMEBUFFER,null);
     gl.bindRenderbuffer(gl.RENDERBUFFER,null);
 }
 gpusetup()
+//!js
+</script>
+
+
+<script id="aiki" async type="javascript/worker">
+//js
+this.me1={}
+this.objcolmap
+this.objenemymap
+this.m4xfps=60
+this.time=0
+this.minx=0
+this.miny=0
+this.maxx=0
+this.maxy=0
+this.minxnum=0
+this.minynum=0
+this.int=undefined
+this.start=false
+
+Object.defineProperty(me1, 'minx', {get:()=>{return me1.x[minxnum]}});
+Object.defineProperty(me1, 'miny', {get:()=>{return me1.y[minynum]}});
+
+
+Object.defineProperty(me1, 'setx', {set:(num)=>{for(let i=0,min=me1.minx;i<me1.x.length;i++)me1.x[i]+=-min+num}});
+Object.defineProperty(me1, 'movex', {set:(num)=>{for(let i=0;i<me1.x.length;i++)me1.x[i]+=num}});
+Object.defineProperty(me1, 'sety', {set:(num)=>{for(let i=0,min=me1.miny;i<me1.y.length;i++)me1.y[i]+=-min+num}});
+Object.defineProperty(me1, 'movey', {set:(num)=>{for(let i=0;i<me1.y.length;i++)me1.y[i]+=num}});
+
+
+self.onmessage = function(e) {
+    if("debugchanel" in e.data){
+        e.data.debugchanel.onmessage=e1=>{
+            let str=""
+            console.log("%cwebworker run: "+e1.data,'color: orange')
+            try{str=eval(e1.data);console.log(str)}catch(e1){e.data.debugchanel.postMessage(e1)}
+            try{e.data.debugchanel.postMessage(str)}catch(e1){e.data.debugchanel.postMessage(e1)}
+        }
+    }
+    if("start" in e.data&&e.data.start==true){
+        if(this.int!=undefined)clearInterval(this.int);
+        this.int=setInterval(func,1000/m4xfps)
+        start=true
+    }
+    if("stop" in e.data&&e.data.stop==true){
+        if(this.int!=undefined)clearInterval(this.int);
+        start=false
+    }
+    if("eval" in e.data){
+        eval(e.data.eval)
+    }
+    if("debug" in e.data&&e.data.debug==true){
+        console.log(this)
+        console.log(me1)
+        console.log(objcolmap)
+    }
+    if("update" in e.data){
+        if("dir" in e.data.update){
+            me1.dir=new Float64Array(e.data.update.dir)
+            me1.shareddir=e.data.update.dir
+        }
+        if("dmg" in e.data.update){
+            me1.dmg=new Uint32Array(e.data.update.dmg)
+            me1.shareddmg=e.data.update.dmg
+        }
+        if("lastupdatetime" in e.data.update){
+            me1.lastupdatetime=new Float64Array(e.data.update.lastupdatetime)
+            me1.sharedlastupdatetime=e.data.update.lastupdatetime
+        }
+        if("x" in e.data.update){
+            me1.x=new Float64Array(e.data.update.x)
+            me1.sharedx=e.data.update.x
+            let minxtemp=Infinity
+            for(let i in me1.x)if(minxtemp>me1.x[i]){minxtemp=me1.x[i];minxnum=i}
+            me1.w=Math.max(0,Math.max(...me1.x)-Math.min(...me1.x));
+        }
+        if("y" in e.data.update){
+            me1.y=new Float64Array(e.data.update.y)
+            me1.sharedy=e.data.update.y
+            let minytemp=Infinity
+            for(let i in me1.y)if(minytemp>me1.y[i]){minytemp=me1.y[i];minynum=i}
+            me1.h=Math.max(0,Math.max(...me1.y)-Math.min(...me1.y));
+        }
+        if("velo" in e.data.update){
+            me1.velo=new Float64Array(e.data.update.velo)
+            me1.sharedvelo=e.data.update.velo
+        }
+        if("minx" in e.data.update){
+            minx=e.data.update.minx
+        }
+        if("miny" in e.data.update){
+            miny=e.data.update.miny
+        }
+        if("maxx" in e.data.update){
+            maxx=e.data.update.maxx
+        }
+        if("maxy" in e.data.update){
+            maxy=e.data.update.maxy
+        }
+        if("objnum" in e.data.update){
+            me1.objnum=e.data.update.objnum
+        }
+        if("kitype" in e.data.update){
+            me1.kitype=e.data.update.kitype
+        }
+        if("code" in e.data.update){
+            self.func=new Function("",e.data.update.code.replace(/^.*(\n|\r)|(\n|\r).*$/g,""))
+        }
+        if("updatet" in e.data.update){
+            me1.updatet=new Uint8Array(e.data.update.updatet)
+            me1.sharedupdatet=e.data.update.updatet
+        }
+        if("colobjnum" in e.data.update){
+            me1.colobjnum=new Uint32Array(e.data.update.colobjnum)
+            me1.sharedcolobjnum=e.data.update.colobjnum
+        }
+        if("m4xfps" in e.data.update){
+            m4xfps=Math.max(e.data.update.m4xfps,0.00001)
+            if(start&&e.data.update.objcolmap!=undefined){if(this.int!=undefined)clearInterval(this.int);this.int=setInterval(func,1000/m4xfps)}
+        }
+        if("objcolmap" in e.data.update){
+            objcolmap=new Uint8Array(e.data.update.objcolmap)
+            if(start&&e.data.update.objcolmap!=undefined){if(this.int!=undefined)clearInterval(this.int);this.int=setInterval(func,1000/m4xfps)}
+        }
+        if("objenemymap" in e.data.update){
+            objenemymap=new Uint8Array(e.data.update.objenemymap)
+            objenemysharedmap=e.data.update.objenemymap
+        }
+    }
+}
+//!js
+</script>
+
+<script id="neuroaiki" async type="javascript/worker">
+//js
+this.objarrays=[]
+this.objcolmap
+this.objenemymap
+this.m4xfps=60
+this.time=0
+this.minx=0
+this.miny=0
+this.maxx=0
+this.maxy=0
+this.network=""
+this.minxnum=0
+this.minynum=0
+this.int=undefined
+this.start=false
+
+let finki
+let kiworstfitnes
+let kipriorisirung=[1,0.001]
+let kipriorisirungmax
+let oldkeystimemax=120
+let resetafter=60000
+let resetcounter=0
+let neat=null
+let viewdistki=60
+let viewscaledown=5
+
+self.onclose = function() {
+    if(typeof(neat)!=undefined&&neat instanceof NEAT){
+        postMessage({havenetwork:true,network:JSON.stringify(neat.export())})
+    }else{
+        postMessage({havenetwork:false})
+    }
+}
+self.onmessage = function(e) {
+    if("debugchanel" in e.data){
+        e.data.debugchanel.onmessage=e1=>{
+            let str=""
+            console.log("%cwebworker run: "+e1.data,'color: orange')
+            try{str=eval(e1.data);console.log(str)}catch(e1){e.data.debugchanel.postMessage(e1)}
+            try{e.data.debugchanel.postMessage(str)}catch(e1){e.data.debugchanel.postMessage(e1)}
+        }
+    }
+    if("stop" in e.data&&e.data.stop==true){
+        if(this.int!=undefined)clearInterval(this.int);
+        start=false
+        this.objarrays=[]
+    }
+    if("sendnetwork" in e.data&&e.data.sendnetwork==true){
+        if(typeof(neat)!=undefined&&neat instanceof NEAT){
+            postMessage({havenetwork:true,network:JSON.stringify(neat.export())})
+        }else{
+            postMessage({havenetwork:false})
+        }
+    }
+    if("eval" in e.data){
+        eval(e.data.eval)
+    }
+    if("debug" in e.data&&e.data.debug==true){
+        console.log(this)
+        console.log(objarrays)
+        console.log(neat)
+    }
+    if("die" in e.data&&e.data.die==true){
+        objarrays[e.data.num].dead=true
+        console.log(e.data.num+" died (from outside)")
+        objarrays[e.data.num].keys[0]=0
+        objarrays[e.data.num].keys[1]=0
+        objarrays[e.data.num].keys[2]=0
+        objarrays[e.data.num].keys[3]=0
+        objarrays[e.data.num].keys[4]=0
+        objarrays[e.data.num].newtime=performance.now()
+        objarrays[e.data.num].oldkeystime=0
+        objarrays[e.data.num].setx=130
+        objarrays[e.data.num].sety=580
+    }
+    if("update" in e.data){
+        if("minx" in e.data.update){
+            minx=e.data.update.minx
+        }
+        if("miny" in e.data.update){
+            miny=e.data.update.miny
+        }
+        if("maxx" in e.data.update){
+            maxx=e.data.update.maxx
+        }
+        if("maxy" in e.data.update){
+            maxy=e.data.update.maxy
+        }
+        if("code" in e.data.update){
+            let t=Object.keys(e.data.update.code)
+            for(let i of t){
+                let param=e.data.update.code[i].replace(/^function.*\(|\).*((\n|\r).*)*$/g,"").split(",")
+                self[i]=new Function(...param,e.data.update.code[i].replace(/^.*(\n|\r)|(\n|\r).*$/g,""))
+            }
+        }
+        if("neatcode" in e.data.update){
+            (function(){
+                eval.apply(this, arguments);
+            }(e.data.update.neatcode))//global running
+        }
+        if("m4xfps" in e.data.update){
+            m4xfps=Math.max(e.data.update.m4xfps,0.00001)
+            if(start&&e.data.update.objcolmap!=undefined){if(this.int!=undefined)clearInterval(this.int);this.int=setInterval(func,1000/m4xfps)}
+        }
+        if("objcolmap" in e.data.update){
+            objcolmap=new Uint8Array(e.data.update.objcolmap)
+            if(start&&e.data.update.objcolmap!=undefined){if(this.int!=undefined)clearInterval(this.int);this.int=setInterval(func,1000/m4xfps)}
+        }
+        if("objenemymap" in e.data.update){
+            objenemymap=new Uint8Array(e.data.update.objenemymap)
+            objenemysharedmap=e.data.update.objenemymap
+        }
+        if("finki" in e.data.update){
+            finki=e.data.update.finki
+        }
+        if("keyshared" in e.data.update){
+            keysharedarr=new Float64Array(e.data.update.keyshared)
+            keyshared=e.data.update.keyshared
+        }
+        if("network" in e.data.update&&e.data.update.network!=""){
+            network=JSON.parse(e.data.update.network)
+        }
+    }
+    if("add" in e.data){
+        //save what element it is
+        let num="num" in e.data.add?e.data.add.num:objarrays.length
+        if(objarrays[num]==null){
+            objarrays[num]={}
+            if(start)kistart()
+        }
+        let me1=objarrays[num]
+        if("dir" in e.data.add){
+            me1.dir=new Float64Array(e.data.add.dir)
+            me1.shareddir=e.data.add.dir
+        }
+        if("lastupdatetime" in e.data.add){
+            me1.lastupdatetime=new Float64Array(e.data.add.lastupdatetime)
+            me1.sharedlastupdatetime=e.data.add.lastupdatetime
+        }
+        if("x" in e.data.add){
+            me1.x=new Float64Array(e.data.add.x)
+            me1.sharedx=e.data.add.x
+            let minxtemp=Infinity
+            for(let i in me1.x)if(minxtemp>me1.x[i]){minxtemp=me1.x[i];minxnum=i}
+            me1.w=Math.max(0,Math.max(...me1.x)-Math.min(...me1.x));
+            Object.defineProperty(me1, 'minx', {get:()=>{return me1.x[minxnum]}});
+            Object.defineProperty(me1, 'setx', {set:(num)=>{for(let i=0,min=me1.minx;i<me1.x.length;i++)me1.x[i]+=-min+num}});
+            Object.defineProperty(me1, 'movex', {set:(num)=>{for(let i=0;i<me1.x.length;i++)me1.x[i]+=num}});
+        }
+        if("y" in e.data.add){
+            me1.y=new Float64Array(e.data.add.y)
+            me1.sharedy=e.data.add.y
+            let minytemp=Infinity
+            for(let i in me1.y)if(minytemp>me1.y[i]){minytemp=me1.y[i];minynum=i}
+            me1.h=Math.max(0,Math.max(...me1.y)-Math.min(...me1.y));
+            Object.defineProperty(me1, 'miny', {get:()=>{return me1.y[minynum]}});
+            Object.defineProperty(me1, 'sety', {set:(num)=>{for(let i=0,min=me1.miny;i<me1.y.length;i++)me1.y[i]+=-min+num}});
+            Object.defineProperty(me1, 'movey', {set:(num)=>{for(let i=0;i<me1.y.length;i++)me1.y[i]+=num}});
+        }
+        if("velo" in e.data.add){
+            me1.velo=new Float64Array(e.data.add.velo)
+            me1.sharedvelo=e.data.add.velo
+        }
+        if("dmg" in e.data.add){
+            me1.dmg=new Uint32Array(e.data.add.dmg)
+            me1.shareddmg=e.data.add.dmg
+        }
+        if("statsnum" in e.data.add){
+            me1.statsnum=new Uint32Array(e.data.add.statsnum)
+            me1.sharedstatsnum=e.data.add.statsnum
+        }
+        if("objnum" in e.data.add){
+            me1.objnum=e.data.add.objnum
+        }
+        if("kitype" in e.data.add){
+            me1.kitype=e.data.add.kitype
+        }
+        if("updatet" in e.data.add){
+            me1.updatet=new Uint8Array(e.data.add.updatet)
+            me1.sharedupdatet=e.data.add.updatet
+        }
+        if("colobjnum" in e.data.add){
+            me1.colobjnum=new Uint32Array(e.data.add.colobjnum)
+            me1.sharedcolobjnum=e.data.add.colobjnum
+        }
+        if("graviins" in e.data.add){
+            me1.graviins=new Float64Array(e.data.add.graviins)
+            me1.sharedgraviins=e.data.add.graviins
+        }
+        if("inwater" in e.data.add){
+            me1.inwater=new Uint8Array(e.data.add.inwater)
+            me1.sharedinwater=e.data.add.inwater
+        }
+        if("keys" in e.data.add){
+            me1.keys=new Float64Array(e.data.add.keys)
+            me1.sharedkeys=e.data.add.keys
+        }
+    }
+    if("start" in e.data&&e.data.start==true&&objarrays.length>0){
+        if(this.int!=undefined)clearInterval(this.int);
+        this.int=setInterval(kiloop,1000/m4xfps)
+        if(!start)kistart()
+        start=true
+    }
+}
+
+
+function kistart(){
+    let exp=null
+    if(typeof(neat)!=undefined&&neat instanceof NEAT)exp=neat.export()
+    //sort them after score
+
+    let config = {
+        model: [
+            //{nodeCount: 8+8*4, type: "input"},
+            {nodeCount: 8+((viewdistki*2/viewscaledown)*(viewdistki*2/viewscaledown)), type: "input"},
+            //{nodeCount: 6, type: "output", activationfunc: activation.RELU}
+            {nodeCount: 32, type: "output", activationfunc: activation.RELU}
+        ],
+        mutationRate: 0.05,
+        crossoverMethod: crossover.RANDOM,
+        mutationMethod: mutate.RANDOM,
+        populationSize: objarrays.length
+    }; 
+
+    //input up down right left x y gravix graviy
+    //man solte noch ob die nachbarten obj enemys sind bzw solid und type
+
+    neat=new NEAT(config);
+    //console.log(neat)
+    //load the best genes first
+    if(network!=""&&network.length==2&&network[1][0]!=null)for(let i=0;i<Math.min(objarrays.length,network[1].length);i++)neat.creatures[i].setFlattenedGenes(network[1][i])
+    if(exp!=null&&exp[1][0]!=null)for(let i=0;i<Math.min(objarrays.length,exp[1].length);i++)neat.creatures[i].setFlattenedGenes(exp[1][i])
+    //console.log(objarrays.length)
+    //console.log(neat)
+    kiworstfitnes=Math.sqrt(Math.pow(maxx-minx,2)+Math.pow(maxy-miny,2))
+    kipriorisirungmax=0
+    for(let i of kipriorisirung){kipriorisirungmax+=i}
+    neat.feedForward()
+    let kitime=performance.now()
+    for(let i of objarrays){
+        i.newtime=kitime
+        i.kitime=kitime
+        i.oldkeystime=0
+    }
+}
+//!js
+</script>
+
+<script id="neat">
+    /*
+	Author: ExtensionShoe
+	Date: 30/08/2019
+	License: MIT
+*/
+function NEAT(config) {
+	this.creatures = [];
+	this.oldCreatures = [];
+	this.model = config.model;
+	this.exportModel = [];
+	this.populationSize = config.populationSize || 500;
+	this.mutationRate = config.mutationRate || 0.05;
+	this.crossoverMethod = config.crossoverMethod || crossover.RANDOM;
+	this.mutationMethod = config.mutationMethod || mutate.RANDOM;
+	this.generation = 0;
+
+	for (let i = 0; i < this.model.length; i++) { // Sanitize the model.
+		let data = Object.assign({}, this.model[i]);
+		if (this.model[i].activationfunc) {
+			data.activationfunc = data.activationfunc.name;
+			this.exportModel.push(data);
+		} else {
+			this.exportModel.push(data);
+		}
+	}
+
+	for (let i = 0; i < this.populationSize; i++) { // Create the creatures.
+		this.creatures.push(new Creature(this.model));
+	}
+
+	this.mutate = function () { // Parses every creature's genes passes them to the mutation function and sets their new (mutated) genes.
+		for (let i = 0; i < this.populationSize; i++) {
+			let genes = this.creatures[i].flattenGenes();
+			genes = this.mutationMethod(genes, this.mutationRate);
+			this.creatures[i].setFlattenedGenes(genes);
+		}
+	}
+
+	this.crossover = function () { // Takes two creature's genes flattens them and passes them to the crossover function.
+		for (let i = 0; i < this.populationSize; i++) {
+			this.oldCreatures = Object.assign([], this.creatures);
+			let parentx = this.pickCreature();
+			let parenty = this.pickCreature();
+
+			let genes = this.crossoverMethod(parentx.flattenGenes(), parenty.flattenGenes());
+			this.creatures[i].setFlattenedGenes(genes);
+		}
+	}
+
+	this.pickCreature = function () { // Normalizes every creature's score (fitness) and and returns a creature based on their fitness value.
+		let sum = 0;
+		for (let i = 0; i < this.oldCreatures.length; i++) {
+			sum += Math.pow(this.oldCreatures[i].score, 2);
+		}
+
+		for (let i = 0; i < this.oldCreatures.length; i++) {
+			this.oldCreatures[i].fitness = Math.pow(this.oldCreatures[i].score, 2) / sum;
+		}
+		let index = 0;
+		let r = Math.random();
+		while (r > 0) {
+			r -= this.oldCreatures[index].fitness;
+			index += 1;
+		}
+		index -= 1;
+		return this.oldCreatures[index];
+	}
+
+	this.setFitness = function (fitness, index) { // Sets a creature's score. This will then be normalized for actual fitness value.
+		this.creatures[index].score = fitness;
+	}
+
+	this.feedForward = function () { // Feeds forward every creature's network.
+		for (let i = 0; i < this.creatures.length; i++) {
+			this.creatures[i].feedForward();
+		}
+	}
+
+	this.doGen = function () { // Does 1 fast generation with crossover and mutation.
+		this.crossover();
+		this.mutate();
+		this.generation++;
+		console.log('Generation: ' + this.generation);
+	}
+
+	this.bestCreature = function () { // Returns the index of the best creature from the previous generation.
+		let index = 0;
+		let max = -Infinity;
+		for (let i = 0; i < this.oldCreatures.length; i++) {
+			if (this.oldCreatures[i].fitness > max) {
+				max = this.oldCreatures[i].fitness;
+				index = i;
+			}
+		}
+		return index;
+	}
+
+	this.getDesicions = function () { // Returns every creature's desicion index in an array.
+		let result = [];
+
+		for (let i = 0; i < this.creatures.length; i++) {
+			result.push(this.creatures[i].desicion());
+		}
+		return result;
+	}
+
+	this.setInputs = function (array, index) { // Sets the inputs of the creature indexed as "index".
+		this.creatures[index].setInputs(array);
+	}
+
+	this.export = function (index) {
+		let data = [];
+		data.push(JSON.parse(JSON.stringify(this.exportModel)));
+		data.push([]);
+		if (index) {
+			data[1].push(this.creatures[index].flattenGenes());
+		} else {
+			for (let i = 0; i < this.populationSize; i++) {
+				data[1].push(this.creatures[i].flattenGenes());
+			}
+		}
+		return data;
+	}
+
+	this.import = function (data) {
+		if (JSON.stringify(data[0]) === JSON.stringify(this.exportModel)) {
+			console.log('Importing ' + data[1].length + ' creature(s)');
+			for (let i = 0; i < data[1].length; i++) {
+				let newCreature = new Creature(this.model);
+				newCreature.setFlattenedGenes(data[1][i]);
+				this.creatures.push(newCreature);
+				this.populationSize++;
+			}
+		} else {
+			throw "Invalid model!";
+		}
+	}
+
+	this.getTensorflowModel = function(index) { // Generate the requested tensorflow model.
+		if (index) {
+			// Generate the model for the index provided.
+			return this.creatures[index].network.getTensorflowModel();
+		} else {
+			// Generate the model the best performing creature.
+			return this.creatures[this.bestCreature()].network.getTensorflowModel();
+		}
+	}
+}
+
+function Creature(model) {
+	this.network = new Network(model); // Init the network
+
+	this.fitness = 0;
+	this.score = 0;
+
+	this.flattenGenes = function () { // Flattens the genes of the creature's genes and returns them as an array.
+		let genes = [];
+
+		for (let i = 0; i < this.network.layers.length - 1; i++) {
+			for (let w = 0; w < this.network.layers[i].nodes.length; w++) {
+				for (let e = 0; e < this.network.layers[i].nodes[w].weights.length; e++) {
+					genes.push(this.network.layers[i].nodes[w].weights[e]);
+				}
+			}
+
+			for (let w = 0; w < this.network.layers[i].bias.weights.length; w++) {
+				genes.push(this.network.layers[i].bias.weights[w]);
+			}
+		}
+
+		return genes;
+	}
+
+	this.setFlattenedGenes = function (genes) { // Sets an array of weights as the creature's genes.
+		for (let i = 0; i < this.network.layers.length - 1; i++) {
+			for (let w = 0; w < this.network.layers[i].nodes.length; w++) {
+				for (let e = 0; e < this.network.layers[i].nodes[w].weights.length; e++) {
+					this.network.layers[i].nodes[w].weights[e] = genes[0];
+					genes.splice(0, 1);
+				}
+			}
+
+			for (let w = 0; w < this.network.layers[i].bias.weights.length; w++) {
+				this.network.layers[i].bias.weights[w] = genes[0];
+				genes.splice(0, 1);
+			}
+		}
+	}
+
+	this.feedForward = function () { // Feeds forward the creature's network.
+		this.network.feedForward();
+	}
+
+	this.setInputs = function (inputs) { // Sets the inputs of the creature.
+		this.network.layers[0].setValues(inputs);
+	}
+
+	this.desicion = function () { // Some spaghetti code that returns the desicion of the creature.
+		let index = -1; 
+		let max = -Infinity;
+		for (let i = 0; i < this.network.layers[this.network.layers.length - 1].nodes.length; i++) {
+			if (this.network.layers[this.network.layers.length - 1].nodes[i].value > max) {
+				max = this.network.layers[this.network.layers.length - 1].nodes[i].value;
+				index = i;
+			}
+		}
+		return index;
+	}
+}
+
+function Network(model) { // Neural Network.
+	this.layers = [];
+	this.model = model;
+
+	for (let i = 0; i < model.length; i++) { // Init all the layers.
+		this.layers.push(new Layer(model[i].nodeCount, model[i].type, model[i].activationfunc));
+	}
+
+	for (let i = 0; i < this.layers.length - 1; i++) { // Connect the layers to each other.
+		this.layers[i].connect(this.layers[i + 1].nodes.length);
+	}
+
+	this.feedForward = function () { // Feeds forward the network.
+		for (let i = 0; i < this.layers.length - 1; i++) {
+			this.layers[i].feedForward(this.layers[i + 1]);
+		}
+	}
+
+	this.getTensorflowModel = function () { // Generates a tensorflow model from the current network.
+		
+		// Collect the weights from each layer in the network.
+		let weights = [];
+		for(let i = 0; i < this.layers.length - 1; i++) {
+			let weights_ = [];
+			for(let j = 0; j < this.layers[i].nodes.length; j++) {
+				weights_.push(this.layers[i].nodes[j].weights);
+			}
+			weights.push(weights_);
+		}
+
+		// Initialize the input and hidden layers.
+		let input = tf.input({shape: [this.model[0].nodeCount]});
+		let previous = input;
+		for(let i = 1; i < this.model.length - 1; i++) {
+			previous = tf.layers.dense({units: this.model[i].nodeCount, activation: 'relu'}).apply(previous);
+		}
+		// Initialize the output layer.
+		let output = tf.layers.dense({units: this.model[this.model.length - 1].nodeCount, activation: 'softmax'}).apply(previous);
+
+		// Create the model with random weights.
+		let model = tf.model({inputs: input, outputs: output});
+
+		// Set the weights of the model to the weights found by NEAT.
+		for(let i = 1; i < this.model.length; i++) {
+			model.layers[i].setWeights([tf.tensor(weights[i - 1], [weights[i-1].length, weights[i-1][0].length], dtype="float32"), tf.fill([this.model[i].nodeCount],0, dtype="float32")]);
+		}
+
+		return model;
+	}
+}
+
+function Layer(nodeCount, type, activationfunc) { // A layer component of a network with nodes and bias node.
+	this.nodes = [];
+	this.bias = undefined;
+	this.type = type;
+	this.activationfunc = activationfunc;
+
+	for (let i = 0; i < nodeCount; i++) { // Inits  nodes.
+		this.nodes.push(new Node());
+	}
+
+	if (this.type !== "output") this.bias = new Node();
+
+	this.connect = function (count) { // Connects one layer to another.
+		for (let i = 0; i < this.nodes.length; i++) {
+			this.nodes[i].initWeights(count);
+		}
+
+		if (this.bias !== undefined) this.bias.initWeights(count);
+	}
+
+	this.feedForward = function (layer) { // Feeds forward the layers values to the specified layer.
+		for (let i = 0; i < this.bias.weights.length; i++) {
+			layer.nodes[i].value = 0;
+		}
+
+		for (let i = 0; i < this.nodes.length; i++) {
+			for (let w = 0; w < this.nodes[i].weights.length; w++) {
+				layer.nodes[w].value += this.nodes[i].value * this.nodes[i].weights[w];
+			}
+		}
+
+		for (let w = 0; w < this.bias.weights.length; w++) {
+			layer.nodes[w].value += this.bias.weights[w];
+		}
+
+		if (layer.activationfunc.name !== "SOFTMAX") for (let w = 0; w < layer.nodes.length; w++) layer.nodes[w].value = layer.activationfunc(layer.nodes[w].value);
+		else layer.setValues(layer.activationfunc(layer.getValues()));
+	}
+
+	this.getValues = function () { // Returns the values of the nodes in the layer as an array.
+		let result = [];
+		for (let i = 0; i < this.nodes.length; i++) {
+			result.push(this.nodes[i].value);
+		}
+		return result;
+	}
+
+	this.setValues = function (values) { // Sets an array as the nodes values.
+		for (let i = 0; i < this.nodes.length; i++) {
+			this.nodes[i].value = values[i];
+		}
+	}
+}
+
+function Node() { // A Node.
+	this.value = 0;
+	this.weights = [];
+
+
+	this.initWeights = function (count) { // Randomly initalize weights.
+		for (let i = 0; i < count; i++) {
+			this.weights.push((Math.random() * 2) - 1);
+		}
+	}
+}
+
+activation = { // Supported activation functions.
+	RELU: function (x) {
+		if (x > 0) return x;
+		else return 0;
+	},
+	TANH: function (x) {
+		return Math.tanh(x);
+	},
+	SIGMOID: function (x) {
+		return (1 / (1 + Math.exp(-x)));
+	},
+	LEAKY_RELU: function (x) {
+		if (x > 0) return x;
+		else return (x * 0.01);
+	},
+	SOFTMAX: function (array) {
+		let sum = 0;
+		let result = [];
+		for (let i = 0; i < array.length; i++) {
+			sum += Math.exp(array[i]);
+		}
+		for (let i = 0; i < array.length; i++) {
+			result.push(Math.exp(array[i]) / sum);
+		}
+		return result;
+	}
+}
+
+crossover = { // Crossover methods.
+	RANDOM: function (genesx, genesy) { // Randomly take genes from parentx or parenty and return newly created genes.
+		let newGenes = [];
+
+		for (let i = 0; i < genesx.length; i++) {
+			if (Math.random() < 0.5) newGenes.push(genesx[i]);
+			else newGenes.push(genesy[i]);
+		}
+
+		return newGenes;
+	},
+	SLICE: function (genesx, genesy) { // Takes a starting and an ending point in parentx's genes removes the genes in between and replaces them with parenty's genes. (How nature does it.)
+		let start = Math.floor(Math.random() * (genesx.length));
+		let end = Math.floor(Math.random() * (genesx.length - start + 2)) + start + 1;
+		let cutPart = genesx.splice(start, end);
+
+		Array.prototype.splice.apply(genesy, [start, cutPart.length].concat(cutPart));
+
+		return genesy;
+
+	}
+}
+
+mutate = { // Mutation function (More to come!).
+	RANDOM: function (genes, mutationRate) { // Randomly sets the weights to a completely random value.
+		for (let i = 0; i < genes.length; i++) {
+			if (Math.random() < mutationRate) genes[i] = (Math.random() * 2) - 1;
+		}
+		return genes;
+	}
+}
 </script>
 <style>
 body,html,canvas{
@@ -762,21 +1381,20 @@ body{
     grid-template-rows:auto;
     overflow-x: hidden;
     }
-img{display:none}
 #canvas{
-    position:absolute;
+    position:fixed;
     z-index: 0;
 }
 #canvasb{
-    position:absolute;
+    position:fixed;
     z-index:-2
 }
 #canvasshadow{
-    position:absolute;
+    position:fixed;
     z-index:-3
 }
 #canvasbshadow{
-    position:absolute;
+    position:fixed;
     z-index:-4
 }
 .menu{
@@ -830,6 +1448,10 @@ h1,h2,h3{
     margin: 0;
     overflow: hidden;
 }
+.desyncedcolor{
+    background-color: white;
+}
+
 </style>
 </head>
 <body>
@@ -839,4 +1461,5 @@ h1,h2,h3{
     <button accesskey="o" title="need main" disabled="true" class="menu" id="settings">Setting</button>
     <button accesskey="w" title="need main and multiplayer" disabled="true" class="menu" id="webrtc">Webrtc</button>
     <button accesskey="b" title="need main createobj and build" disabled="true" class="menu" id="build">Build</button>
+    <button accesskey="c" title="need main" disabled="true" class="menu" id="close">Close</button>
 </body>

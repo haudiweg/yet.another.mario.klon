@@ -63,7 +63,11 @@ const colorobj={
     Pipe:function(x,y,me,w,h) {
         let canvas1=new OffscreenCanvas(Math.ceil(w),Math.ceil(h))
         let context1=canvas1.getContext("2d");
-        let imageData=new ImageData(Math.ceil(w),Math.ceil(h));
+        let imageData1=new ImageData(Math.ceil(w),Math.ceil(h));
+
+        let canvas2=new OffscreenCanvas(Math.ceil(w),Math.ceil(h))
+        let context2=canvas2.getContext("2d");
+        let imageData2=new ImageData(Math.ceil(w),Math.ceil(h));
         let type=0
         for (let i=0;i<Math.ceil(w)*Math.ceil(h);i++){
             type=0
@@ -97,16 +101,28 @@ const colorobj={
     
     
             if(type==1){
-                imageData.data[i*4+0]=me.pipetextur1r||0
-                imageData.data[i*4+1]=me.pipetextur1g||100
-                imageData.data[i*4+2]=me.pipetextur1b||0
-                imageData.data[i*4+3]=me.pipetextur1a||255
+                imageData1.data[i*4+0]=me.pipetextur1r||0
+                imageData1.data[i*4+1]=me.pipetextur1g||100
+                imageData1.data[i*4+2]=me.pipetextur1b||0
+                imageData1.data[i*4+3]=me.pipetextur1a||255
             }else if(type==2){
-                imageData.data[i*4+3]=me.pipetextur2a||255
+                imageData1.data[i*4+3]=me.pipetextur2a||255
+            }
+
+            if(type!==0){
+                imageData2.data[i*4+0]=me.pipetextur1r||0
+                imageData2.data[i*4+1]=me.pipetextur1g||100
+                imageData2.data[i*4+2]=me.pipetextur1b||0
+                imageData2.data[i*4+3]=me.pipetextur1a||255
             }
         }
-        context1.putImageData(imageData,0,0);
-        me.fill=canvas1
+        context1.putImageData(imageData1,0,0);
+        context2.putImageData(imageData2,0,0);
+        me.fill=[canvas1,canvas2]
+        //me.fill=[canvas2,canvas2]
+        //me.fill=[canvas1,canvas1]
+        //me.fill=canvas1
+        //me.fill=canvas2
         if(renderer==3)updatetextur=true
         if(renderer==0)renderbackground=true
     },
@@ -240,52 +256,46 @@ const colorobj={
         if(w<=0||h<=0)return
         let canvas1=new OffscreenCanvas(Math.ceil(w)*texturquali,Math.ceil(h)*texturquali)
         let context1=canvas1.getContext("2d");
-        const texalphascale=typeof(x)=="object"&&textureantialiasingscaling
+        const texalphascale=textureantialiasingscaling
         let alpha
-        if(typeof(x)=="object"){
-            let path=new Path2D()
-            if(texalphascale){
-                alpha=new Float64Array((Math.ceil(w)*texturquali)*(Math.ceil(h)*texturquali))
-                path.moveTo((x[0]-me.minx)*textureantialiasing*texturquali,(y[0]-me.miny)*textureantialiasing*texturquali)
-                for (let i=1;i<x.length;i++)path.lineTo((x[i]-me.minx)*textureantialiasing*texturquali,(y[i]-me.miny)*textureantialiasing*texturquali)
-                path.closePath();
-                for (let i=0;i<(Math.ceil(w)*texturquali)*(Math.ceil(h)*texturquali);i++){
-                    for (let i1=0;i1<textureantialiasing;i1++){
-                        for (let i2=0;i2<textureantialiasing;i2++){
-                            alpha[i]+=+context1.isPointInPath(path,(i%(Math.ceil(w)*texturquali))*textureantialiasing+i1,Math.trunc(i/(Math.ceil(w)*texturquali))*textureantialiasing+i2)
-                        }
+        let path=new Path2D()
+        if(texalphascale){
+            alpha=new Float64Array((Math.ceil(w)*texturquali)*(Math.ceil(h)*texturquali))
+            path.moveTo((x[0]-me.minx)*textureantialiasing*texturquali,(y[0]-me.miny)*textureantialiasing*texturquali)
+            for (let i=1;i<x.length;i++)path.lineTo((x[i]-me.minx)*textureantialiasing*texturquali,(y[i]-me.miny)*textureantialiasing*texturquali)
+            path.closePath();
+            for (let i=0;i<(Math.ceil(w)*texturquali)*(Math.ceil(h)*texturquali);i++){
+                for (let i1=0;i1<textureantialiasing;i1++){
+                    for (let i2=0;i2<textureantialiasing;i2++){
+                        alpha[i]+=+context1.isPointInPath(path,(i%(Math.ceil(w)*texturquali))*textureantialiasing+i1,Math.trunc(i/(Math.ceil(w)*texturquali))*textureantialiasing+i2)
                     }
-                    alpha[i]/=textureantialiasing*textureantialiasing
                 }
-            }else{
-                alpha=new Float64Array(Math.ceil(w)*Math.ceil(h))
-                path.moveTo((x[0]-me.minx)*textureantialiasing,(y[0]-me.miny)*textureantialiasing)
-                for (let i=1;i<x.length;i++)path.lineTo((x[i]-me.minx)*textureantialiasing,(y[i]-me.miny)*textureantialiasing)
-                path.closePath();
-                for (let i=0;i<Math.ceil(w)*Math.ceil(h);i++){
-                    for (let i1=0;i1<textureantialiasing;i1++){
-                        for (let i2=0;i2<textureantialiasing;i2++){
-                            alpha[i]+=+context1.isPointInPath(path,(i%Math.ceil(w))*textureantialiasing+i1,Math.trunc(i/Math.ceil(w))*textureantialiasing+i2)
-                        }
+                alpha[i]/=textureantialiasing*textureantialiasing
+            }
+        }else{
+            alpha=new Float64Array(Math.ceil(w)*Math.ceil(h))
+            path.moveTo((x[0]-me.minx)*textureantialiasing,(y[0]-me.miny)*textureantialiasing)
+            for (let i=1;i<x.length;i++)path.lineTo((x[i]-me.minx)*textureantialiasing,(y[i]-me.miny)*textureantialiasing)
+            path.closePath();
+            for (let i=0;i<Math.ceil(w)*Math.ceil(h);i++){
+                for (let i1=0;i1<textureantialiasing;i1++){
+                    for (let i2=0;i2<textureantialiasing;i2++){
+                        alpha[i]+=+context1.isPointInPath(path,(i%Math.ceil(w))*textureantialiasing+i1,Math.trunc(i/Math.ceil(w))*textureantialiasing+i2)
                     }
-                    alpha[i]/=textureantialiasing*textureantialiasing
                 }
+                alpha[i]/=textureantialiasing*textureantialiasing
             }
         }
+        
         let imageData=new ImageData(Math.ceil(w)*texturquali,Math.ceil(h)*texturquali);
         let terain=new Float64Array(Math.ceil(w)*Math.ceil(h))
+        let terain1=new Float64Array(Math.ceil(w)*Math.ceil(h))
         let ele=[]
-        if(typeof(x)=="object"){
-            for (let i=0;i<x.length;i++)ele[i]=[x[i],y[i]]
-        }else{
-            ele=[
-                [x,y],
-                [x+w,y],
-                [x+w,y+h],
-                [x,y+h]]
-        }
-        let minxobj=typeof(x)=="object"?Math.min(...x):x
-        let minyobj=typeof(x)=="object"?Math.min(...y):y
+        for (let i=0;i<x.length;i++)ele[i]=[x[i],y[i]]
+        
+        let minxobj=Math.min(...x)
+        let minyobj=Math.min(...y)
+
         let dist=new Float32Array(Math.ceil(w)*Math.ceil(h))
         for (let ix=0;ix<Math.ceil(w);ix++) {
             for (let iy=0;iy<Math.ceil(h);iy++) {
@@ -330,7 +340,7 @@ const colorobj={
         let offsny=0
         let offsx=0
         let offsy=0
-        let path=[]
+        let path1=[]
         let ele1=[]
         if(rerender==true){
             offsnx=me.minx
@@ -351,8 +361,8 @@ const colorobj={
             for(let inum=0;inum<ele1.length;inum++){
                 let min1=(inum-1)<0?ele1.length-1:inum-1
                 let plus1=(inum+1)%ele1.length
-                path[inum]=new Path2D()
-                path[inum].moveTo(ele1[inum][0]-offsx,ele1[inum][1]-offsy)
+                path1[inum]=new Path2D()
+                path1[inum].moveTo(ele1[inum][0]-offsx,ele1[inum][1]-offsy)
     
                 let temp=[]
                 let winkel=[]
@@ -387,10 +397,12 @@ const colorobj={
         }
         for (let i=0;i<Math.ceil(w)*Math.ceil(h);i++) {
             let num=(Math.random()*me.randomnis+Math.min(Math.max(Math.min(Math.max(1-((dist[i]-me.offsetheight)/me.abnahmeheight),0),1)*(me.abfac+0.5),0),1)*(1-me.randomnis))
+            let num1=(Math.random()*me.randomnisremove+Math.min(Math.max(Math.min(Math.max(1-((dist[i]-me.offsetheightremove)/me.abnahmeheightremove),0),1)*(me.abfacremove+0.5),0),1)*(1-me.randomnisremove))
             if(rerender==true){
                 let yt=Math.trunc(i/Math.ceil(w))
                 let xt=i%Math.ceil(w)
                 let tnum=0
+                let tnum1=0
                 let texturoverwrite=false
     
                 for(let inum=0;inum<ele.length;inum++){
@@ -410,7 +422,8 @@ const colorobj={
                     //py-=tempyc
     
                     if(context1.isPointInPath(path[inum],tempxu,tempyu)){
-                        tnum=me.gennumbers[0][Math.ceil(tempyu)*Math.ceil(me.gennumbers[3])+Math.ceil(tempxu)]
+                        tnum=me.gennumbers[0][0][Math.ceil(tempyu)*Math.ceil(me.gennumbers[3])+Math.ceil(tempxu)]
+                        tnum1=me.gennumbers[0][1][Math.ceil(tempyu)*Math.ceil(me.gennumbers[3])+Math.ceil(tempxu)]
                         texturoverwrite=true
                         //tnum=3
                         break
@@ -420,14 +433,19 @@ const colorobj={
                     tnum*=me.überlagerung
                     num*=(1-me.überlagerung)
                     num+=tnum
+
+                    tnum1*=me.überlagerungremove
+                    num1*=(1-me.überlagerungremove)
+                    num1+=tnum1
                 }
     
             }
             terain[i]=num
+            terain1[i]=num1
         }
         //wen textur smaler wird dan net save   bearchte das texturen die nicht pixel perfect sind net so gern gesavt werden
         if(me.gennumbers[3]*me.gennumbers[4]<Math.floor(w)*Math.floor(h)){
-            me.gennumbers[0]=[...terain]
+            me.gennumbers[0]=[[...terain],[...terain1]]
             me.gennumbers[1]=typeof(x)=="object"?[...x]:x
             me.gennumbers[2]=typeof(y)=="object"?[...y]:y
             me.gennumbers[3]=w
@@ -453,11 +471,31 @@ const colorobj={
                 }
             }
         }
+        for(let ifilter=0;ifilter<me.grassremovefilter;ifilter++){
+            const oldterain=[...terain1]
+            for (let yi=0,i=0;yi<Math.ceil(h);yi++) {
+                for (let xi=0;xi<Math.ceil(w);xi++,i++) {
+                    let divfilter=1
+                    if(xi>0){divfilter+=me.filtersmoveremove;terain1[i]+=oldterain[i-1]*me.filtersmoveremove}
+                    if(xi<w-1){divfilter+=me.filtersmoveremove;terain1[i]+=oldterain[i+1]*me.filtersmoveremove}
+                    if(yi>0){divfilter+=me.filtersmoveremove;terain1[i]+=oldterain[i-Math.ceil(w)]*me.filtersmoveremove}
+                    if(yi<h-1){divfilter+=me.filtersmoveremove;terain1[i]+=oldterain[i+Math.ceil(w)]*me.filtersmoveremove}
+    
+                    if(xi>0&&yi>0){divfilter+=me.filtersmoveremove;terain1[i]+=oldterain[i-Math.ceil(w)-1]*me.filtersmoveremove}
+                    if(xi<w-1&&yi>0){divfilter+=me.filtersmoveremove;terain1[i]+=oldterain[i-Math.ceil(w)+1]*me.filtersmoveremove}
+                    if(xi>0&&yi<h-1){divfilter+=me.filtersmoveremove;terain1[i]+=oldterain[i+Math.ceil(w)-1]*me.filtersmoveremove}
+                    if(xi<w-1&&yi<h-1){divfilter+=me.filtersmoveremove;terain1[i]+=oldterain[i+Math.ceil(w)+1]*me.filtersmoveremove}
+    
+                    terain1[i]/=divfilter
+                }
+            }
+        }
         for(let i=0,i1=0,i3=0;i1<Math.ceil(h)*texturquali;i1++){
             for(let i2=0;i2<Math.ceil(w)*texturquali;i2++,i3++){
                 i=Math.trunc(i1/texturquali)*Math.ceil(w)+Math.trunc(i2/texturquali)
                 if(snow){
-                    if(terain[i]>=0.5){
+                    if(terain1[i]>=0.5){
+                    }else if(terain[i]>=0.5){
                         imageData.data[i3*4+0]=Math.random()*me.snowtextursnow[0][0]+me.snowtextursnow[0][1]
                         imageData.data[i3*4+1]=Math.random()*me.snowtextursnow[1][0]+me.snowtextursnow[1][1]
                         imageData.data[i3*4+2]=Math.random()*me.snowtextursnow[2][0]+me.snowtextursnow[2][1]
@@ -474,7 +512,8 @@ const colorobj={
                         imageData.data[i3*4+3]=me.snowtexturstone[3]*(typeof(x)=="object"?alpha[texalphascale?i3:i]:1)
                     }
                 }else{
-                    if(terain[i]>=0.5){
+                    if(terain1[i]>=0.5){
+                    }else if(terain[i]>=0.5){
                         imageData.data[i3*4+0]=Math.random()*me.grasstexturgrass[0][0]+me.grasstexturgrass[0][1]
                         imageData.data[i3*4+1]=Math.random()*me.grasstexturgrass[1][0]+me.grasstexturgrass[1][1]
                         imageData.data[i3*4+2]=Math.random()*me.grasstexturgrass[2][0]+me.grasstexturgrass[2][1]
@@ -542,15 +581,8 @@ const colorobj={
     },
     Question:function(x,y,me,w,h){
         let ele=[]
-        if(typeof(me.x)=="object"){
-            for (let i=0;i<me.x.length;i++){ele[i][0]=me.x[i];ele[i][1]=me.y[i]}
-        }else{
-            ele=[
-                [me.x,me.y],
-                [me.x+me.w,me.y],
-                [me.x+me.w,me.y+me.h],
-                [me.x,me.y+me.h]]
-        }
+        for (let i=0;i<x.length;i++){ele[i]=[];ele[i][0]=x[i];ele[i][1]=y[i]}
+        
 
         let canvas1=new OffscreenCanvas(Math.ceil(w),Math.ceil(h))
         let context1=canvas1.getContext("2d");
@@ -808,35 +840,49 @@ async function shadow(s,me){//nur wen sich was bewegt
         }
     }
 }
-function playertexturani(me){
+function texturanimation(me){//bit ineffizient code
+    //animation get names and look if there values are true or false
+    //[this.t.dir[0]==-1&&this.t.dmg[0]==3&&this.t.kitype==0,0,this]
+    //[trigger,priorisirung(mostimpactiv),this]
     if(typeof(me.animation)!="object")return
     let obj=Object.keys(me.animation).filter(i=>i.includes("fillpic")&&typeof(me.animation[i])=="object")
     let trigger=[]
     for(let i in obj){
         trigger[i]=me.animation[obj[i]].trigger
     }
+
     function mostimportant(i0,i1){
         if(i0[1]>i1[1])return 1
         if(i0[1]<i1[1])return -1
         return 0
     }
     let mostimpactiv=trigger.filter(i=>i[0]).sort(mostimportant)
+
+    //resette aniframe of not aktiv ones
     let notactiv=trigger.filter(i=>i[0]==false)
     for(let i in notactiv){
         notactiv[i][2].aniframe=0
     }
+
+    //if no pictures are activ use normal texture
     if(mostimpactiv.length==0&&me.animation.reset!=null){
         me.fill=me.animation.reset
         me.animation.reset=null
     }
+    //save the default pic
     if(mostimpactiv.length>0&&me.animation.reset==null){
         me.animation.reset=me.fill
     }
+
+    //animation with multible modis
     if(mostimpactiv.length>0){
         let highest=mostimpactiv[mostimpactiv.length-1]
         let keys1=[...highest[2].pic.keys()]
+
+        //get picture das is below aniframe number (nearest below number) and use it as texture
         let num=keys1.filter(i=>i<=highest[2].aniframe&&highest[2].pic.get(i).length==2)
         if(num.length>0)me.fill=highest[2].pic.get(num[num.length-1])[1]
+
         if(highest[2].mode=="stop"){
             if(keys1[keys1.length-1]>=highest[2].aniframe)highest[2].aniframe+=60/fps
         }
@@ -857,7 +903,9 @@ function playertexturani(me){
 async function Wasserpsy(x=0,y=0,me,w,h){
     let left=new Float64Array(w)
     let right=new Float64Array(w)
+    let upd=false
     while(me.wasserfps>=1){
+        upd=true
         me.wasserfps--
         for(let i=0;i<w;i++){
 	    	me.wasserphysa[0][i]+=me.tension*(me.TargetHeight-me.wasserphysa[1][i])-me.wasserphysa[0][i]*me.dampening
@@ -880,7 +928,7 @@ async function Wasserpsy(x=0,y=0,me,w,h){
             }
         }
     }
-    Wasserpic(x,y,me,w,h)
+    if(upd)Wasserpic(x,y,me,w,h)
     //interpolation
 }
 async function Wasserpic(x,y,me,w,h) {
@@ -890,14 +938,12 @@ async function Wasserpic(x,y,me,w,h) {
         for(let i1=Math.trunc(me.down-me.schaum+me.wasserphysa[0][i]);i1<Math.trunc(me.down+me.wasserphysa[0][i]);i1++)data[i+i1*w]=me.wassertexturschaum
         for(let i1=Math.trunc(me.down+me.wasserphysa[0][i]);i1<=h;i1++)data[i+i1*w]=me.wassertexturwasser
     }
-    if(typeof(x)=="object"){
-        let canvas1=new OffscreenCanvas(w,h)
-        let context1=canvas1.getContext("2d");
-        let path=new Path2D()
-        path.moveTo(x[0]-me.minx,y[0]-me.miny)
-        for (let i=1;i<x.length;i++)path.lineTo(x[i]-me.minx,y[i]-me.miny)
-        for (let i=0;i<w*h;i++)if(!context1.isPointInPath(path,i%w, i/w)){data[i]=0}
-    }
+    let canvas1=new OffscreenCanvas(w,h)
+    let context1=canvas1.getContext("2d");
+    let path=new Path2D()
+    path.moveTo(x[0]-me.minx,y[0]-me.miny)
+    for (let i=1;i<x.length;i++)path.lineTo(x[i]-me.minx,y[i]-me.miny)
+    for (let i=0;i<w*h;i++)if(!context1.isPointInPath(path,i%w, i/w)){data[i]=0}
     //rgba beachten also endian
     me.fill.getContext("2d").putImageData(new ImageData(new Uint8ClampedArray(buf),w,h),0,0)
 }
@@ -927,17 +973,19 @@ function inverse_kinematic(me,multi=false){
             move*=-1
         }
         
-        if(debug&&!multi)debugtext+="\nbonewinkel"+i+": "+wink+"°"+
-                            "\nbonewinkel"+i+": "+wink/(180/Math.PI)+
-                            "\nrichtung"+i+": "+richtung+
-                            "\nmove"+i+": "+move+
-                            "\nix"+i+": "+ix+
-                            "\niy"+i+": "+iy+
-                            "\ndir: "+me.dir+
-                            "\nbewegung"+i+": "+bone.bewegung
+        if(debug&&!multi&&me.construck=="Player"&&walkdebug){
+            debugtext+="\nbonewinkel"+i+": "+wink+"°"+
+                "\nbonewinkel"+i+": "+wink/(180/Math.PI)+
+                "\nrichtung"+i+": "+richtung+
+                "\nmove"+i+": "+move+
+                "\nix"+i+": "+ix+
+                "\niy"+i+": "+iy+
+                "\ndir: "+me.dir[0]+
+                "\nbewegung"+i+": "+bone.bewegung
+        }
 
         bone.bewegung+=Math.abs(me.velo[0])
-        if(me.inwater&&me.falldist>10){
+        if(me.inwater[0]&&me.falldist>10){
             iy-=Math.max(Math.sin((Math.PI)*(Math.max(bone.bewegung,0)/5)),0)*4
         }else{
             if(bone.wait==false&&Math.abs(me.velo[0])<0.1){
@@ -968,7 +1016,7 @@ function inverse_kinematic(me,multi=false){
             (targetSqrDist + bonseg0.len2 - bonseg1.len2) / (2 * bonseg0.len * Math.sqrt(targetSqrDist))
         ));
         theta1 = Math.atan2(Math.abs(iy), Math.abs(ix)) - Math.acos(angle);
-        bonseg0.x = originx + bonseg0.len * Math.cos(theta1)*me.dir*(me.inwater?-1:1);
+        bonseg0.x = originx + bonseg0.len * Math.cos(theta1)*me.dir[0]*(me.inwater[0]?-1:1);
         bonseg0.y = originy + bonseg0.len * Math.sin(theta1);
 
 
@@ -976,7 +1024,7 @@ function inverse_kinematic(me,multi=false){
             (targetSqrDist - bonseg0.len2 - bonseg1.len2) / (2 * bonseg0.len * bonseg1.len)
         )); 
         let theta2 = Math.acos(angle);
-        bonseg1.x = bonseg0.x + bonseg1.len * Math.cos(theta2 + theta1)*me.dir*(me.inwater?-1:1);
+        bonseg1.x = bonseg0.x + bonseg1.len * Math.cos(theta2 + theta1)*me.dir[0]*(me.inwater[0]?-1:1);
         bonseg1.y = bonseg0.y + bonseg1.len * Math.sin(theta2 + theta1);
     }
 }
@@ -994,7 +1042,7 @@ function wassercolide(me,me1){
             heightunderplayer=me1.miny+me1.down+(heightunderplayer/counter)
 
             if(me.y+me.h<heightunderplayer)return
-            me.inwater=true
+            me.inwater[0]=true
 
             if(me.y+me.h-heightunderplayer<10&&me1.wasserphyplayerwave&&wasserphyplayerwave){
                 for(let i1=Math.trunc(Math.max(me.x-me1.minx,0));i1<Math.trunc(Math.min(me.x+me.w-me1.minx,me1.w));i1++){
@@ -1006,40 +1054,45 @@ function wassercolide(me,me1){
                 }
             }
         }else{
-            me.inwater=true
+            me.inwater[0]=true
         }
     }
 }
 function pani(ro,wx,wy,me){
-    stopmain=false
-    let paniv=true,timeo1pani=0
+    let paniv=true,
+        timeo1pani=0,
+        playphy=false
+
+    if("playerphysik" in me&&me.playerphysik){
+        playphy=true
+        me.playerphysik=false
+    }
+
     setTimeout(()=>{
         paniv=false,
-        stopmain=true
-        me.x=wx
-        me.y=wy
+        me.setx=wx
+        me.sety=wy
         timeo=timeo1pani
-        window.requestAnimationFrame(ani)
         if(renderer==0)renderbackground=true
+        if(playphy)me.playerphysik=true
     },200)
     function ani1pani(time1pani){
         const fps1=Math.max(1/((time1pani-timeo1pani)/1e3),10)
         if(promall[3].res)for (let s in mySun[loadmap])shadow(s,me)
         switch (ro) {
             case 0:
-                me.y-=(60/fps1)
+                me.movey=-(60/fps1)
             break;
             case 1:
-                me.x+=(60/fps1)
+                me.movex=(60/fps1)
             break;
             case 2:
-                me.y+=(60/fps1)
+                me.movey=(60/fps1)
             break;
             case 3:
-                me.x-=(60/fps1)
+                me.movex=-(60/fps1)
             break;
         }
-        repaint(rofx,rofy)
         timeo1pani=time1pani
         if (paniv)window.requestAnimationFrame(ani1pani)
     }

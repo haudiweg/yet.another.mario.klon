@@ -13,379 +13,6 @@
  * include all functions to create obj
  */
 const createobj={
-    /**array that defines every variable in the obj*/
-
-    //[regex(numbers strings etc get convertet to typeof object),type,regex]
-    type:{
-        x:[/^\[(number,)*number\]$|^number$/,"object"],
-        y:[/^\[(number,)*number\]$|^number$/,"object"],
-        w:"number",
-        h:"number",
-        minx:"number",
-        miny:"number",
-        static:"boolean",
-        shadow:[/^\[(,?\[(object,)*(object)?\])+\]|\[undefined\]|\[\]$/,"object"],
-        shadowadd:"object",
-        fill:"string|object",
-        fillstr:"string",
-        fillbackup:"string",
-        phy:"boolean",
-        allblue:"boolean",
-        übergang:"number",
-        stärke:"number",
-        stärkemit:"number",
-        smovnes:"number",
-        stärke1:"number",
-        stärkemit1:"number",
-        einpendelphasse:"number",
-        down:"number",
-        schaum:"number",
-        Spread:"number",
-        j:"number",
-        TargetHeight:"number",
-        dampening:"number",
-        tension:"number",
-        wasserfps:"number",
-        construck:"string",
-        construckarr:"string",
-        reibung:"number",
-        haftreibung:"number",
-        dmg:"number",
-        md:"number",
-        dir:"number",
-        type:[/string|(\[(string,)*string\])/,"object"],
-        statsnum:"number",
-        sx:"number",
-        sy:"number",
-        velo:[/\[number,number\]/,"object"],
-        falldist:"number",
-        inwater:"boolean",
-        masse:"number",
-        nokill:"number",
-        owner:"object",
-        winkel:"number",
-        speed:"number",
-        bounce:"number",
-        bouncemax:"number",
-        bouncelast:"number",
-        wasserphysa:[/\[object,object\]/,"object"],
-        wasserphycollision:"boolean",
-        wasserphyplayerwave:"boolean",
-        dest:"boolean",
-        ro:"number",
-        wx:"number",
-        wy:"number",
-        gennumbers:[/(\[\[(number,?)*\],(\[(number,)*number\]|number),(\[(number,)*number\]|number),number,number\])/,"object"],
-        havcoll:"boolean",
-        kitype:"number",
-        graviins:[/\[number,number\]/,"object"],
-        gravirich:"number",
-        rich4:"number",
-        rich4arr:[/\[number,number,number,number\]/,"object"],
-        rich2:[/\[number,number\]/,"object"],
-        rich2arr:[/\[number,number\]/,"object"],
-        abfac:"number",
-        dx:"number",
-        dy:"number",
-        abnahmeheight:"number",
-        filtersmove:"number",
-        offsetheight:"number",
-        randomnis:"number",
-        texturrichtung:[/\[(number,)*number\]/,"object"],
-        überlagerung:"number",
-        savemin:"number",
-        fillpic:[/(\[(string,)*string\])|string/,"object|string"],
-        fillvideo:[/(\[(string,)*string\])|string/,"object|string"],
-        blur:"number",
-        blurcolor:"string",
-        stats:[/\[(\[((\[(object,)*object\],)*(\[(object,)*object\]))\],)*(\[((\[(object,)*object\],)*(\[(object,)*object\]))\])\]/,"object"],
-        pipetexturtop:"number",
-        pipetexturside:"number",
-        pipetextur1r:"number",
-        pipetextur1g:"number",
-        pipetextur1b:"number",
-        pipetextur1a:"number",
-        pipetextur2a:"number",
-        grassstone:"number",
-        grasstexturgrass:[/\[(\[number,number\],){3}number\]/,"object"],
-        grasstexturdirt:[/\[(\[number,number\],){3}number\]/,"object"],
-        grasstexturstone:[/\[(\[number,number\],){3}number\]/,"object"],
-        grassfilter:"number",
-        snowstone:"number",
-        snowtextursnow:[/\[(\[number,number\],){3}number\]/,"object"],
-        snowtexturdirt:[/\[(\[number,number\],){3}number\]/,"object"],
-        snowtexturstone:[/\[(\[number,number\],){3}number\]/,"object"],
-        snowfilter:"number",
-        wassertexturschaum:"number",
-        wassertexturwasser:"number",
-        questiontexturdistanz:"number",
-        questiontexturtextcolor:"string",
-        questiontexturtextstroke:"string",
-        questiontexturcolor:"string",
-        questiontexturpointcolor:"string",
-        questiontexturtext:"string",
-        inversekinematics:"boolean",
-        picoff:[/\[number,number\]/,"object"],
-        rotate:"number",
-        bones:[/\[(object,)*object\]/,"object"],
-        animation:"object",
-        damage:"object",
-        nodraw:"boolean",
-        fishtoattack:"boolean",
-        texture:"object",
-        webglfill:[/\[(number,){3}number\]/,"object"],//hir noch werte eingrenzen
-        grassrandomfactor:"number",
-        audio:"boolean",
-        createtaudio:"boolean",
-        audiogen:"function",
-        audiorem:"function",
-        audioobj:"object",
-        webglcantdraw:"boolean",
-        webglcantdrawfillbackup:"boolean",
-        managefromplayer:"boolean",
-        managefromplayernum:"string",
-        managefromplayerobjnum:"number",
-        sync:"boolean",
-        groundflat:"boolean",
-        invisible:"boolean",
-        kimultiplayertimer:"number",
-        kimultiplayertimerreset:"number",
-        Multiplayer:{
-            onlineplayernum:"number",
-            onlineplayer:"string",
-        },
-        Questionblock:{
-            option:[/(\[(\[string(,object)?(,\[\[object\]\]|(,\[number,\[\[object\]\]\])|(,\[number,number,\[\[object\]\]\]))?\])?,?(\[string(,object)?(,\[\[object\]\]|(,\[number,\[\[object\]\]\])|(,\[number,number,\[\[object\]\]\]))?\])?\])/,"object"]
-        },
-        Specialblock:{
-            option:[/(\[(number,)*number\])|number/,"object"],
-            timeout:"object",
-            timeout1:"object",
-            playeronobj:"number"
-        },
-        Grassani:{
-            grass:[/\[((object,)*object)?\]/,"object"],
-            firsts:[/\[((number,)*number)?\]/,"object"],
-            grassspawn:"function",
-            ignoresun:"boolean"
-        },
-        Player:{
-            environment:"boolean",
-            playerphysik:"boolean",
-            getstats:"object",
-            shift:"boolean",
-            nomove:"number",
-            umgebung:[/^\[(\[(object|number)?,number\],){3}\[(object|number)?,number\]\]$/,"object"],
-            disto:[/^\[(\[((object,)*boolean)?\],){3}\[((object,)*boolean)?\]\]$/,"object"],
-            distd:[/^\[(\[((number,)*number)?\],){3}\[((number,)*number)?\]\]$/,"object"],
-            controls:"object"
-        }
-    },
-    /**dont show it in debug*/
-    notdisplay:{
-        global:[
-            "shadow",
-            "shadowadd",
-            "static",
-            "construck",
-            "construckarr",
-            "wasserphysa",
-            "gennumbers",
-            "rich4",
-            "rich4arr",
-            "rich2",
-            "rich2arr",
-            "gravirich",
-            "graviins",
-            "getstats",
-            "animation",
-            "bones",
-            "umgebung",
-            "shift",
-            "nomove",
-            "damage",
-            "disto",
-            "distd",
-            "grassspawn",
-            "groundflat"
-        ]
-    },
-    savedell:[
-        "shadow",
-        "shadowadd",
-        "graviins",
-        "gravirich",
-        "rich4",
-        "rich4arr",
-        "rich2",
-        "rich2arr",
-        "damage",
-        "nomove",
-        "shift",
-        "umgebung",
-        "bones",
-        "animation",
-        "disto",
-        "texture",
-        "webglfill",
-        "grassspawn",
-        "groundflat"
-    ],
-    tooltip:{
-        en:{
-            x:"cordinate <> of player"
-        },
-        de:{
-            x:"cordinaten <> von Spieler" 
-        }
-    },
-    multiplayerallowedprop:[
-        "x",
-        "y",
-        "w",
-        "h",
-        "statsnum",
-        "velo",
-        "inwater",
-        "falldist",
-        "dir",
-        "groundflat",
-        "rich4arr"
-    ],
-    multiplayerallowedobjprop:[
-        "x",
-        "y",
-        "w",
-        "h",
-        "dir",
-        "nodraw",
-        "havcoll",
-        "invisible"
-    ],
-    multiplayerallowedspawn:[
-        "Powerup"
-    ],
-    multiplayerallowedremove:[
-        "Powerup"
-    ],
-    /**@private */
-    check:function(arr,defaultarr){
-        if(typeof(createobj[this.constructor.name].type)=="undefined"){
-            Object.create(createobj[this.constructor.name].type={...createobj.type})//filter hir alle obj raus die namen von obj haben
-            if(typeof(createobj.type[this.constructor.name])=="object")Object.assign(createobj[this.constructor.name].type,createobj.type[this.constructor.name])
-        }
-        if(typeof(createobj[this.constructor.name].notdisplay)=="undefined"){
-            Object.create(createobj[this.constructor.name].notdisplay={...createobj.notdisplay.global})
-            if(typeof(createobj.notdisplay[this.constructor.name])=="object")Object.assign(createobj[this.constructor.name].notdisplay,createobj.notdisplay[this.constructor.name])
-        }
-        //@ts-expect-error
-        let languagetemp=language=="auto"?(window.navigator.languages?window.navigator.languages[0]:navigator.language||navigator.browserLanguage||navigator.userLanguage||"en").replace(/[-_].*/,""):language
-        if(!createobj.tooltip.hasOwnProperty(languagetemp))languagetemp="en"
-        if(typeof(createobj[this.constructor.name].tooltip)=="undefined"){
-            Object.create(createobj[this.constructor.name].tooltip={...createobj.tooltip[languagetemp]})//filter hir alle obj raus die namen von obj haben
-            if(typeof(createobj.tooltip[languagetemp][this.constructor.name])=="object")Object.assign(createobj[this.constructor.name].tooltip,createobj.tooltip[languagetemp][this.constructor.name])
-        }
-        Object.defineProperty(this, 'construckarr', {
-            enumerable: true,
-            configurable: false,
-            writable: false,
-            value: (arr=="return")?defaultarr.constructor.name:Object.keys(window).find(me=>window[me]===((typeof(arr[0])=="number")?arr[arr.length-1]:(arr!==undefined?arr:defaultarr.constructor.name)))
-        });
-        Object.defineProperty(this, 'construck', {
-            enumerable: true,
-            configurable: false,
-            writable: false,
-            value: this.constructor.name
-        });
-        if(!checkprop(this))return
-        //arr="return"
-        //arr=myRect
-        //arr=[0,myRect] //zahl=platz in aktuellen myRect array
-        //arr=[0,0,myRect] // erste zahl myRect array karten number   zweite zahl number in myRect array
-        if(typeof(arr[0])=="number"){
-            if(arr.length==3){
-                arr[2][arr[0]][arr[1]]=this
-            }else{
-                arr[1][loadmap][arr[0]]=this
-            }
-        }else{
-            if(arr=="return"){
-                return this
-            }else{
-                if(arr==undefined){
-                    defaultarr[loadmap].push(this)
-                }else{
-                    arr[loadmap].push(this)
-                }
-            }
-        }
-    },
-    /**@private */
-    pos:function(opt){
-        if(!Array.isArray(opt))opt=[opt]
-        let numt=opt.findIndex(i=>i.constructor.name=="Object")
-        if(numt!=-1){
-            let temp=opt[numt]
-            opt[numt]=undefined
-            opt[4]=temp
-        }
-        for(let i=0;i<4;i++){if(opt[i]==undefined)opt[i]=[this.x,this.y,this.w,this.h][i]}
-        Object.assign(this,{x:opt[0],y:opt[1],w:opt[2],h:opt[3]},opt[4])
-        if(typeof(this.x)=="object")this.w=Math.max(0,Math.max(...this.x)-Math.min(...this.x));
-        if(typeof(this.y)=="object")this.h=Math.max(0,Math.max(...this.y)-Math.min(...this.y));
-
-        //get the min x and y pos
-        //use getter that i allways have the actuel lowest number
-        if(typeof(this.x)=="object"){
-            let minx=Infinity
-            let minxnum=0
-            for(let i in this.x)if(minx>this.x[i]){minx=this.x[i];minxnum=i}
-            Object.defineProperty(this, 'minx', {get:()=>{return this.x[minxnum]}});
-        }else{
-            Object.defineProperty(this, 'minx', {get:()=>{return this.x}});
-        }
-        if(typeof(this.y)=="object"){
-            let miny=Infinity
-            let minynum=0
-            for(let i in this.y)if(miny>this.y[i]){miny=this.y[i];minynum=i}
-            Object.defineProperty(this, 'miny', {get:()=>{return this.y[minynum]}});
-        }else{
-            Object.defineProperty(this, 'miny', {get:()=>{return this.y}});
-        }
-    },
-    /**@private */
-    bones:function(){
-        for(let i of this.bones){
-            i.wait=true
-            i.t=this
-            let obj=Object.keys(i).filter(me=>typeof(i[me])=="object"&&i[me]!=this)
-            for(let i1 of obj){
-                i[i1].t=this
-                Object.defineProperty(i[i1], 'len2',{get: function() {return i[i1].len**2}});
-            }
-            for(let i1=0;typeof(i["segment"+i1])!="undefined";i1++){
-                i["segment"+i1].x=0
-                i["segment"+i1].y=0
-            }
-        }
-    },
-    /**@private */
-    animation:function(){
-        let temp=this.animation
-        temp.reset=null
-        let obj=Object.keys(this.animation).filter(me=>typeof(temp[me])=="object"&&me.includes("fillpic"))
-        for(let i of obj){
-            temp[i].t=this
-            if(typeof(temp[i].aniframe)=="undefined")temp[i].aniframe=0
-            if(typeof(temp[i].mode)=="undefined")temp[i].mode="loopjump"
-            if(temp[i].mode=="loopback"&&typeof(temp[i].dir)!="number")temp[i].dir=1
-            for(let i1 of temp[i].pic){
-                let img = new Image();
-                img.src = i1[1][0];
-                img.onload=()=>{i1[1][1]=img}
-            }
-        }
-    },
 /**@type {createobjfunc}*/
     Shape:function(arr,...opt) {
         let defaultarr=myRect;
@@ -393,16 +20,48 @@ const createobj={
         this.y = 0;
         this.w = 0;
         this.h = 0;
+        this.damage={
+            t:this,
+            collide:function(me){
+                if(me.statsnum!=3)return
+                myRect[loadmap].splice(myRect[loadmap].indexOf(this.t),1)
+                if(renderer==3)updatescene=true
+                if(rumble&&me.construck=="Player")keys.vibrate(87,0,1)
+                needcolmap=true
+            },
+        };
         this.havcoll = true;
         this.fill = "grey";
         this.dest = false;
         this.static = true;
+        this.coindropdest = 10;
         this.reibung = 0.1;
         this.haftreibung = 0.3;
-        createobj.pos.call(this,opt)
+        createobjhelper.pos.call(this,opt)
         this.fillstr=this.fill;
-        createobj.check.call(this,arr,defaultarr)
+        createobjhelper.convtoshared.call(this)
+        createobjhelper.check.call(this,arr,defaultarr)
     },
+/**@type {createobjfunc}*/
+Onewayblock:function(arr,...opt) {
+    let defaultarr=myRect;
+    this.x = 0;
+    this.y = 0;
+    this.w = 0;
+    this.h = 0;
+    this.alloweddirections=[0,0,1,0];
+    this.havcoll = true;
+    this.fill = "blue";
+    this.dest = false;
+    this.static = true;
+    this.coindropdest = 10;
+    this.reibung = 0.1;
+    this.haftreibung = 0.3;
+    createobjhelper.pos.call(this,opt)
+    this.fillstr=this.fill;
+    createobjhelper.convtoshared.call(this)
+    createobjhelper.check.call(this,arr,defaultarr)
+},
 /**@type {createobjfunc}*/
     Grassani:function(arr,...opt){
         let defaultarr=myRect;
@@ -412,7 +71,6 @@ const createobj={
         this.h = 0;
         this.fillbackup = "rgba(0,0,0,0)";
         this.fill = "Grassstraw";
-        this.md = 1;
         this.ignoresun = false;
         this.nodraw = true;
         this.havcoll = false;
@@ -526,9 +184,10 @@ const createobj={
                     delete this.t.audioobj.osc
             }
         };
-        createobj.pos.call(this,opt)
+        createobjhelper.pos.call(this,opt)
         this.fillstr=this.fill;
-        createobj.check.call(this,arr,defaultarr)
+        createobjhelper.convtoshared.call(this)
+        createobjhelper.check.call(this,arr,defaultarr)
     },
 /**@type {createobjfunc}*/
     Grass:function(arr,...opt) {
@@ -557,10 +216,26 @@ const createobj={
         this.grasstexturdirt = [[50,102],[50,102],[50,102],255];
         this.grasstexturstone = [[100,39],[100,-31],[50,-16],255];
         this.grassfilter = 1;
-        createobj.pos.call(this,opt)
+
+        this.randomnisremove = 0.2;
+        this.abfacremove = 0.45;
+        this.abnahmeheightremove = 1;
+        this.offsetheightremove = 0;
+        this.filtersmoveremove = 0.8;
+        this.grassremovefilter = 1;
+
+        createobjhelper.pos.call(this,opt)
         this.gennumbers=[[],0,0,0,0]
         this.fillstr=this.fill;
-        createobj.check.call(this,arr,defaultarr)
+        createobjhelper.convtoshared.call(this)
+        createobjhelper.check.call(this,arr,defaultarr)
+    },
+    Ground:function(arr,...opt){
+        if(weaterinfo!=null&&(weaterinfo.weather[0].main=="Snow"||weaterinfo.main.temp_min<0)){
+            createobj.Snow.apply(this,arguments)
+        }else{
+            createobj.Grass.apply(this,arguments)
+        }
     },
 /**@type {createobjfunc}*/
     Snow:function(arr,...opt) {
@@ -584,15 +259,24 @@ const createobj={
         this.abnahmeheight = 100;
         this.offsetheight = 0;
         this.filtersmove = 0.1;
+        this.grassfilter = 1;
+
+        this.randomnisremove = 0.2;
+        this.abfacremove = 0.45;
+        this.abnahmeheightremove = 1;
+        this.offsetheightremove = 0;
+        this.filtersmoveremove = 0.8;
+        this.grassremovefilter = 1;
+
         this.snowstone = 50;
         this.snowtextursnow = [[30,205],[30,205],[20,225],255];
         this.snowtexturdirt = [[50,102],[50,102],[50,102],255];
         this.snowtexturstone = [[100,39],[100,-31],[50,-16],255];
-        this.snowfilter = 1;
-        createobj.pos.call(this,opt)
+        createobjhelper.pos.call(this,opt)
         this.gennumbers=[[],0,0,0,0]
         this.fillstr=this.fill;
-        createobj.check.call(this,arr,defaultarr)
+        createobjhelper.convtoshared.call(this)
+        createobjhelper.check.call(this,arr,defaultarr)
     },
 /**@type {createobjfunc}*/
     Wasser:function(arr,...opt) {
@@ -627,14 +311,16 @@ const createobj={
         this.wassertexturwasser = 1690862145
         this.wasserphycollision = false;
         this.wasserphyplayerwave = false;
-        createobj.pos.call(this,opt)
+        createobjhelper.pos.call(this,opt)
         this.wasserphysa=[new Float32Array(this.w),new Float64Array(this.w)]
         this.fillstr=this.fill;
-        createobj.check.call(this,arr,defaultarr)
+        createobjhelper.convtoshared.call(this)
+        createobjhelper.check.call(this,arr,defaultarr)
     },
 /**@type {createobjfunc}*/
     Powerup:function(arr,...opt) {
         let defaultarr=myRect;
+        this.velo = [0,0];
         this.x = 0;
         this.y = 0;
         this.w = 0;
@@ -651,24 +337,25 @@ const createobj={
             t:this,
             jump:function(me){
                 if (me.getstats.powerup.includes(this.t.md)){
-                    me.statsnum=this.t.md
-                    if(multiplayerstartet&&multiplayer&&!listenforplayer)postMessage({act:"player stats update",data:{statsnum:me.statsnum},playersendid:me.playersendid,id:multiplayerid})
+                    me.statsnum[0]=this.t.md
+                    if(multiplayerstartet&&multiplayer&&!listenforplayer)postMessage({act:"player stats update",data:{statsnum:me.statsnum[0]},playersendid:me.playersendid,id:multiplayerid})
                 }
                 myRect[loadmap].splice(myRect[loadmap].indexOf(this.t),1)
                 if(renderer==3)updatescene=true
             },
             collide:function(me){
                 if (me.getstats.powerup.includes(this.t.md)){
-                    me.statsnum=this.t.md
-                    if(multiplayerstartet&&multiplayer&&!listenforplayer)postMessage({act:"player stats update",data:{statsnum:me.statsnum},playersendid:me.playersendid,id:multiplayerid})
+                    me.statsnum[0]=this.t.md
+                    if(multiplayerstartet&&multiplayer&&!listenforplayer)postMessage({act:"player stats update",data:{statsnum:me.statsnum[0]},playersendid:me.playersendid,id:multiplayerid})
                 }
                 myRect[loadmap].splice(myRect[loadmap].indexOf(this.t),1)
                 if(renderer==3)updatescene=true
             },
         };
-        createobj.pos.call(this,opt)
+        createobjhelper.pos.call(this,opt)
         this.fillstr=this.fill;
-        createobj.check.call(this,arr,defaultarr)
+        createobjhelper.convtoshared.call(this)
+        createobjhelper.check.call(this,arr,defaultarr)
     },
 /**@type {createobjfunc}*/
     Enemy:function(arr,...opt) {
@@ -677,61 +364,132 @@ const createobj={
         this.y = 0;
         this.w = 0;
         this.h = 0;
+        this.velo = [0,0];
         this.type = "ki";
         this.havcoll = false;
         this.fill = "gray";
         this.dmg = 0;
-        this.md = 0;
         this.kitype = 0;
-        this.dir = 0;
+        this.dir = 1;
         this.managefromplayer = true;
         this.static = false;
         this.damage={
             t:this,
             fire:function(){
-                if(this.t.dmg>0)this.t.dmg--
-                if(this.t.dmg==0){
+                if(this.t.dmg[0]>0)this.t.dmg[0]--
+                if(this.t.dmg[0]==0){
                     myRect[loadmap].splice(myRect[loadmap].indexOf(this.t),1);
                     if(renderer==3)updatescene=true
                 }
             },
             jump:function(){
-                if(this.t.dmg>0)this.t.dmg--
-                if(this.t.dmg==0){
+                if(this.t.dmg[0]>0)this.t.dmg[0]--
+                if(this.t.dmg[0]==0){
                     myRect[loadmap].splice(myRect[loadmap].indexOf(this.t),1);
                     if(renderer==3)updatescene=true
                 }
             },
             collide:function(me,nokill){
                 if(nokill)return
-                if (me.statsnum>0){
+                if (me.statsnum[0]>0){
                     console.log("dmg")
-                    me.statsnum=me.getstats.minus
+                    me.statsnum[0]=me.getstats.minus
                     me.nokill=1
-                    if(multiplayerstartet&&multiplayer&&!listenforplayer)postMessage({act:"player stats update",data:{statsnum:me.statsnum},playersendid:me.playersendid,id:multiplayerid})
-                }else if (me.dmg>0){
+                    if(multiplayerstartet&&multiplayer&&!listenforplayer)postMessage({act:"player stats update",data:{statsnum:me.statsnum[0]},playersendid:me.playersendid,id:multiplayerid})
+                }else if (me.dmg[0]>0){
                     console.log("kill")
-                    me.x=me.sx
-                    me.y=me.sy
-                    me.dmg--
+                    me.x.set(me.sx)
+                    me.y.set(me.sy)
+                    me.dmg[0]--
                     me.nokill=1
+                    if("type" in me&&Object.getOwnPropertyNames(neuronetworks).includes(me.type))kidiewin(me)
                     if(renderer==0)renderbackground=true
                     if(multiplayerstartet&&multiplayer&&!listenforplayer)postMessage({act:"player stats update",data:{x:me.x,y:me.y},playersendid:me.playersendid,id:multiplayerid})
                 }else{
                     console.log("kill no live")
-                    me.x=me.sx=me.dx
-                    me.y=me.sy=me.dy
-                    me.dmg=5
+                    me.x.set(me.sx=[...me.dx])
+                    me.y.set(me.sy=[...me.dy])
+                    me.dmg[0]=5
                     me.nokill=1
+                    if("type" in me&&Object.getOwnPropertyNames(neuronetworks).includes(me.type))kidiewin(me)
                     if(renderer==0)renderbackground=true
                     if(multiplayerstartet&&multiplayer&&!listenforplayer)postMessage({act:"player stats update",data:{x:me.x,y:me.y},playersendid:me.playersendid,id:multiplayerid})
                 }
+                if(me==anime)guistats()
                 if(renderer==3)updatescene=true
             }
         };
-        createobj.pos.call(this,opt)
+        createobjhelper.pos.call(this,opt)
         this.fillstr=this.fill;
-        createobj.check.call(this,arr,defaultarr)
+        createobjhelper.convtoshared.call(this)
+        createobjhelper.check.call(this,arr,defaultarr)
+    },
+/**@type {createobjfunc}*/
+    Gumpa:function(arr,...opt) {
+        let defaultarr=myRect;
+        this.x = 0;
+        this.y = 0;
+        this.w = 0;
+        this.h = 0;
+        this.velo = [0,0];
+        this.type = "ki";
+        this.havcoll = false;
+        this.fill = "gray";
+        this.dmg = 0;
+        this.kitype = 0;
+        this.dir = 1;
+        this.managefromplayer = true;
+        this.static = false;
+        this.damage={
+            t:this,
+            fire:function(){
+                if(this.t.dmg[0]>0)this.t.dmg[0]--
+                if(this.t.dmg[0]==0){
+                    myRect[loadmap].splice(myRect[loadmap].indexOf(this.t),1);
+                    if(renderer==3)updatescene=true
+                }
+            },
+            jump:function(){
+                if(this.t.dmg[0]>0)this.t.dmg[0]--
+                if(this.t.dmg[0]==0){
+                    myRect[loadmap].splice(myRect[loadmap].indexOf(this.t),1);
+                    if(renderer==3)updatescene=true
+                }
+            },
+            collide:function(me,nokill){
+                if(nokill)return
+                if (me.statsnum[0]>0){
+                    console.log("dmg")
+                    me.statsnum[0]=me.getstats.minus
+                    me.nokill=1
+                    if(multiplayerstartet&&multiplayer&&!listenforplayer)postMessage({act:"player stats update",data:{statsnum:me.statsnum[0]},playersendid:me.playersendid,id:multiplayerid})
+                }else if (me.dmg[0]>0){
+                    console.log("kill")
+                    me.x.set(me.sx)
+                    me.y.set(me.sy)
+                    me.dmg[0]--
+                    me.nokill=1
+                    if("type" in me&&Object.getOwnPropertyNames(neuronetworks).includes(me.type))kidiewin(me)
+                    if(renderer==0)renderbackground=true
+                    if(multiplayerstartet&&multiplayer&&!listenforplayer)postMessage({act:"player stats update",data:{x:me.x,y:me.y},playersendid:me.playersendid,id:multiplayerid})
+                }else{
+                    console.log("kill no live")
+                    me.x.set(me.sx=[...me.dx])
+                    me.y.set(me.sy=[...me.dy])
+                    me.dmg[0]=5
+                    me.nokill=1
+                    if("type" in me&&Object.getOwnPropertyNames(neuronetworks).includes(me.type))kidiewin(me)
+                    if(renderer==0)renderbackground=true
+                    if(multiplayerstartet&&multiplayer&&!listenforplayer)postMessage({act:"player stats update",data:{x:me.x,y:me.y},playersendid:me.playersendid,id:multiplayerid})
+                }
+                if(me==anime)guistats()
+                if(renderer==3)updatescene=true
+            }
+        };
+        createobjhelper.pos.call(this,opt)
+        this.fillstr=this.fill;
+        createobjhelper.convtoshared.call(this)
+        createobjhelper.check.call(this,arr,defaultarr)
     },
 /**@type {createobjfunc}*/
     Koopa:function(arr,...opt) {
@@ -740,18 +498,185 @@ const createobj={
         this.y = 0;
         this.w = 0;
         this.h = 0;
-        this.type = "kikoopa";
+        this.velo = [0,0];
+        this.type = "koopaki";
         this.havcoll = false;
-        this.fill = "gray";
-        this.dmg = 1;
-        this.md = 0;
-        this.kitype = 0;
-        this.dir = 0;
+        this.fill = "red";
+        this.dmg = 3;
+        this.kitype = 1;
+        this.dir = 1;
         this.managefromplayer = true;
         this.static = false;
-        createobj.pos.call(this,opt)
+        this.animation={
+            //frames (auch komma werte), bildurl img
+            //trigger sol return [bool,importance,this]
+            fillpicwlg:{
+                pic:new Map([
+                    [0,["img/Koopa/KoopaLinks.svg"]],
+                ]),
+                get trigger(){
+                    return [this.t.dir[0]==-1&&this.t.dmg[0]==3&&this.t.kitype==0,0,this]
+                },
+                aniframe:0
+            },
+            fillpicwrg:{
+                pic:new Map([
+                    [0,["img/Koopa/KoopaRechts.svg"]],
+                ]),
+                get trigger(){
+                    return [this.t.dir[0]==1&&this.t.dmg[0]==3&&this.t.kitype==0,0,this]
+                },
+                aniframe:0
+            },
+            fillpicwlshellg:{
+                pic:new Map([
+                    [0,["img/Koopa/KoopaPanzerLinks.svg"]],
+                ]),
+                get trigger(){
+                    return [this.t.dir[0]==-1&&(this.t.dmg[0]==1||this.t.dmg[0]==2)&&this.t.kitype==0,0,this]
+                },
+                aniframe:0
+            },
+            fillpicwrshellg:{
+                pic:new Map([
+                    [0,["img/Koopa/KoopaPanzerRechts.svg"]],
+                ]),
+                get trigger(){
+                    return [this.t.dir[0]==1&&(this.t.dmg[0]==1||this.t.dmg[0]==2)&&this.t.kitype==0,0,this]
+                },
+                aniframe:0
+            },
+
+            fillpicwlr:{
+                pic:new Map([
+                    [0,["img/Koopa/KoopaLinksRot.svg"]],
+                ]),
+                get trigger(){
+                    return [this.t.dir[0]==-1&&this.t.dmg[0]==3&&this.t.kitype==1,0,this]
+                },
+                aniframe:0
+            },
+            fillpicwrr:{
+                pic:new Map([
+                    [0,["img/Koopa/KoopaRechtsRot.svg"]],
+                ]),
+                get trigger(){
+                    return [this.t.dir[0]==1&&this.t.dmg[0]==3&&this.t.kitype==1,0,this]
+                },
+                aniframe:0
+            },
+            fillpicwlshellr:{
+                pic:new Map([
+                    [0,["img/Koopa/KoopaPanzerLinksRot.svg"]],
+                ]),
+                get trigger(){
+                    return [this.t.dir[0]==-1&&(this.t.dmg[0]==1||this.t.dmg[0]==2)&&this.t.kitype==1,0,this]
+                },
+                aniframe:0
+            },
+            fillpicwrshellr:{
+                pic:new Map([
+                    [0,["img/Koopa/KoopaPanzerRechtsRot.svg"]],
+                ]),
+                get trigger(){
+                    return [this.t.dir[0]==1&&(this.t.dmg[0]==1||this.t.dmg[0]==2)&&this.t.kitype==1,0,this]
+                },
+                aniframe:0
+            },
+        }
+        createobjhelper.animation.call(this)
+        this.damage={
+            t:this,
+            fire:function(){
+                if(this.t.dmg[0]>0)this.t.dmg[0]--
+                if(this.t.dmg[0]==0){
+                    myRect[loadmap].splice(myRect[loadmap].indexOf(this.t),1);
+                    if(renderer==3)updatescene=true
+                }
+            },
+            groundpound:function(me){
+                me.velo[me.rich2arr[1]]+=me.rich2[me.rich2arr[1]]*2
+                if(this.timer!=undefined)clearInterval(this.timer)
+                if(this.t.dmg[0]==3){
+                    this.t.dmg[0]=2
+                    this.timer=setTimeout(()=>{this.t.dmg[0]=3},10000);
+                    return
+                }
+                if(this.t.dmg[0]==2){
+                    this.t.dir[0]=Math.sign((this.t.minx+this.t.w/2)-(me.minx+me.w/2))
+                    this.t.dmg[0]=1
+                    return
+                }
+                if(this.t.dmg[0]==1){
+                    this.t.dmg[0]=2
+                    this.timer=setTimeout(()=>{this.t.dmg[0]=3},10000);
+                    return
+                }
+                //walk
+                //shell no speed
+                //shell speed
+            },
+            jump:function(me){
+                me.velo[me.rich2arr[1]]+=me.rich2[me.rich2arr[1]]*2
+                if(this.timer!=undefined)clearInterval(this.timer)
+                if(this.t.dmg[0]==3){
+                    this.t.dmg[0]=2
+                    this.timer=setTimeout(()=>{this.t.dmg[0]=3},10000);
+                    return
+                }
+                if(this.t.dmg[0]==2){
+                    this.t.dir[0]=Math.sign((this.t.minx+this.t.w/2)-(me.minx+me.w/2))
+                    this.t.dmg[0]=1
+                    return
+                }
+                if(this.t.dmg[0]==1){
+                    this.t.dmg[0]=2
+                    this.timer=setTimeout(()=>{this.t.dmg[0]=3},10000);
+                    return
+                }
+                //3walk
+                //2shell no speed
+                //1shell speed
+            },
+            collide:function(me,nokill){
+                if(this.t.dmg[0]==2){
+                    this.t.dir[0]=Math.sign((this.t.minx+this.t.w/2)-(me.minx+me.w/2))
+                    this.t.dmg[0]=1
+                    return
+                }
+                if(nokill)return
+                if (me.statsnum[0]>0){
+                    console.log("dmg")
+                    me.statsnum[0]=me.getstats.minus
+                    me.nokill=1
+                    if(multiplayerstartet&&multiplayer&&!listenforplayer)postMessage({act:"player stats update",data:{statsnum:me.statsnum[0]},playersendid:me.playersendid,id:multiplayerid})
+                }else if (me.dmg[0]>0){
+                    console.log("kill")
+                    me.x.set(me.sx)
+                    me.y.set(me.sy)
+                    me.dmg[0]--
+                    me.nokill=1
+                    if("type" in me&&Object.getOwnPropertyNames(neuronetworks).includes(me.type))kidiewin(me)
+                    if(renderer==0)renderbackground=true
+                    if(multiplayerstartet&&multiplayer&&!listenforplayer)postMessage({act:"player stats update",data:{x:me.x,y:me.y},playersendid:me.playersendid,id:multiplayerid})
+                }else{
+                    console.log("kill no live")
+                    me.x.set(me.sx=[...me.dx])
+                    me.y.set(me.sy=[...me.dy])
+                    me.dmg[0]=5
+                    me.nokill=1
+                    if("type" in me&&Object.getOwnPropertyNames(neuronetworks).includes(me.type))kidiewin(me)
+                    if(renderer==0)renderbackground=true
+                    if(multiplayerstartet&&multiplayer&&!listenforplayer)postMessage({act:"player stats update",data:{x:me.x,y:me.y},playersendid:me.playersendid,id:multiplayerid})
+                }
+                if(renderer==3)updatescene=true
+                if(me==anime)guistats()
+            }
+        };
+        createobjhelper.pos.call(this,opt)
         this.fillstr=this.fill;
-        createobj.check.call(this,arr,defaultarr)
+        createobjhelper.convtoshared.call(this)
+        createobjhelper.check.call(this,arr,defaultarr)
     },
 /**@type {createobjfunc}*/
     Specialblock:function(arr,...opt) {
@@ -760,8 +685,19 @@ const createobj={
         this.y = 0;
         this.w = 0;
         this.h = 0;
+        this.velo = [0,0];
         this.havcoll = true;
         this.fill = "orange";
+        this.damage={
+            t:this,
+            collide:function(me){
+                if(me.statsnum!=3)return
+                myRect[loadmap].splice(myRect[loadmap].indexOf(this.t),1)
+                if(renderer==3)updatescene=true
+                if(rumble&&me.construck=="Player")keys.vibrate(87,0,1)
+                needcolmap=true
+            },
+        };
         this.dir = 0;
         this.option = 0;
         this.reibung = 0.06;
@@ -774,9 +710,10 @@ const createobj={
         this.timeout1 = null;
         this.invisible = false;
         this.sync = true;
-        createobj.pos.call(this,opt)
+        createobjhelper.pos.call(this,opt)
         this.fillstr=this.fill;
-        createobj.check.call(this,arr,defaultarr)
+        createobjhelper.convtoshared.call(this)
+        createobjhelper.check.call(this,arr,defaultarr)
     },
 /**@type {createobjfunc}*/
     Pipe:function(arr,...opt) {
@@ -785,7 +722,6 @@ const createobj={
         this.y = 0;
         this.w = 0;
         this.h = 0;
-        this.type="pipe";
         this.havcoll = true;
         this.fillbackup = "green";
         this.fill = "Pipe";
@@ -797,9 +733,33 @@ const createobj={
         this.haftreibung = 0.02;
         this.pipetexturtop = 10;
         this.pipetexturside = 2;
-        createobj.pos.call(this,opt)
+        
+        this.damage={
+            t:this,
+            collide:function(me){
+                if(me.statsnum!=3)return
+                myRect[loadmap].splice(myRect[loadmap].indexOf(this.t),1)
+                if(renderer==3)updatescene=true
+                if(rumble&&me.construck=="Player")keys.vibrate(87,0,1)
+                needcolmap=true
+            },
+            collideup:function(me){
+                if(this.t.ro==0)if(promall[3].res){pani(this.t.ro,this.t.wx,this.t.wy,me)}else{me.setx=this.t.wx;me.sety=this.t.wy}
+            },
+            collideright:function(me){
+                if(this.t.ro==1)if(promall[3].res){pani(this.t.ro,this.t.wx,this.t.wy,me)}else{me.setx=this.t.wx;me.sety=this.t.wy}
+            },
+            collidedown:function(me){
+                if(this.t.ro==2)if(promall[3].res){pani(this.t.ro,this.t.wx,this.t.wy,me)}else{me.setx=this.t.wx;me.sety=this.t.wy}
+            },
+            collideleft:function(me){
+                if(this.t.ro==3)if(promall[3].res){pani(this.t.ro,this.t.wx,this.t.wy,me)}else{me.setx=this.t.wx;me.sety=this.t.wy}
+            },
+        };
+        createobjhelper.pos.call(this,opt)
         this.fillstr=this.fill;
-        createobj.check.call(this,arr,defaultarr)
+        createobjhelper.convtoshared.call(this)
+        createobjhelper.check.call(this,arr,defaultarr)
     },
 /**@type {createobjfunc}*/
     Multiplayer:function(arr,...opt) {
@@ -821,13 +781,20 @@ const createobj={
         this.haftreibung = 0.3;
         this.groundflat = true;
         this.rich4arr = [0,1,2,3];
-        createobj.pos.call(this,opt)
+        createobjhelper.pos.call(this,opt)
         this.inversekinematics = true;
-        skelett.Luigi.call(this)
-        //skelett.Mario.call(this)
-        createobj.bones.call(this)
+        if(promall[20].res){
+            skelett.Luigi.call(this)
+            createobjhelper.bones.call(this)
+        }else{
+            Promise.all([promall[20]]).then(()=>{
+                skelett.Luigi.call(this)
+                createobjhelper.bones.call(this)
+            })
+        }
         this.fillstr=this.fill;
-        createobj.check.call(this,arr,defaultarr)
+        createobjhelper.convtoshared.call(this)
+        createobjhelper.check.call(this,arr,defaultarr)
     },
 /**@type {createobjfunc}*/
     Player:function(arr,...opt) {
@@ -841,6 +808,7 @@ const createobj={
         this.fill = "blue";
         this.rotate = 0;
         this.fishtoattack = true;
+        this.nomovetimer=0;
 
         //wen bild geladen fügs in animation rein
         //fillconfig schreibt dan was wan ausgefürt wird
@@ -858,7 +826,6 @@ const createobj={
                 get trigger(){
                     return [this.t.velo[0]<-1,0,this]
                 },
-                mode:"loopback",
                 aniframe:0
             },
             fillpicwr:{
@@ -871,8 +838,26 @@ const createobj={
                 },
                 aniframe:0
             },
+            fillpicbored:{
+                pic:new Map([
+                    [0,["img/Mario/MarioGaming.svg"]]
+                ]),
+                get trigger(){
+                    return [this.t.nomovetimer>300,0,this]
+                },
+                aniframe:0
+            },
+            fillpicwrbored:{
+                pic:new Map([
+                    [0,["img/Mario/MarioGaming.svg"]]
+                ]),
+                get trigger(){
+                    return [this.t.velo[0]>1&&this.t.nomovetimer>300,0,this]
+                },
+                aniframe:0
+            },
         }
-        createobj.animation.call(this)
+        createobjhelper.animation.call(this)
         this.environment = true;
         this.playerphysik = true;
         this.fillbackup = "blue";
@@ -888,19 +873,71 @@ const createobj={
         this.inwater = false;
         this.umgebung = [[,0],[,0],[,0],[,0]];
         this.stats = stats;
-        createobj.pos.call(this,opt)
-        this.sx = this.x;
-        this.sy = this.y;
-        this.dx = this.x;
-        this.dy = this.y;
+        this.coins = 0;
+        createobjhelper.pos.call(this,opt)
+        this.sx = typeof(this.x)=="object"?new Float64Array([...this.x]):this.x;
+        this.sy = typeof(this.y)=="object"?new Float64Array([...this.y]):this.y;
+        this.dx = typeof(this.x)=="object"?new Float64Array([...this.x]):this.x;
+        this.dy = typeof(this.y)=="object"?new Float64Array([...this.y]):this.y;
         this.fillstr=this.fill;
         this.shift=false;
-        Object.defineProperties(this,{getstats:{get:function(){return this.stats[this.inwater|0][this.shift|0][this.statsnum|0]}}})
+        Object.defineProperties(this,{getstats:{get:function(){return this.stats[this.inwater[0]|0][this.shift|0][this.statsnum[0]|0]}}})
         this.inversekinematics = true;
-        skelett.Mario.call(this)
-        createobj.bones.call(this)
-        createobj.check.call(this,arr,defaultarr)
+        if(promall[20].res){
+            skelett.Mario.call(this)
+            createobjhelper.bones.call(this)
+        }else{
+            Promise.all([promall[20]]).then(()=>{
+                skelett.Mario.call(this)
+                createobjhelper.bones.call(this)
+            })
+        }
+        createobjhelper.convtoshared.call(this)
+        createobjhelper.check.call(this,arr,defaultarr)
     },
+/**@type {createobjfunc}*/
+Playerki:function(arr,...opt) {
+    let defaultarr=myRect;
+    this.keys=[0,0,0,0,0]
+    this.controls = {w:0,a:1,s:2,d:3,r:4};
+    this.x = 0;
+    this.y = 0;
+    this.w = 0;
+    this.h = 0;
+    this.havcoll = false;
+    this.type="playerai"
+    this.fill = "blue";
+    this.rotate = 0;
+    this.fishtoattack = true;
+    this.environment = true;
+    this.playerphysik = true;
+    this.dmg = 5;
+    this.statsnum = 0;
+    this.nokill = 0;
+    this.graviins = [0,0];
+    this.static = false;
+    this.dir = 1;
+    this.masse = 300;
+    this.velo = [0,0];
+    this.falldist = 0;
+    this.inwater = false;
+    this.umgebung = [[,0],[,0],[,0],[,0]];
+    this.stats = stats;
+    this.coins = 0;
+    createobjhelper.pos.call(this,opt)
+    this.sx = typeof(this.x)=="object"?new Float64Array([...this.x]):this.x;
+    this.sy = typeof(this.y)=="object"?new Float64Array([...this.y]):this.y;
+    this.dx = typeof(this.x)=="object"?new Float64Array([...this.x]):this.x;
+    this.dy = typeof(this.y)=="object"?new Float64Array([...this.y]):this.y;
+    this.fillstr=this.fill;
+    this.shift=false;
+    Object.defineProperties(this,{getstats:{get:function(){return this.stats[this.inwater[0]|0][this.shift|0][this.statsnum[0]|0]}}})
+    //this.inversekinematics = true;
+    //skelett.Luigi.call(this)
+    //createobjhelper.bones.call(this)
+    createobjhelper.convtoshared.call(this)
+    createobjhelper.check.call(this,arr,defaultarr)
+},
 /**@type {createobjfunc}*/
     Sun:function(arr,...opt) {
         let defaultarr=mySun;
@@ -911,11 +948,13 @@ const createobj={
         this.havcoll = false;
         this.fill = "yellow";
         this.static = true;
-        this.blur=5;
+        this.blur=15;
+        this.lightcolor="rgba(252, 238, 197,1)";
         this.blurcolor="yellow";
-        createobj.pos.call(this,opt)
+        createobjhelper.pos.call(this,opt)
         this.fillstr=this.fill;
-        createobj.check.call(this,arr,defaultarr)
+        createobjhelper.convtoshared.call(this)
+        createobjhelper.check.call(this,arr,defaultarr)
     },
 /**@type {createobjfunc}*/
     Questionblock:function(arr,...opt) {
@@ -929,6 +968,17 @@ const createobj={
         this.fillbackup = "orange";
         this.option = [["Powerup",{dmg:0,md:1,type:"ki",kitype:0,dir:1}],["Shape",{fill:"black"}]];
         //summonobj(type) summonobj(optionen) summonobj(arr) replaceobj(type) replaceobj(optionen)  replaceobj(arr)
+
+        this.damage={
+            t:this,
+            collide:function(me){
+                if(me.statsnum!=3)return
+                myRect[loadmap].splice(myRect[loadmap].indexOf(this.t),1)
+                if(renderer==3)updatescene=true
+                if(rumble&&me.construck=="Player")keys.vibrate(87,0,1)
+                needcolmap=true
+            },
+        };
         this.static = true;
         this.dir = 0;
         this.reibung = 0.06;
@@ -940,30 +990,128 @@ const createobj={
         this.questiontexturcolor = "yellow";
         this.questiontexturpointcolor = "gray";
         this.questiontexturtext = "?";
-        createobj.pos.call(this,opt)
+        createobjhelper.pos.call(this,opt)
         this.fillstr=this.fill;
-        createobj.check.call(this,arr,defaultarr)
+        createobjhelper.convtoshared.call(this)
+        createobjhelper.check.call(this,arr,defaultarr)
     },
 /**@type {createobjfunc}*/
     Feuer:function(arr,...opt) {
-        let defaultarr=myFire;
+        let defaultarr=myRect;
+        this.equal = true;
         this.x = 0;
         this.y = 0;
         this.w = 10;
         this.h = 10;
-        this.owner = myRect[0];
+        this.owner = myRect[0][0];
+        this.type = "fire";
         this.winkel = 0;
-        this.speed = 32;
+        this.speed = 4;
+        this.webglfill=[1,0,0,1];
         this.static = false;
+        this.randomnis = 0.1;
+        this.gravimulti = 0.6;
         this.bounce = 0;
+        this.bouncelast = false;
         this.bouncemax = 10;
-        this.bouncelast = -1;
         this.havcoll = false;
         this.fill = "red";
-        createobj.pos.call(this,opt)
+        createobjhelper.pos.call(this,opt)
         this.fillstr=this.fill;
-        setTimeout(()=>{myFire[loadmap].splice(myFire[loadmap].indexOf(this),1);if(renderer==3)updatescene=true},10000);
-        createobj.check.call(this,arr,defaultarr)
+        this.timer=setTimeout(()=>{
+            myRect[loadmap].splice(myRect[loadmap].indexOf(this),1)
+            if(renderer==3&&!webglfallback)updatescene=true
+        },10000);
+        console.log(this.timer)
+        createobjhelper.convtoshared.call(this)
+        createobjhelper.check.call(this,arr,defaultarr)
+    },
+/**@type {createobjfunc}*/
+    Bommerang:function(arr,...opt) {
+        let defaultarr=myRect;
+        this.x = 0;
+        this.y = 0;
+        this.w = 10;
+        this.h = 10;
+        this.owner = myRect[0][0];
+        this.type = "Boomerang";
+        this.thrown = false;
+        this.dampening = 0.9;
+        this.tension = 0.05;
+        this.velo = [0,0];
+        this.winkel = 0;
+        this.speed = 50;
+        this.static = false;
+        this.havcoll = false;
+        this.fill = "blue";
+        this.animation={
+            //frames (auch komma werte), bildurl img
+            //trigger sol return [bool,importance,this]
+            fillpicwl:{
+                pic:new Map([
+                    [0,["img/Rasenmäher/Rasenmäher1.svg"]],
+                    [1,["img/Rasenmäher/Rasenmäher2.svg"]],
+                    [2,["img/Rasenmäher/Rasenmäher3.svg"]],
+                    [3,["img/Rasenmäher/Rasenmäher4.svg"]],
+                    [4,["img/Rasenmäher/Rasenmäher5.svg"]],
+                    [5,["img/Rasenmäher/Rasenmäher6.svg"]],
+                    [6,["img/Rasenmäher/Rasenmäher7.svg"]],
+                ]),
+                get trigger(){
+                    return [true,0,this]
+                },
+                aniframe:0
+            }
+        }
+        createobjhelper.animation.call(this)
+        this.fillbackup = "blue";
+        createobjhelper.pos.call(this,opt)
+        this.fillstr=this.fill;
+        createobjhelper.convtoshared.call(this)
+        createobjhelper.check.call(this,arr,defaultarr)
+    },
+/**@type {createobjfunc}*/
+    Waypoint:function(arr,...opt) {
+        let defaultarr=myRect;
+        this.x = 0;
+        this.y = 0;
+        this.w = 0;
+        this.h = 0;
+        this.havcoll = true;
+        this.fill = "blue";
+        this.static = true;
+        this.reibung = 0.05;
+        this.haftreibung = 0.02;
+        this.damage={
+            t:this,
+            collide:function(me){
+                if(me.statsnum!=3)return
+                myRect[loadmap].splice(myRect[loadmap].indexOf(this.t),1)
+                if(renderer==3)updatescene=true
+                if(rumble&&me.construck=="Player")keys.vibrate(87,0,1)
+                needcolmap=true
+            },
+            collideup:function(me){
+                me.sx=[...me.x]
+                me.sy=[...me.y]
+            },
+            collideright:function(me){
+                me.sx=[...me.x]
+                me.sy=[...me.y]
+            },
+            collidedown:function(me){
+                me.sx=[...me.x]
+                me.sy=[...me.y]
+            },
+            collideleft:function(me){
+                me.sx=[...me.x]
+                me.sy=[...me.y]
+            },
+        };
+        createobjhelper.pos.call(this,opt)
+        this.fillstr=this.fill;
+        createobjhelper.convtoshared.call(this)
+        createobjhelper.check.call(this,arr,defaultarr)
     },
 /**@type {createobjfunc}*/
     Finish:function(arr,...opt) {
@@ -972,7 +1120,6 @@ const createobj={
         this.y = 0;
         this.w = 0;
         this.h = 0;
-        this.type = "finish";
         this.havcoll = true;
         this.fill = "URL";
         this.fillpic = "img/Haus.svg";
@@ -980,9 +1127,49 @@ const createobj={
         this.static = true;
         this.reibung = 0.05;
         this.haftreibung = 0.02;
-        createobj.pos.call(this,opt)
+        this.damage={
+            t:this,
+            collideup:function(me){
+                console.log("finish")
+                if(me.construck=="Player"){
+                    winscreen()
+                    stopmain=false;
+                    if(multiplayerstartet&&me1.managefromplayernum==multiplayerid)postMessage({act:"winscreen",id:multiplayerid})
+                }
+                if("type" in me&&Object.getOwnPropertyNames(neuronetworks).includes(me.type))kidiewin(me)
+            },
+            collideright:function(me){
+                console.log("finish")
+                if(me.construck=="Player"){
+                    winscreen()
+                    stopmain=false;
+                    if(multiplayerstartet&&me1.managefromplayernum==multiplayerid)postMessage({act:"winscreen",id:multiplayerid})
+                }
+                if("type" in me&&Object.getOwnPropertyNames(neuronetworks).includes(me.type))kidiewin(me)
+            },
+            collidedown:function(me){
+                console.log("finish")
+                if(me.construck=="Player"){
+                    winscreen()
+                    stopmain=false;
+                    if(multiplayerstartet&&me1.managefromplayernum==multiplayerid)postMessage({act:"winscreen",id:multiplayerid})
+                }
+                if("type" in me&&Object.getOwnPropertyNames(neuronetworks).includes(me.type))kidiewin(me)
+            },
+            collideleft:function(me){
+                console.log("finish")
+                if(me.construck=="Player"){
+                    winscreen()
+                    stopmain=false;
+                    if(multiplayerstartet&&me1.managefromplayernum==multiplayerid)postMessage({act:"winscreen",id:multiplayerid})
+                }
+                if("type" in me&&Object.getOwnPropertyNames(neuronetworks).includes(me.type))kidiewin(me)
+            },
+        };
+        createobjhelper.pos.call(this,opt)
         this.fillstr=this.fill;
-        createobj.check.call(this,arr,defaultarr)
+        createobjhelper.convtoshared.call(this)
+        createobjhelper.check.call(this,arr,defaultarr)
     },
 /**@type {createobjfunc}*/
     Gravi:function(arr,...opt) {
@@ -993,8 +1180,9 @@ const createobj={
         this.h = 1;
         this.stärke = 10;
         this.abfac = 0.05;
-        createobj.pos.call(this,opt)
-        createobj.check.call(this,arr,defaultarr)
+        createobjhelper.pos.call(this,opt)
+        createobjhelper.convtoshared.call(this)
+        createobjhelper.check.call(this,arr,defaultarr)
     },
 /**@type {createobjfunc}*/
     Dead:function(arr,...opt){
@@ -1006,51 +1194,32 @@ const createobj={
         this.h = 0;
         this.havcoll = false;
         this.fill = "rgba(0,0,0,0)";
-        this.md = 1;
         this.dest = false ;
         this.static = true;
         this.damage={
             t:this,
-            jump:function(me){
-                if (me.dmg>0){
-                    console.log("kill")
-                    me.x=me.sx
-                    me.y=me.sy
-                    me.dmg--
-                    me.nokill=1
-                    if(renderer==3)updatescene=true
-                }else{
-                    console.log("kill no live")
-                    me.x=me.sx=me.dx
-                    me.y=me.sy=me.dy
-                    me.dmg=5
-                    me.nokill=1
-                    if(renderer==0)renderbackground=true
-                    if(renderer==3)updatescene=true
-                }
-            },
             collide:function(me){
-                if (me.dmg>0){
-                    console.log("kill")
-                    me.x=me.sx
-                    me.y=me.sy
-                    me.dmg--
+                if (me.dmg[0]>0){
+                    if(me.construck=="Player")console.log("kill")
+                    me.x.set(me.sx)
+                    me.y.set(me.sy)
+                    me.dmg[0]--
                     me.nokill=1
-                    if(renderer==3)updatescene=true
                 }else{
-                    console.log("kill no live")
-                    me.x=me.sx=me.dx
-                    me.y=me.sy=me.dy
-                    me.dmg=5
+                    if(me.construck=="Player")console.log("kill no live")
+                    me.x.set(me.sx=[...me.dx])
+                    me.y.set(me.sy=[...me.dy])
+                    me.dmg[0]=5
                     me.nokill=1
-                    if(renderer==0)renderbackground=true
-                    if(renderer==3)updatescene=true
                 }
+                if(me==anime)guistats()
+                if("type" in me&&Object.getOwnPropertyNames(neuronetworks).includes(me.type))kidiewin(me)
             }
         };
-        createobj.pos.call(this,opt)
+        createobjhelper.pos.call(this,opt)
         this.fillstr=this.fill;
-        createobj.check.call(this,arr,defaultarr)
+        createobjhelper.convtoshared.call(this)
+        createobjhelper.check.call(this,arr,defaultarr)
     }
 }
 Object.freeze(createobj)
@@ -1058,21 +1227,21 @@ function checkprop(obj){
     let fehlerteil
     let typeofrec=b=>Array.isArray(b)?"["+b.map(a=>typeofrec(a))+"]":typeof(b)
     let bool=Object.getOwnPropertyNames(obj).some(prop=>{
-        let match=Array.isArray(createobj[obj.construck].type[prop])?createobj[obj.construck].type[prop][0]:createobj[obj.construck].type[prop]
+        let match=Array.isArray(createobjsettings[obj.construck].type[prop])?createobjsettings[obj.construck].type[prop][0]:createobjsettings[obj.construck].type[prop]
         let conv=typeofrec(obj[prop])
         let numberregcheck
         let regexcheck=false
         let convregexcheck=""
-        if(Array.isArray(createobj[obj.construck].type[prop])&&createobj[obj.construck].type[prop].length==3){
-            if(createobj[obj.construck].type[prop][2] instanceof RegExp){
+        if(Array.isArray(createobjsettings[obj.construck].type[prop])&&createobjsettings[obj.construck].type[prop].length==3){
+            if(createobjsettings[obj.construck].type[prop][2] instanceof RegExp){
                 convregexcheck=JSON.stringify(prop)
-                numberregcheck=convregexcheck.match(createobj[obj.construck].type[prop][2])
+                numberregcheck=convregexcheck.match(createobjsettings[obj.construck].type[prop][2])
                 regexcheck=true
             }
         }
         let type=conv.match(match)
-        if(type==null||type.index!==0||!createobj[obj.construck].type.hasOwnProperty(prop)||(regexcheck&&(numberregcheck==null||numberregcheck.index!==0))){
-            fehlerteil=regexcheck?[prop,obj[prop],typeof(match)=="object"?match.source:match,conv,type,createobj[obj.construck].type[prop][2],convregexcheck,numberregcheck]:[prop,obj[prop],typeof(match)=="object"?match.source:match,conv,type]
+        if(type==null||type.index!==0||!createobjsettings[obj.construck].type.hasOwnProperty(prop)||(regexcheck&&(numberregcheck==null||numberregcheck.index!==0))){
+            fehlerteil=regexcheck?[prop,obj[prop],typeof(match)=="object"?match.source:match,conv,type,createobjsettings[obj.construck].type[prop][2],convregexcheck,numberregcheck]:[prop,obj[prop],typeof(match)=="object"?match.source:match,conv,type]
             return true
         }
         return false
@@ -1120,682 +1289,5 @@ function checkprop(obj){
                 ))
         }
     }else{return true}
-}
-const webglbuffer={
-    createbuffer:function(groupname,opt){
-        let group
-        if(webglbuffers.hasOwnProperty(groupname))group=webglbuffers[groupname]
-        if(group==undefined){console.warn("nogroup");return}
-        this.group=group
-        this.buffername="coordinates"
-        this.bufferlength=2
-        this.divisor=0
-        this.drawtype=group.gl.DYNAMIC_DRAW
-        this.buffertype=group.gl.ARRAY_BUFFER
-        this.numbertype=group.gl.FLOAT
-        this.normalized=false
-        this.stride=0
-        this.offset=0
-        webglbuffer.addpro.call(this,opt)
-        this.pointer=group.gl.getAttribLocation(group.shader, this.buffername)
-        this.buffer=group.gl.createBuffer()
-        group.gl.bindBuffer(group.gl.ARRAY_BUFFER,this.buffer);
-        group.gl.bufferData(this.buffertype,group.buffersize*bpe*this.bufferlength,this.drawtype)
-        group.gl.bindBuffer(group.gl.ARRAY_BUFFER,null)
-        group.buffer[this.buffername]=this
-    },
-    createfeedbackbuffer:function(groupname,opt){
-        let group
-        if(webglbuffers.hasOwnProperty(groupname))group=webglbuffers[groupname]
-        if(group==undefined){console.warn("nogroup");return}
-        let this0={}
-        let this1={}
-        this.group=group
-        this.buffername="coordinates"
-        this.bufferlength=2
-        this.divisor=0
-        this.drawtype=group.gl.DYNAMIC_DRAW
-        this.buffertype=group.gl.TRANSFORM_FEEDBACK_BUFFER
-        this.numbertype=group.gl.FLOAT
-        this.normalized=false
-        this.stride=0
-        this.offset=0
-        webglbuffer.addpro.call(this,opt)
-        this.pointer=group.gl.getAttribLocation(group.shader, this.buffername)//man solte jetzt kucken wen da1 in name steht
-        webglbuffer.addproall.call(this0,this)
-        webglbuffer.addproall.call(this1,this)
-        this0.buffer=group.gl.createBuffer()
-        group.gl.bindBuffer(group.gl.TRANSFORM_FEEDBACK_BUFFER,this0.buffer);
-        group.gl.bufferData(group.gl.TRANSFORM_FEEDBACK_BUFFER,group.buffersize*bpe*this.bufferlength,this.drawtype)
-        group.gl.bindBuffer(group.gl.TRANSFORM_FEEDBACK_BUFFER,null)
-        group.feedbackbuffer[this.buffername]=this0
-
-        this1.buffer=group.gl.createBuffer()
-        group.gl.bindBuffer(group.gl.TRANSFORM_FEEDBACK_BUFFER,this1.buffer);
-        group.gl.bufferData(group.gl.TRANSFORM_FEEDBACK_BUFFER,group.buffersize*bpe*this.bufferlength,this.drawtype)
-        group.gl.bindBuffer(group.gl.TRANSFORM_FEEDBACK_BUFFER,null)
-        group.feedbackbuffer[this.buffername+"1"]=this1
-    },
-    creategroup:function(opt){
-        this.name="newBuffer"
-        if(typeof(opt.name)=="string")this.name=opt.name
-        this.gl=ctx
-        this.shader=shaderProgram[0]
-        this.buffersize=500//500000
-        webglbuffer.addpro.call(this,opt)
-        webglbuffers[this.name]=this
-        webglbuffers[this.name].buffer={}
-        webglbuffers[this.name].feedbackbuffer={}
-        webglbuffers[this.name].uniform={}
-        webglbuffers[this.name].framebuffer={}
-        webglbuffers[this.name].renderbuffer={}
-    },
-    createuniform:function(groupname,name){
-        let group
-        if(webglbuffers.hasOwnProperty(groupname))group=webglbuffers[groupname]
-        if(group==undefined){console.warn("nogroup");return}
-        group.uniform[name]=group.gl.getUniformLocation(group.shader,name)
-    },
-    createframebuffer:function(groupname,name){
-        let group
-        if(webglbuffers.hasOwnProperty(groupname))group=webglbuffers[groupname]
-        if(group==undefined){console.warn("nogroup");return}
-        group.framebuffer[name]=group.gl.createFramebuffer()
-    },
-    createrenderbuffer:function(groupname,name){
-        let group
-        if(webglbuffers.hasOwnProperty(groupname))group=webglbuffers[groupname]
-        if(group==undefined){console.warn("nogroup");return}
-        group.renderbuffer[name]=group.gl.createRenderbuffer()
-    },
-
-    addvaotogroup:function(groupname){
-        let group
-        if(webglbuffers.hasOwnProperty(groupname))group=webglbuffers[groupname]
-        if(group==undefined){console.warn("nogroup");return}
-        for(let i of Object.keys(group.buffer)){
-            group.gl.bindBuffer(group.gl.ARRAY_BUFFER,group.buffer[i].buffer);
-            group.gl.bufferData(group.buffer[i].buffertype,group.buffersize*bpe*group.buffer[i].bufferlength,group.buffer[i].drawtype)
-        }
-        if(webgl2){
-            group.vao=group.gl.createVertexArray();
-            group.gl.bindVertexArray(group.vao)
-        }else if(WEBGLoes){
-            group.vao=WEBGLoes.createVertexArrayOES();
-            WEBGLoes.bindVertexArrayOES(group.vao)
-        }else{
-            console.log("novao")
-            return
-        }
-        for(let i of Object.keys(group.buffer)){
-            group.gl.bindBuffer(group.gl.ARRAY_BUFFER,group.buffer[i].buffer);
-            group.gl.enableVertexAttribArray(group.buffer[i].pointer)
-            group.gl.vertexAttribPointer(group.buffer[i].pointer,group.buffer[i].bufferlength,group.buffer[i].numbertype,group.buffer[i].normalized,group.buffer[i].stride,group.buffer[i].offset);
-        }
-        for(let i of Object.keys(group.feedbackbuffer)){
-            group.gl.enableVertexAttribArray(group.feedbackbuffer[i].pointer)
-        }
-        if(webgl2){
-            group.gl.bindVertexArray(null)
-        }else if(WEBGLoes){
-            WEBGLoes.bindVertexArrayOES(null)
-        }
-    },
-    bindvertexarray:function(groupname){
-        let group
-        if(webglbuffers.hasOwnProperty(groupname))group=webglbuffers[groupname]
-        if(group==undefined){console.warn("nogroup");return}
-        if(webgl2){
-            group.gl.bindVertexArray(group.vao)
-        }else if(WEBGLoes){
-            WEBGLoes.bindVertexArrayOES(group.vao)
-        }else{
-            for(let i of Object.keys(group.buffer)){
-                group.gl.bindBuffer(group.gl.ARRAY_BUFFER,group.buffer[i].buffer);
-                group.gl.enableVertexAttribArray(group.buffer[i].pointer)
-                group.gl.vertexAttribPointer(group.buffer[i].pointer,group.buffer[i].bufferlength,group.buffer[i].numbertype,group.buffer[i].normalized,group.buffer[i].stride,group.buffer[i].offset);
-            }
-        }
-    },
-    bindandpointbuffer:function(obj){
-        obj.group.gl.bindBuffer(obj.buffertype,obj.buffer)
-        obj.group.gl.vertexAttribPointer(obj.pointer,obj.bufferlength,obj.numbertype,obj.normalized,obj.stride,obj.offset);
-    },
-    addproall:function(opt){
-        for(let i of Object.keys(opt)){
-            if(!this.hasOwnProperty(i))this[i]=opt[i]
-        }
-    },
-    addpro:function(opt){
-        for(let i of Object.keys(this)){
-            if(opt.hasOwnProperty(i))this[i]=opt[i]
-        }
-    },
-    testbufferoverflow:function(groupname,objlength){
-        //suche welche buffer enabled sind
-        let group
-        if(webglbuffers.hasOwnProperty(groupname))group=webglbuffers[groupname]
-        if(group==undefined){console.warn("nogroup");return}
-    
-        if(group.buffersize<objlength*bpe+100){
-            const buffersizeold=group.buffersize
-            let multi=Math.pow(10,(Math.log(objlength*bpe)*Math.LOG10E+1|0)-1)
-            if(group.buffersize==Math.ceil((objlength*bpe)/multi)*multi)return
-            group.buffersize=Math.ceil((objlength*bpe)/multi)*multi
-    
-            if(debug){
-                console.groupCollapsed("bufferresize")
-                console.info("buffer to smal update size\nfrom: "+Number((buffersizeold).toFixed(1)).toLocaleString()+"\nto: "+Number((group.buffersize).toFixed(1)).toLocaleString()+"\nname: "+group.name)
-                console.groupEnd()
-            }
-    
-            for(let i of Object.keys(group.buffer)){
-                group.gl.bindBuffer(group.buffer[i].buffertype, group.buffer[i].buffer);
-                if(webgl2){
-                    var arrBuffer = new ArrayBuffer(buffersizeold*bpe*group.buffer[i].bufferlength);
-                    gl.getBufferSubData(group.buffer[i].buffertype, 0, new Int8Array(arrBuffer));
-                }
-                group.gl.bufferData(group.buffer[i].buffertype, group.buffersize*bpe*group.buffer[i].bufferlength, group.buffer[i].drawtype);
-                if(webgl2){
-                    group.gl.bufferSubData(group.buffer[i].buffertype,0, arrBuffer)
-                }
-            }
-            for(let i of Object.keys(group.feedbackbuffer)){
-                group.gl.bindBuffer(group.feedbackbuffer[i].buffertype, group.feedbackbuffer[i].buffer);
-                if(webgl2){
-                    var arrBuffer = new ArrayBuffer(buffersizeold*bpe*group.feedbackbuffer[i].bufferlength);
-                    gl.getBufferSubData(group.feedbackbuffer[i].buffertype, 0, new Int8Array(arrBuffer));
-                }
-                group.gl.bufferData(group.feedbackbuffer[i].buffertype, group.buffersize*bpe*group.feedbackbuffer[i].bufferlength,group.feedbackbuffer[i].drawtype)
-                if(webgl2){
-                    group.gl.bufferSubData(group.feedbackbuffer[i].buffertype,0, arrBuffer)
-                }
-            }
-        }
-    }
-}
-const skelett={
-    Mario:function(){
-        this.bones=
-            [
-                {
-                phy:true,
-                bewegung:-1,
-                get fussklippe(){return this.t.inwater&&this.t.falldist>10?16:18},
-                origin:{
-                    get x(){
-                        if(this.t.inwater&&this.t.falldist>10){
-                            if(this.t.velo[0]>0)return this.t.x
-                            if(this.t.velo[0]<0)return this.t.x+this.t.w
-                        }else{
-                            if(typeof(this.t.rich4arr)=="undefined")return this.t.x
-                            if(this.t.rich4arr[0]==0)return this.t.x+this.t.w/2-2
-                            if(this.t.rich4arr[0]==1)return this.t.x
-                            if(this.t.rich4arr[0]==2)return this.t.x+this.t.w/2-2
-                            if(this.t.rich4arr[0]==3)return this.t.x+this.t.w
-                        }
-                    },
-                    get y(){
-                        if(this.t.inwater&&this.t.falldist>10){
-                            return this.t.y+this.t.h/2-4
-                        }else{
-                            if(typeof(this.t.rich4arr)=="undefined")return this.t.y+(this.t.h/4)*3
-                            if(this.t.rich4arr[0]==0)return this.t.y+(this.t.h/4)*3
-                            //if(this.t.rich4arr[0]==1)return this.t.y+this.t.h/2-4
-                            //if(this.t.rich4arr[0]==2)return this.t.y+this.t.h
-                            //if(this.t.rich4arr[0]==3)return this.t.y+this.t.h/2-4
-                        }
-                    }
-                },
-                pointer:{
-                    get x(){
-                        if(this.t.inwater&&this.t.falldist>10){
-                            if(this.t.velo[0]<0)return this.t.x+this.t.w+20
-                            if(this.t.velo[0]>0)return this.t.x-20
-                        }else{
-                            return this.t.x+this.t.w/2-2
-                        }
-                    },
-                    get y(){
-                        if(this.t.inwater&&this.t.falldist>10){
-                            return this.t.y+this.t.h/2-4
-                        }else{
-                            return this.t.y+this.t.h
-                        }
-                    }
-                },
-                segment0:{
-                    phy:true,
-                    get next(){return this.t.bones[0].segment1},
-                    get origin(){return this.t.bones[0].origin},
-                    get finish(){return this},
-                    width:2.5,
-                    fillpic0:"img/Mario/MarioLBein.svg",
-                    fillpic1:"img/Mario/MarioRBein.svg",
-                    get fillconfig(){return this.t.dir==1?this.fill0:this.fill1},
-                    get len(){return this.t.h/8+1}
-                },
-                segment1:{
-                    phy:true,
-                    get origin(){return this.t.bones[0].segment0},
-                    get finish(){return this},
-                    width:2.5,
-                    fillpic0:"img/Mario/MarioLBein.svg",
-                    fillpic1:"img/Mario/MarioRBein.svg",
-                    get fillconfig(){return this.t.dir==1?this.fill0:this.fill1},
-                    get len(){return this.t.h/8}
-                }
-            },{
-                phy:true,
-                bewegung:-6,
-                get fussklippe(){return this.t.inwater&&this.t.falldist>10?16:8},
-                origin:{
-                    get x(){
-                        if(this.t.inwater&&this.t.falldist>10){
-                            if(this.t.velo[0]>0)return this.t.x
-                            if(this.t.velo[0]<0)return this.t.x+this.t.w
-                        }else{
-                            if(typeof(this.t.rich4arr)=="undefined")return this.t.x
-                            if(this.t.rich4arr[0]==0)return this.t.x+this.t.w/2+2
-                            if(this.t.rich4arr[0]==1)return this.t.x
-                            if(this.t.rich4arr[0]==2)return this.t.x+this.t.w/2+2
-                            if(this.t.rich4arr[0]==3)return this.t.x+this.t.w
-                        }
-                    },
-                    get y(){
-                        if(this.t.inwater&&this.t.falldist>10){
-                            return this.t.y+this.t.h/2+4
-                        }else{
-                            if(typeof(this.t.rich4arr)=="undefined")return this.t.y+(this.t.h/4)*3
-                            if(this.t.rich4arr[0]==0)return this.t.y+(this.t.h/4)*3
-                            //if(this.t.rich4arr[0]==1)return this.t.y+this.t.h/2+4
-                            //if(this.t.rich4arr[0]==2)return this.t.y+this.t.h
-                            //if(this.t.rich4arr[0]==3)return this.t.y+this.t.h/2+4
-                        }
-                    }
-                },
-                pointer:{
-                    get x(){
-                        if(this.t.inwater&&this.t.falldist>10){
-                            if(this.t.velo[0]<0)return this.t.x+this.t.w+20
-                            if(this.t.velo[0]>0)return this.t.x-20
-                        }else{
-                            return this.t.x+this.t.w/2+2
-                        }
-                    },
-                    get y(){
-                        if(this.t.inwater&&this.t.falldist>10){
-                            return this.t.y+this.t.h/2-4
-                        }else{
-                            return this.t.y+this.t.h
-                        }
-                    }
-                },
-                segment0:{
-                    phy:true,
-                    get next(){return this.t.bones[1].segment1},
-                    get origin(){return this.t.bones[1].origin},
-                    get finish(){return this},
-                    width:2.5,
-                    fillpic0:"img/Mario/MarioLBein.svg",
-                    fillpic1:"img/Mario/MarioRBein.svg",
-                    get fillconfig(){return this.t.dir==1?this.fill0:this.fill1},
-                    get len(){return this.t.h/8+1},
-                },
-                segment1:{
-                    phy:true,
-                    get origin(){return this.t.bones[1].segment0},
-                    get finish(){return this},
-                    width:2.5,
-                    fillpic0:"img/Mario/MarioLBein.svg",
-                    fillpic1:"img/Mario/MarioRBein.svg",
-                    get fillconfig(){return this.t.dir==1?this.fill0:this.fill1},
-                    get len(){return this.t.h/8}
-                }
-            },{
-                phy:false,
-                segment0:{
-                    phy:false,
-                    get origin(){
-                        if(this.t.inwater&&this.t.falldist>10)return {x:this.t.bones[0].segment1.x+((this.t.dir==1)?2:-2),y:this.t.bones[0].segment1.y} 
-                        return {x:this.t.bones[0].segment1.x+((this.t.dir==1)?0.5:-0.5),y:this.t.bones[0].segment1.y+((this.t.dir==1)?0.5:-0.5)-2}
-                    },
-                    get finish(){
-                        if(this.t.inwater&&this.t.falldist>10)return {x:this.t.bones[0].segment1.x,y:this.t.bones[0].segment1.y} 
-                        return {x:this.t.bones[0].segment1.x+((this.t.dir==1)?0.5:-0.5),y:this.t.bones[0].segment1.y}
-                    },
-                    width:5,
-                    fillpic0:"img/Mario/MarioRFuß.svg",
-                    fillpic1:"img/Mario/MarioLFuß.svg",
-                    get fillconfig(){return this.t.dir==1?this.fill0:this.fill1},
-                    len:7,
-                },
-                segment1:{
-                    phy:false,
-                    get origin(){
-                        if(this.t.inwater&&this.t.falldist>10)return {x:this.t.bones[1].segment1.x+((this.t.dir==1)?2:-2),y:this.t.bones[1].segment1.y} 
-                        return {x:this.t.bones[1].segment1.x+((this.t.dir==1)?0.5:-0.5),y:this.t.bones[1].segment1.y+((this.t.dir==1)?0.5:-0.5)-2}
-                    },
-                    get finish(){
-                        if(this.t.inwater&&this.t.falldist>10)return {x:this.t.bones[1].segment1.x,y:this.t.bones[1].segment1.y} 
-                        return {x:this.t.bones[1].segment1.x+((this.t.dir==1)?0.5:-0.5),y:this.t.bones[1].segment1.y}
-                    },
-                    width:5,
-                    fillpic0:"img/Mario/MarioRFuß.svg",
-                    fillpic1:"img/Mario/MarioLFuß.svg",
-                    get fillconfig(){return this.t.dir==1?this.fill0:this.fill1},
-                    len:7,
-                },
-                segment2:{
-                    phy:false,
-                    get origin(){//umdrehn von körpr mit dir
-                        if(this.t.inwater&&this.t.falldist>10)return {x:this.t.bones[0].segment0.x+(this.t.dir==1?10:-10),y:this.t.y+this.t.h/2}
-                        return {x:this.t.x+this.t.w/2,y:this.t.y+this.t.h/3}
-                    },
-                    get finish(){
-                        if(this.t.inwater&&this.t.falldist>10)return {x:this.t.bones[0].segment0.x,y:this.t.y+this.t.h/2}
-                        return {x:this.t.x+this.t.w/2,y:this.t.y+(this.t.h/4)*3}
-                    },
-                    width:10,
-                    fillpic0:"img/Mario/MarioKörper.svg",
-                    get fillconfig(){return this.fill0},
-                    len:7,
-                },
-                segment3:{
-                    phy:false,
-                    get origin(){
-                        if(this.t.inwater&&this.t.falldist>10)return {x:this.t.x+(this.t.dir==1?this.t.w:0),y:this.t.y+this.t.h/2}
-                        return {x:this.t.x+this.t.w/2+1*Math.sin(this.winkel),y:this.t.y}
-                    },
-                    get finish(){
-                        return this.t.bones[2].segment2.origin
-                    },
-                    width:10,
-                    fillpic0:"img/Mario/MarioRKopf.svg",
-                    fillpic1:"img/Mario/MarioLKopf.svg",
-                    get fillconfig(){return this.t.dir==1?this.fill0:this.fill1},
-                    len:7,
-                    winkel:0
-                },
-                segment4:{
-                    phy:false,
-                    get origin(){return {x:this.t.x+this.t.w/2-this.t.bones[2].segment2.width/2,y:this.t.bones[2].segment2.origin.y}},
-                    get finish(){return {x:this.t.x+this.t.w/2-this.t.bones[2].segment2.width/2,y:this.t.y+this.t.h*(2.5/4)}},
-                    width:2,
-                    fillpic0:"img/Mario/MarioLArm.svg",
-                    get fillconfig(){return this.fill0},
-                    len:7,
-                },
-                segment5:{
-                    phy:false,
-                    get origin(){return {x:this.t.x+this.t.w/2+this.t.bones[2].segment2.width/2,y:this.t.bones[2].segment2.origin.y}},
-                    get finish(){return {x:this.t.x+this.t.w/2+this.t.bones[2].segment2.width/2,y:this.t.y+this.t.h*(2.5/4)}},
-                    width:2,
-                    fillpic0:"img/Mario/MarioRArm.svg",
-                    get fillconfig(){return this.fill0},
-                    len:7,
-                },
-                segment6:{
-                    phy:false,
-                    get origin(){return {x:this.t.bones[2].segment4.finish.x,y:this.t.bones[2].segment4.finish.y-2}},
-                    get finish(){return {x:this.t.bones[2].segment4.finish.x,y:this.t.bones[2].segment4.finish.y+2}},
-                    width:2,
-                    fillpic0:"img/Mario/MarioLHand.svg",
-                    get fillconfig(){return this.fill0},
-                    len:7,
-                },
-                segment7:{
-                    phy:false,
-                    get origin(){return {x:this.t.bones[2].segment5.finish.x,y:this.t.bones[2].segment5.finish.y-2}},
-                    get finish(){return {x:this.t.bones[2].segment5.finish.x,y:this.t.bones[2].segment5.finish.y+2}},
-                    width:2,
-                    fillpic0:"img/Mario/MarioRHand.svg",
-                    get fillconfig(){return this.fill0},
-                    len:7,
-                },
-            }
-        ]
-    },
-    Luigi:function(){
-        this.bones=
-            [
-                {
-                phy:true,
-                bewegung:-1,
-                get fussklippe(){return this.t.inwater&&this.t.falldist>10?16:18},
-                origin:{
-                    get x(){
-                        if(this.t.inwater&&this.t.falldist>10){
-                            if(this.t.velo[0]>0)return this.t.x
-                            if(this.t.velo[0]<0)return this.t.x+this.t.w
-                        }else{
-                            if(typeof(this.t.rich4arr)=="undefined")return this.t.x
-                            if(this.t.rich4arr[0]==0)return this.t.x+this.t.w/2-2
-                            if(this.t.rich4arr[0]==1)return this.t.x
-                            if(this.t.rich4arr[0]==2)return this.t.x+this.t.w/2-2
-                            if(this.t.rich4arr[0]==3)return this.t.x+this.t.w
-                        }
-                    },
-                    get y(){
-                        if(this.t.inwater&&this.t.falldist>10){
-                            return this.t.y+this.t.h/2-4
-                        }else{
-                            if(typeof(this.t.rich4arr)=="undefined")return this.t.y+(this.t.h/4)*3
-                            if(this.t.rich4arr[0]==0)return this.t.y+(this.t.h/4)*3
-                            //if(this.t.rich4arr[0]==1)return this.t.y+this.t.h/2-4
-                            //if(this.t.rich4arr[0]==2)return this.t.y+this.t.h
-                            //if(this.t.rich4arr[0]==3)return this.t.y+this.t.h/2-4
-                        }
-                    }
-                },
-                pointer:{
-                    get x(){
-                        if(this.t.inwater&&this.t.falldist>10){
-                            if(this.t.velo[0]<0)return this.t.x+this.t.w+20
-                            if(this.t.velo[0]>0)return this.t.x-20
-                        }else{
-                            return this.t.x+this.t.w/2-2
-                        }
-                    },
-                    get y(){
-                        if(this.t.inwater&&this.t.falldist>10){
-                            return this.t.y+this.t.h/2-4
-                        }else{
-                            return this.t.y+this.t.h
-                        }
-                    }
-                },
-                segment0:{
-                    phy:true,
-                    get next(){return this.t.bones[0].segment1},
-                    get origin(){return this.t.bones[0].origin},
-                    get finish(){return this},
-                    width:2.5,
-                    fillpic0:"img/Luigi/LuigiLBein.svg",
-                    fillpic1:"img/Luigi/LuigiRBein.svg",
-                    get fillconfig(){return this.t.dir==1?this.fill0:this.fill1},
-                    get len(){return this.t.h/8+1}
-                },
-                segment1:{
-                    phy:true,
-                    get origin(){return this.t.bones[0].segment0},
-                    get finish(){return this},
-                    width:2.5,
-                    fillpic0:"img/Luigi/LuigiLBein.svg",
-                    fillpic1:"img/Luigi/LuigiRBein.svg",
-                    get fillconfig(){return this.t.dir==1?this.fill0:this.fill1},
-                    get len(){return this.t.h/8}
-                }
-            },{
-                phy:true,
-                bewegung:-6,
-                get fussklippe(){return this.t.inwater&&this.t.falldist>10?16:8},
-                origin:{
-                    get x(){
-                        if(this.t.inwater&&this.t.falldist>10){
-                            if(this.t.velo[0]>0)return this.t.x
-                            if(this.t.velo[0]<0)return this.t.x+this.t.w
-                        }else{
-                            if(typeof(this.t.rich4arr)=="undefined")return this.t.x
-                            if(this.t.rich4arr[0]==0)return this.t.x+this.t.w/2+2
-                            if(this.t.rich4arr[0]==1)return this.t.x
-                            if(this.t.rich4arr[0]==2)return this.t.x+this.t.w/2+2
-                            if(this.t.rich4arr[0]==3)return this.t.x+this.t.w
-                        }
-                    },
-                    get y(){
-                        if(this.t.inwater&&this.t.falldist>10){
-                            return this.t.y+this.t.h/2+4
-                        }else{
-                            if(typeof(this.t.rich4arr)=="undefined")return this.t.y+(this.t.h/4)*3
-                            if(this.t.rich4arr[0]==0)return this.t.y+(this.t.h/4)*3
-                            //if(this.t.rich4arr[0]==1)return this.t.y+this.t.h/2+4
-                            //if(this.t.rich4arr[0]==2)return this.t.y+this.t.h
-                            //if(this.t.rich4arr[0]==3)return this.t.y+this.t.h/2+4
-                        }
-                    }
-                },
-                pointer:{
-                    get x(){
-                        if(this.t.inwater&&this.t.falldist>10){
-                            if(this.t.velo[0]<0)return this.t.x+this.t.w+20
-                            if(this.t.velo[0]>0)return this.t.x-20
-                        }else{
-                            return this.t.x+this.t.w/2+2
-                        }
-                    },
-                    get y(){
-                        if(this.t.inwater&&this.t.falldist>10){
-                            return this.t.y+this.t.h/2-4
-                        }else{
-                            return this.t.y+this.t.h
-                        }
-                    }
-                },
-                segment0:{
-                    phy:true,
-                    get next(){return this.t.bones[1].segment1},
-                    get origin(){return this.t.bones[1].origin},
-                    get finish(){return this},
-                    width:2.5,
-                    fillpic0:"img/Luigi/LuigiLBein.svg",
-                    fillpic1:"img/Luigi/LuigiRBein.svg",
-                    get fillconfig(){return this.t.dir==1?this.fill0:this.fill1},
-                    get len(){return this.t.h/8+1},
-                },
-                segment1:{
-                    phy:true,
-                    get origin(){return this.t.bones[1].segment0},
-                    get finish(){return this},
-                    width:2.5,
-                    fillpic0:"img/Luigi/LuigiLBein.svg",
-                    fillpic1:"img/Luigi/LuigiRBein.svg",
-                    get fillconfig(){return this.t.dir==1?this.fill0:this.fill1},
-                    get len(){return this.t.h/8}
-                }
-            },{
-                phy:false,
-                segment0:{
-                    phy:false,
-                    get origin(){
-                        if(this.t.inwater&&this.t.falldist>10)return {x:this.t.bones[0].segment1.x+((this.t.dir==1)?2:-2),y:this.t.bones[0].segment1.y} 
-                        return {x:this.t.bones[0].segment1.x+((this.t.dir==1)?0.5:-0.5),y:this.t.bones[0].segment1.y+((this.t.dir==1)?0.5:-0.5)-2}
-                    },
-                    get finish(){
-                        if(this.t.inwater&&this.t.falldist>10)return {x:this.t.bones[0].segment1.x,y:this.t.bones[0].segment1.y} 
-                        return {x:this.t.bones[0].segment1.x+((this.t.dir==1)?0.5:-0.5),y:this.t.bones[0].segment1.y}
-                    },
-                    width:5,
-                    fillpic0:"img/Luigi/LuigiRFuß.svg",
-                    fillpic1:"img/Luigi/LuigiLFuß.svg",
-                    get fillconfig(){return this.t.dir==1?this.fill0:this.fill1},
-                    len:7,
-                },
-                segment1:{
-                    phy:false,
-                    get origin(){
-                        if(this.t.inwater&&this.t.falldist>10)return {x:this.t.bones[1].segment1.x+((this.t.dir==1)?2:-2),y:this.t.bones[1].segment1.y} 
-                        return {x:this.t.bones[1].segment1.x+((this.t.dir==1)?0.5:-0.5),y:this.t.bones[1].segment1.y+((this.t.dir==1)?0.5:-0.5)-2}
-                    },
-                    get finish(){
-                        if(this.t.inwater&&this.t.falldist>10)return {x:this.t.bones[1].segment1.x,y:this.t.bones[1].segment1.y} 
-                        return {x:this.t.bones[1].segment1.x+((this.t.dir==1)?0.5:-0.5),y:this.t.bones[1].segment1.y}
-                    },
-                    width:5,
-                    fillpic0:"img/Luigi/LuigiRFuß.svg",
-                    fillpic1:"img/Luigi/LuigiLFuß.svg",
-                    get fillconfig(){return this.t.dir==1?this.fill0:this.fill1},
-                    len:7,
-                },
-                segment2:{
-                    phy:false,
-                    get origin(){//umdrehn von körpr mit dir
-                        if(this.t.inwater&&this.t.falldist>10)return {x:this.t.bones[0].segment0.x+(this.t.dir==1?10:-10),y:this.t.y+this.t.h/2}
-                        return {x:this.t.x+this.t.w/2,y:this.t.y+this.t.h/3}
-                    },
-                    get finish(){
-                        if(this.t.inwater&&this.t.falldist>10)return {x:this.t.bones[0].segment0.x,y:this.t.y+this.t.h/2}
-                        return {x:this.t.x+this.t.w/2,y:this.t.y+(this.t.h/4)*3}
-                    },
-                    width:10,
-                    fillpic0:"img/Luigi/LuigiKörper.svg",
-                    get fillconfig(){return this.fill0},
-                    len:7,
-                },
-                segment3:{
-                    phy:false,
-                    get origin(){
-                        if(this.t.inwater&&this.t.falldist>10)return {x:this.t.x+(this.t.dir==1?this.t.w:0),y:this.t.y+this.t.h/2}
-                        return {x:this.t.x+this.t.w/2+1*Math.sin(this.winkel),y:this.t.y}
-                    },
-                    get finish(){
-                        return this.t.bones[2].segment2.origin
-                    },
-                    width:10,
-                    fillpic0:"img/Luigi/LuigiRKopf.svg",
-                    fillpic1:"img/Luigi/LuigiLKopf.svg",
-                    get fillconfig(){return this.t.dir==1?this.fill0:this.fill1},
-                    len:7,
-                    winkel:0
-                },
-                segment4:{
-                    phy:false,
-                    get origin(){return {x:this.t.x+this.t.w/2-this.t.bones[2].segment2.width/2,y:this.t.bones[2].segment2.origin.y}},
-                    get finish(){return {x:this.t.x+this.t.w/2-this.t.bones[2].segment2.width/2,y:this.t.y+this.t.h*(2.5/4)}},
-                    width:2,
-                    fillpic0:"img/Luigi/LuigiLArm.svg",
-                    get fillconfig(){return this.fill0},
-                    len:7,
-                },
-                segment5:{
-                    phy:false,
-                    get origin(){return {x:this.t.x+this.t.w/2+this.t.bones[2].segment2.width/2,y:this.t.bones[2].segment2.origin.y}},
-                    get finish(){return {x:this.t.x+this.t.w/2+this.t.bones[2].segment2.width/2,y:this.t.y+this.t.h*(2.5/4)}},
-                    width:2,
-                    fillpic0:"img/Luigi/LuigiRArm.svg",
-                    get fillconfig(){return this.fill0},
-                    len:7,
-                },
-                segment6:{
-                    phy:false,
-                    get origin(){return {x:this.t.bones[2].segment4.finish.x,y:this.t.bones[2].segment4.finish.y-2}},
-                    get finish(){return {x:this.t.bones[2].segment4.finish.x,y:this.t.bones[2].segment4.finish.y+2}},
-                    width:2,
-                    fillpic0:"img/Luigi/LuigiLHand.svg",
-                    get fillconfig(){return this.fill0},
-                    len:7,
-                },
-                segment7:{
-                    phy:false,
-                    get origin(){return {x:this.t.bones[2].segment5.finish.x,y:this.t.bones[2].segment5.finish.y-2}},
-                    get finish(){return {x:this.t.bones[2].segment5.finish.x,y:this.t.bones[2].segment5.finish.y+2}},
-                    width:2,
-                    fillpic0:"img/Luigi/LuigiRHand.svg",
-                    get fillconfig(){return this.fill0},
-                    len:7,
-                },
-            }
-        ]
-    }
 }
 promallres[1]()

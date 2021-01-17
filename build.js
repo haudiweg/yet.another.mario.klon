@@ -37,7 +37,7 @@ function addtobuildmenu(i){
 }
 function savetopreset(event,obj){
     let temp=[obj].map(a=>({...a}))[0]
-    let arrayfrom=[myFire[loadmap],myRect[loadmap],mySun[loadmap]].find(me=>me.includes(obj))
+    let arrayfrom=[myRect[loadmap],mySun[loadmap]].find(me=>me.includes(obj))
     if(typeof(temp.fill)=="object"){temp.fill=temp.fillstr}
     delete temp.shadow
     delete temp.shadowadd
@@ -97,7 +97,7 @@ function dragspawn(event){
     collisionmap(false,true)
 }
 async function build(){
-    for (let me of [...myRect[loadmap],...mySun[loadmap],...myFire[loadmap]]) {mesureminmax(me)}
+    for (let me of [...myRect[loadmap],...mySun[loadmap]]) {mesureminmax(me)}
     await collisionmap(true,true)
     canvas.addEventListener('drop',dragspawn);
     canvas.addEventListener('dragover',me=>me.preventDefault());
@@ -116,8 +116,10 @@ function stopbuildf(){
     canvas.removeEventListener('drop',dragspawn);
     canvas.removeEventListener('dragover',me=>me.preventDefault());
     const myNode = document.getElementById("buildmenu");
-    while (myNode.firstChild) {myNode.removeChild(myNode.firstChild);}
-    myNode.remove()
+    if(myNode!=null){
+        while (myNode.firstChild) {myNode.removeChild(myNode.firstChild);}
+        myNode.remove()
+    }
     const myNode1 = document.getElementById("optionmenu");
     if(myNode1!==null){
         while (myNode1.firstChild) {myNode1.removeChild(myNode1.firstChild);}
@@ -181,8 +183,8 @@ function ani1(time1){
     //mache screen bewegen
     if(focused&&clickedonobj!=undefined){
         //wen obj gefocust wurde
-        rofx-=(rofx-(((typeof(clickedonobj.x)=="object")?clickedonobj.x.reduce((a,b)=>a+b)/zoomn/clickedonobj.x.length:clickedonobj.x/zoomn+clickedonobj.w/zoomn/2)-canvas.width/   2))/20
-        rofy-=(rofy-(((typeof(clickedonobj.y)=="object")?clickedonobj.y.reduce((a,b)=>a+b)/zoomn/clickedonobj.y.length:clickedonobj.y/zoomn+clickedonobj.h/zoomn/2)-canvas. height/2))/20
+        rofx-=(rofx-(clickedonobj.x.reduce((a,b)=>a+b)/zoomn/clickedonobj.x.length-canvas.width/   2))/20
+        rofy-=(rofy-(clickedonobj.y.reduce((a,b)=>a+b)/zoomn/clickedonobj.y.length-canvas. height/2))/20
         if(renderer==0)renderbackground=true
     }else if(mousex!==null||mousey!==null){
         //wen ich an want klicke
@@ -194,7 +196,7 @@ function ani1(time1){
     }
     
     if(!whatmenu&&directionx>=1){
-        let obj=([...myRect[loadmap],...mySun[loadmap],...myFire[loadmap]].map(i=>[(typeof(i.x)=="object")?i.x.reduce((a,b)=>a+b)/i.x.length:i.x+i.w/2,i])).sort((a,b)=>a[0]-b[0])
+        let obj=([...myRect[loadmap],...mySun[loadmap]].map(i=>[(typeof(i.x)=="object")?i.x.reduce((a,b)=>a+b)/i.x.length:i.x+i.w/2,i])).sort((a,b)=>a[0]-b[0])
         let objnum=obj.findIndex(i=>i[1]==clickedonobj)
         focusedobj=clickedonobj=obj[objnum+1>=obj.length?0:objnum+1][1]
         directionx=0
@@ -208,7 +210,7 @@ function ani1(time1){
         spawnmenü(obj[objnum+1>=obj.length?0:objnum+1][1])
     }
     if(!whatmenu&&directionx<=-1){
-        let obj=([...myRect[loadmap],...mySun[loadmap],...myFire[loadmap]].map(i=>[(typeof(i.x)=="object")?i.x.reduce((a,b)=>a+b)/i.x.length:i.x+i.w/2,i])).sort((a,b)=>a[0]-b[0])
+        let obj=([...myRect[loadmap],...mySun[loadmap]].map(i=>[(typeof(i.x)=="object")?i.x.reduce((a,b)=>a+b)/i.x.length:i.x+i.w/2,i])).sort((a,b)=>a[0]-b[0])
         let objnum=obj.findIndex(i=>i[1]==clickedonobj)
         focusedobj=clickedonobj=obj[objnum-1<=0?obj.length-1:objnum-1][1]
         directionx=0
@@ -274,7 +276,7 @@ function ani1(time1){
         }
     }
     if(doublecklick==3){
-        if(resizebuild)resizeobj(focusedobj,buildscale.between,buildscale.winkelt)
+        if(resizebuild)resizeobj(focusedobj,buildscale.between,buildscale.winkel)
         if(movebuild)moveobj(focusedobj)
         movedcordx=mousexc
         movedcordy=mouseyc
@@ -333,72 +335,36 @@ function ani1(time1){
 }
 //eingabe 
 function moveobj(i){
-    if(typeof(i.x)=="object"){
-        for(let x of i.x)x+=(mousexc-movedcordx)
-        for(let y of i.y)y+=(mouseyc-movedcordy)
-    }else{
-        i.x+=(mousexc-movedcordx)
-        i.y+=(mouseyc-movedcordy)
-    }
+    i.movex=(mousexc-movedcordx)
+    i.movey=(mouseyc-movedcordy)
     if(i.static&&renderer==0)renderbackground=true
     if(renderer)updatescene=true
 }
 function resizeobj(i,between,winkelt){
-    if(typeof(i.x)=="object"){
-        i.x[between[0]]+=(mousexc-movedcordx)*Math.abs(Math.cos(winkelt))
-        i.y[between[0]]+=(mouseyc-movedcordy)*Math.abs(Math.sin(winkelt))
-        i.x[between[1]]+=(mousexc-movedcordx)*Math.abs(Math.cos(winkelt))
-        i.y[between[1]]+=(mouseyc-movedcordy)*Math.abs(Math.sin(winkelt))
-        i.w=Math.max(...i.x)-Math.min(...i.x)
-        i.h=Math.max(...i.y)-Math.min(...i.y)
+    i.x[between[0]]+=(mousexc-movedcordx)*Math.abs(Math.cos(winkelt))
+    i.y[between[0]]+=(mouseyc-movedcordy)*Math.abs(Math.sin(winkelt))
+    i.x[between[1]]+=(mousexc-movedcordx)*Math.abs(Math.cos(winkelt))
+    i.y[between[1]]+=(mouseyc-movedcordy)*Math.abs(Math.sin(winkelt))
+    i.w=Math.max(...i.x)-Math.min(...i.x)
+    i.h=Math.max(...i.y)-Math.min(...i.y)
 
-        if(typeof(this.x)=="object"){
-            let minx=Infinity
-            let minxnum=0
-            for(let i in this.x)if(minx>this.x[i]){minx=this.x[i];minxnum=i}
-            Object.defineProperty(this, 'minx', {get:()=>{return this.x[minxnum]}});
-        }else{
-            Object.defineProperty(this, 'minx', {get:()=>{return this.x}});
-        }
-        if(typeof(this.y)=="object"){
-            let miny=Infinity
-            let minynum=0
-            for(let i in this.y)if(miny>this.y[i]){miny=this.y[i];minynum=i}
-            Object.defineProperty(this, 'miny', {get:()=>{return this.y[minynum]}});
-        }else{
-            Object.defineProperty(this, 'miny', {get:()=>{return this.y}});
-        }
-    }else{
-        if(between[0]==0){
-            i.y+=mouseyc-movedcordy
-            i.h=Math.max(i.h-mouseyc+movedcordy,1)
-        }
-        if(between[0]==1){
-            i.w=Math.max(i.w+mousexc-movedcordx,1)
-        }
-        if(between[0]==2){
-            i.h=Math.max(i.h+mouseyc-movedcordy,1)
-        }
-        if(between[0]==3){
-            i.x+=mousexc-movedcordx
-            i.w=Math.max(i.w-mousexc+movedcordx,1)
-        }
-    }
+    let minxt=Infinity
+    i.minxnum=0
+    for(let i1 in i.x)if(minxt>i.x[i1]){minxt=i.x[i1];i.minxnum=i1}
+        
+        
+    let minyt=Infinity
+    i.minynum=0
+    for(let i1 in i.y)if(minyt>i.y[i1]){minyt=i.y[i1];i.minynum=i1}
+    
     if(i.static&&renderer==0)renderbackground=true
     if(renderer)updatescene=true
 }
 /**@return {boolean|{clickx:number,clicky:number,between:[number,number],winkel:number}} wantscale */
 function wantscale(i,x,y){
     let ele=[]
-    if(typeof(i.x)=="object"){
-        for (let i1=0;i1<i.x.length;i1++)ele[i1]=[i.x[i1],i.y[i1]]
-    }else{
-        ele=[
-            [i.x,i.y],
-            [i.x+i.w,i.y],
-            [i.x+i.w,i.y+i.h],
-            [i.x,i.y+i.h]]
-    }
+    for (let i1=0;i1<i.x.length;i1++)ele[i1]=[i.x[i1],i.y[i1]]
+    
     let mindist=Infinity
     let distxy=false
     for(let i1=0,i2=1;i1<ele.length;i1++,i2=(i1+1)%ele.length){
