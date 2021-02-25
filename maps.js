@@ -18,7 +18,7 @@ function defaultarrload(num="all"){
         new createobj.Pipe(myRect,300,700,30,20,{wx:650,wy:695,ro:1});
         new createobj.Pipe(myRect,400,700,30,20,{wx:650,wy:695,ro:2});
         new createobj.Pipe(myRect,500,700,30,20,{wx:650,wy:695,ro:3});
-        new createobj.Grass(myRect,-2000, 720, 3500, 1);
+        new createobj.Grass(myRect,-2000, 720, 3500, 10);
 
         new createobj.Grass(myRect,1500, 0, 0, 600);
         new createobj.Grass(myRect,1500, 720, 0, 1800);
@@ -37,29 +37,35 @@ function defaultarrload(num="all"){
 
 
 
-
-        new createobj.Questionblock(myRect,-360, 560, 20, 20,{questiontexturtext:"right",option:[["Gravi",{x:5000,y:0,w:1,h:2800},[0,myGravi]],]})
-        new createobj.Questionblock(myRect,-480, 440, 20, 20,{questiontexturtext:"down",option:[["Gravi",{x:0,y:5000,w:2800,h:1},[0,myGravi]],]})
-        new createobj.Questionblock(myRect,-360, 320, 20, 20,{questiontexturtext:"left",option:[["Gravi",{x:-5000,y:0,w:1,h:2800},[0,myGravi]],]})
-        new createobj.Questionblock(myRect,-250, 440, 20, 20,{questiontexturtext:"up",option:[["Gravi",{x:0,y:-5000,w:2800,h:1},[0,myGravi]],]})
+        new createobj.Questionblock(myRect,-360, 560, 20, 20,{questiontexturtext:"right",spawn:{spawn:[{name:"Gravi",options:{x:5000,y:0,w:1,h:2800},were:[0,myGravi]}]}})
+        //new createobj.Questionblock(myRect,-360, 560, 20, 20,{questiontexturtext:"right",option:[["Gravi",{x:5000,y:0,w:1,h:2800},[0,myGravi]],]})
+        new createobj.Questionblock(myRect,-480, 440, 20, 20,{questiontexturtext:"down",spawn:{spawn:[{name:"Gravi",options:{x:0,y:5000,w:2800,h:1},were:[0,myGravi]}]}})
+        //new createobj.Questionblock(myRect,-480, 440, 20, 20,{questiontexturtext:"down",option:[["Gravi",{x:0,y:5000,w:2800,h:1},[0,myGravi]],]})
+        new createobj.Questionblock(myRect,-360, 320, 20, 20,{questiontexturtext:"left",spawn:{spawn:[{name:"Gravi",options:{x:-5000,y:0,w:1,h:2800},were:[0,myGravi]}]}})
+        //new createobj.Questionblock(myRect,-360, 320, 20, 20,{questiontexturtext:"left",option:[["Gravi",{x:-5000,y:0,w:1,h:2800},[0,myGravi]],]})
+        new createobj.Questionblock(myRect,-250, 440, 20, 20,{questiontexturtext:"up",spawn:{spawn:[{name:"Gravi",options:{x:0,y:-5000,w:2800,h:1},were:[0,myGravi]}]}})
+        //new createobj.Questionblock(myRect,-250, 440, 20, 20,{questiontexturtext:"up",option:[["Gravi",{x:0,y:-5000,w:2800,h:1},[0,myGravi]],]})
 
         new createobj.Pipe(myRect,-390,600,20,2,{wx:-390,wy:695,ro:2});
         new createobj.Pipe(myRect,-330,720,20,20,{wx:-330,wy:565,ro:2});
 
-        new createobj.Questionblock(myRect,-400, 560, 20, 20,{questiontexturtext:"middle",option:[["Gravi",{x:-349,y:449,w:2,h:2,stärke:0.1},[0,myGravi]],]})
+        new createobj.Questionblock(myRect,-400, 560, 20, 20,{questiontexturtext:"middle",spawn:{spawn:[{name:"Gravi",options:{x:-349,y:449,w:2,h:2,stärke:0.1},were:[0,myGravi]}]}})
+        //new createobj.Questionblock(myRect,-400, 560, 20, 20,{questiontexturtext:"middle",option:[["Gravi",{x:-349,y:449,w:2,h:2,stärke:0.1},[0,myGravi]],]})
 
         new createobj.Pipe(myRect,-360,440,20,20,{wx:-360,wy:610,ro:0});
-        new createobj.Questionblock(myRect,-360, 640, 20, 20,{questiontexturtext:"down",option:[["Gravi",{x:0,y:5000,w:2800,h:1},[0,myGravi]],]})
+        new createobj.Questionblock(myRect,-360, 560, 20, 20,{questiontexturtext:"down",spawn:{spawn:[{name:"Gravi",options:{x:0,y:5000,w:2800,h:1},were:[0,myGravi]}]}})
+        //new createobj.Questionblock(myRect,-360, 640, 20, 20,{questiontexturtext:"down",option:[["Gravi",{x:0,y:5000,w:2800,h:1},[0,myGravi]],]})
 
 
-        new createobj.Questionblock(myRect,1400, 670, 20, 20,{questiontexturtext:"b-hole",option:[["Gravi",{x:3000,y:800,w:1,h:1,abfac:0.001},[0,myGravi]],]})
+        new createobj.Questionblock(myRect,-360, 560, 20, 20,{questiontexturtext:"b-hole",spawn:{spawn:[{name:"Gravi",options:{x:3000,y:800,w:1,h:1,abfac:0.001},were:[0,myGravi]}]}})
+        //new createobj.Questionblock(myRect,1400, 670, 20, 20,{questiontexturtext:"b-hole",option:[["Gravi",{x:3000,y:800,w:1,h:1,abfac:0.001},[0,myGravi]],]})
         new createobj.Pipe(myRect,900,700,30,20,{wx:1200,wy:700,ro:2});
         new createobj.Pipe(myRect,1200,700,30,20,{wx:900,wy:700,ro:2});
 
         new createobj.Pipe(myRect,0,700,30,20,{wx:0,wy:1340,ro:2});
 
 
-        new createobj.Grass(myRect,-2000, 1420, 4000, 1);
+        new createobj.Grass(myRect,-2000, 1420, 4000, 10);
         new createobj.Pipe(myRect,0,1400,30,20,{wx:50,wy:2080,ro:2});
         new createobj.Pipe(myRect,50,1400,30,20,{wx:0,wy:640,ro:2});
         new createobj.Wasser(myRect,200, 1000, 1000, 420,{phy:true});
@@ -67,6 +73,8 @@ function defaultarrload(num="all"){
         new createobj.Shape(myRect,-1001,1000,1,390);
         new createobj.Wasser(myRect,-1000, 1000, 600, 420,{phy:false,allblue:true});
         new createobj.Shape(myRect,-401,1000,1,390);
+
+        new createobj.Wasser(myRect,-1800, 1000, 600, 420,{phy:false});
         //new createobj.Enemy(myRect,-601,1200,20,20,{type:"fish",kitype:4});
 
 
@@ -175,9 +183,9 @@ function defaultarrload(num="all"){
         new createobj.Ground(myRect,0, 710, 200, 10);
         new createobj.Grassani(myRect,0, 709, 200, 1);
 
-        new createobj.Onewayblock(myRect,100, 680, 50, 5)
+        new createobj.Onewayblock(myRect,100, 670, 50, 5)
 
-        new createobj.Shape(myRect,100, 600,50,50,{fill:"URLvideo",fillvideo:"img/BadApple.mp4"});
+        new createobj.Shape(myRect,70, 600,50,50,{fill:"URLvideo",fillvideo:"img/BadApple.mp4"});
 
         new createobj.Ground(myRect,200, 690, 500, 30);
         new createobj.Grassani(myRect,200, 689, 500, 1);
@@ -231,6 +239,20 @@ function defaultarrload(num="all"){
         //for(let i=0,i1=0;i<steps;i++,i1+=add)new createobj.Playerki(myRect,20,660, 10, 15,{
         //    fill:`rgba(${Math.abs(Math.sin(i1+of*0)*256)},${Math.abs(Math.sin(i1+of*1)*256)},${Math.abs(Math.sin(i1+of*2)*256)},1)`
         //});
+
+        let id=new createobj.Shape(myRect,0,1,700,600,{fill:"green",havcoll:false}).id;
+        console.log(id)
+        //new createobj.Shape(myRect,0,0,700,600,{fill:"URL",fillpic:"img/pp1.jpg"});
+        //new createobj.Shape(myRect,0,0,700,600,{fill:"URL",fillpic:"img/pp2.jpg"});
+        //new createobj.Shape(myRect,0,0,700,600,{fill:"URL",fillpic:"img/pp3.jpg"});
+        //new createobj.Shape(myRect,0,0,700,600,{fill:"URL",fillpic:"img/pp4.jpg"});
+        //new createobj.Shape(myRect,0,0,700,600,{fill:"URL",fillpic:"img/pp5.jpg"});
+
+        new createobj.Questionblock(myRect,  0, 660, 20, 20,{questiontexturtext:"1",spawn:{spawn:[{name:"Shape",options:{x:0,y:0,w:700,h:600,fill:"URL",fillpic:"img/pp1.jpg",havcoll:false},were:[id,myRect]}]}})
+        new createobj.Questionblock(myRect, 40, 660, 20, 20,{questiontexturtext:"2",spawn:{spawn:[{name:"Shape",options:{x:0,y:0,w:700,h:600,fill:"URL",fillpic:"img/pp2.jpg",havcoll:false},were:[id,myRect]}]}})
+        new createobj.Questionblock(myRect, 80, 660, 20, 20,{questiontexturtext:"3",spawn:{spawn:[{name:"Shape",options:{x:0,y:0,w:700,h:600,fill:"URL",fillpic:"img/pp3.jpg",havcoll:false},were:[id,myRect]}]}})
+        new createobj.Questionblock(myRect,120, 660, 20, 20,{questiontexturtext:"4",spawn:{spawn:[{name:"Shape",options:{x:0,y:0,w:700,h:600,fill:"URL",fillpic:"img/pp4.jpg",havcoll:false},were:[id,myRect]}]}})
+        new createobj.Questionblock(myRect,160, 660, 20, 20,{questiontexturtext:"5",spawn:{spawn:[{name:"Shape",options:{x:0,y:0,w:700,h:600,fill:"URL",fillpic:"img/pp5.jpg",havcoll:false},were:[id,myRect]}]}})
 
         if(basicinfo)console.info("loaded map 3")
     }

@@ -1,4 +1,45 @@
 const shader={
+    wassertextur:{//obj sol sich um wasser in game draw beschäftigen
+        webgl2:true,
+        vs:glsl`#version 300 es
+precision mediump float;
+
+in vec4 coordinates7;
+out vec4 coordinates7o;
+uniform vec2 canvashwwebgl;
+uniform vec4 offsgl;
+
+vec4 conv4(vec4 cord) {return (vec4((cord.x/canvashwwebgl.x)*2.0-1.0,((canvashwwebgl.y-cord.y)/canvashwwebgl.y)*2.0-1.0,0.0,1.0));}
+void main(void) {
+    coordinates7o=coordinates7;
+    gl_Position = conv4(coordinates7/offsgl.w-vec4(offsgl.xy,0,0));
+}
+        `,
+        fs:glsl`#version 300 es
+precision mediump usampler2D;
+precision mediump float;
+
+uniform sampler2D wasserheight;
+uniform float down;
+uniform float schaum;
+uniform vec4 wassertexturschaum;
+uniform vec4 wassertexturwasser;
+
+out vec4 fragColor;
+in vec4 coordinates7o;
+in vec2 gl_PointCoord;
+void main(void) {
+    //kucke ob unter threashhold dan mach die farbe
+    if(coordinates7o.y>down+textur(wasserheight,gl_PointCoord).x-schaum){
+        fragColor=wassertexturschaum;
+    }
+    //kucke ob unter threashhold dan mach die farbe
+    if(coordinates7o.y>down+textur(wasserheight,gl_PointCoord).x){
+        fragColor=wassertexturwasser;
+    }
+}        
+        `
+    },
     shadow:{
         webgl2:true,
         vs:glsl`#version 300 es

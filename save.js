@@ -70,7 +70,8 @@ async function savearr(mode=0){
     const temp=[myRect[loadmap],mySun[loadmap],myGravi[loadmap]]
     let temp1=[]
     for(let i in temp){
-        temp1[i]=temp[i].map(a=>({...a}))
+        temp1[i]=temp[i].map(a=>Object.assign({}, a))
+        //temp1[i]=temp[i].map(a=>({...a}))
         for(let i1 in temp1[i]){
             if(temp1[i][i1]=="undefined")continue
             if(typeof(temp1[i][i1].fill)=="object"&&temp1[i][i1].fill.constructor.name=="HTMLImageElement"){

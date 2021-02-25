@@ -181,7 +181,7 @@ const colorobj={
                         let goy=ele1[i1][1]
                         let winkel=Math.atan2(ele1[i1][1]-ele1[i2][1],ele1[i1][0]-ele1[i2][0])
                         suncord.push([gox,goy])
-                        while(Math.sqrt(Math.pow(gox-ele1[i2][0],2)+Math.pow(goy-ele1[i2][1],2))>1){
+                        while(Math.hypot(gox-ele1[i2][0],goy-ele1[i2][1])>1){
                             gox-=Math.cos(winkel)
                             goy-=Math.sin(winkel)
                             suncord.push([gox,goy])
@@ -203,7 +203,7 @@ const colorobj={
         const minyobj=typeof(x)=="object"?Math.min(...y):y
         while(me.temp.elefor.length>0){
             let [stopx,stopy,gox,goy,winkelx,winkely]=me.temp.elefor[0]
-            while(Math.sqrt((gox-stopx)*(gox-stopx)+(goy-stopy)*(goy-stopy))>1){
+            while(Math.hypot(gox-stopx,goy-stopy)>1){
                 gox-=winkelx
                 goy-=winkely
                 if(Math.random()<=me.grassrandomfactor){
@@ -211,10 +211,10 @@ const colorobj={
                         let max=Infinity
                         let dir=0
                         br:for(let i3 of suncord){
-                            let dist=Math.sqrt((gox-i3[0])*(gox-i3[0])+(goy-i3[1])*(goy-i3[1]))
+                            let dist=Math.hypot(gox-i3[0],goy-i3[1])
                             if(dist<=max){
                                 //das hir auch über multible frames
-                                for(let gox1=gox,goy1=goy,winkel1=Math.atan2(goy-i3[1],gox-i3[0]);Math.sqrt((gox1-i3[0])*(gox1-i3[0])+(goy1-i3[1])*(goy1-i3[1]))>1;gox1-=Math.cos  (winkel1),goy1-=Math.sin(winkel1)){
+                                for(let gox1=gox,goy1=goy,winkel1=Math.atan2(goy-i3[1],gox-i3[0]);Math.hypot(gox1-i3[0],goy1-i3[1])>1;gox1-=Math.cos(winkel1),goy1-=Math.sin(winkel1)){
                                     if(objcolmap[Math.trunc(goy1-miny)*(maxx-minx)+Math.trunc(gox1-minx)]>0)continue br
                                     //solte vieleicht kucken ob werte auserhalb min und max sind bzw ob minx maxx miny maxy net ein ganzer wert ist
                                 }
@@ -392,7 +392,7 @@ const colorobj={
                     temp[i][0]=px
                     temp[i][1]=py
                 }
-                for(let itemp of temp)path[inum].lineTo(itemp[0],itemp[1])
+                for(let itemp of temp)path.lineTo(itemp[0],itemp[1])
             }
         }
         for (let i=0;i<Math.ceil(w)*Math.ceil(h);i++) {
@@ -421,7 +421,7 @@ const colorobj={
                     //px-=tempxc
                     //py-=tempyc
     
-                    if(context1.isPointInPath(path[inum],tempxu,tempyu)){
+                    if(context1.isPointInPath(path,tempxu,tempyu)){
                         tnum=me.gennumbers[0][0][Math.ceil(tempyu)*Math.ceil(me.gennumbers[3])+Math.ceil(tempxu)]
                         tnum1=me.gennumbers[0][1][Math.ceil(tempyu)*Math.ceil(me.gennumbers[3])+Math.ceil(tempxu)]
                         texturoverwrite=true
@@ -928,7 +928,7 @@ async function Wasserpsy(x=0,y=0,me,w,h){
             }
         }
     }
-    if(upd)Wasserpic(x,y,me,w,h)
+    if(upd&&!(webglwasserdraw&&renderer==3&&webgl2))Wasserpic(x,y,me,w,h)
     //interpolation
 }
 async function Wasserpic(x,y,me,w,h) {

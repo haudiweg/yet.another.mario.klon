@@ -60,7 +60,7 @@ if(!("OffscreenCanvas" in window)){
 }else{
     try{
         (new OffscreenCanvas(0,0)).getContext("2d");
-    }catch{
+    }catch(err){
         console.warn("offscreencanvas context 2d dont work")
         window.OffscreenCanvas=function(w=0,h=0){
 /** @type {HTMLCanvasElement} a */
@@ -73,6 +73,27 @@ if(!("OffscreenCanvas" in window)){
 if(!("SharedArrayBuffer" in window)){
     console.warn("use ArrayBuffer as SharedArrayBuffer")
     window.SharedArrayBuffer=ArrayBuffer
+}
+if(!("allSettled" in Promise)){
+    console.warn("use Promise.allSettled fallback")
+    Promise.allSettled = function (promises) {
+      let mappedPromises = promises.map((p) => {
+        return p
+          .then((value) => {
+            return {
+              status: 'fulfilled',
+              value,
+            };
+          })
+          .catch((reason) => {
+            return {
+              status: 'rejected',
+              reason,
+            };
+          });
+      });
+      return Promise.all(mappedPromises);
+    };
 }
 console.info("backupfunction finished")
 
@@ -310,7 +331,7 @@ function work(minx,miny,maxx,maxy,myRect,col,colobj,objnumout){
         //tests auf offscreen das auch context 2d geht
         try{
             (new OffscreenCanvas(0,0)).getContext("2d");
-        }catch{
+        }catch(err){
             offscall=false
         }
     }
@@ -968,7 +989,7 @@ function kistart(){
     if(exp!=null&&exp[1][0]!=null)for(let i=0;i<Math.min(objarrays.length,exp[1].length);i++)neat.creatures[i].setFlattenedGenes(exp[1][i])
     //console.log(objarrays.length)
     //console.log(neat)
-    kiworstfitnes=Math.sqrt(Math.pow(maxx-minx,2)+Math.pow(maxy-miny,2))
+    kiworstfitnes=Math.hypot(maxx-minx,maxy-miny)
     kipriorisirungmax=0
     for(let i of kipriorisirung){kipriorisirungmax+=i}
     neat.feedForward()

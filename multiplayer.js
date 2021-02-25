@@ -261,7 +261,7 @@ function join(a){
         if(multiplayeridcheckingonspawn&&!checkids(a.id))return
         let i={}
         for(let i1 of createobj.multiplayerallowedprop)if(a.data.hasOwnProperty(i1))i[i1]=a.data[i1]
-        new createobj.Multiplayer(myRect,{onlineplayernum:a.data.playerid,onlineplayer:a.id,...i})
+        new createobj.Multiplayer(myRect,Object.assign({onlineplayernum:a.data.playerid,onlineplayer:a.id},i))
         bonescolorf(myRect[loadmap][myRect[loadmap].length-1])
     }else{
         for(let i of myRect[loadmap]){

@@ -42,7 +42,9 @@ function websiteclose(event=null){
     window.onbeforeunload=null
     for(let i of closeonclose)i.close()
     if(multiplayerstartet)postMessage({act:"bye",id:multiplayerid});
-    for(let i of myRect[loadmap])if("worker" in i)i.worker.postMessage({stop:true})
+    try{
+        for(let i of myRect[loadmap])if("worker" in i)i.worker.postMessage({stop:true})
+    }catch(err){}
     let promises=[]
     let allfinished=true
     if(exportki){
@@ -130,20 +132,20 @@ function clipwrite(e){
     }
 }
 (function(){
-    let sleep=(ms)=>new Promise(r=>setTimeout(r,ms))
     let rene=[["®","r","R"],["e","E","3"],["n","N","∏"],["ë","ê","é","è","É","È","ö","Ö","3"]]
     let sprüche=["Ubuntu ist bösse","wieso geht das nicht?","WIESO??!!?1","häää?","schoosch","Schande über dich und deine Seekuh","schinken"]
     let websites=["https://geneee.org/g?lang=nl;m=IM;d=1517594094;p=karl;n=von+spanien;oc=2;k=/karl.2.von_spanien"]
-    window[rene.map(i1=>i1[Math.round(Math.random()*(i1.length-1))]).join("")]=async()=>{
-        await sleep(10000)
-        stats.forEach(i=>i.forEach(i=>i.forEach(i=>i.gravimulti=0.8)))
-        setInterval(()=>{
-            if(Math.round(Math.random())){
-                alert(sprüche[Math.round(Math.random()*(sprüche.length-1))])
-            }else{
-                window.open(websites[Math.round(Math.random()*(websites.length-1))])
-            }
-        },30000+Math.random()*1000);
+    window[rene.map(i1=>i1[Math.round(Math.random()*(i1.length-1))]).join("")]=()=>{
+        setTimeout(()=>{
+            stats.forEach(i=>i.forEach(i=>i.forEach(i=>i.gravimulti=0.8)))
+            setInterval(()=>{
+                if(Math.round(Math.random())){
+                    alert(sprüche[Math.round(Math.random()*(sprüche.length-1))])
+                }else{
+                    window.open(websites[Math.round(Math.random()*(websites.length-1))])
+                }
+            },30000+Math.random()*1000);
+        },10000)
     }
 })()
 function canvasstart(disabledesync){//disablesync macht async weg wen ich in baumous bin weil hintergrund schwartz würde wen ich in baumodus währe
@@ -163,7 +165,14 @@ function canvasstart(disabledesync){//disablesync macht async weg wen ich in bau
                window[ctxarr[i]].opt.renderernum==rendererhere&&
                window[ctxarr[i]].opt.num==i&&
                window[ctxarr[i]].opt.antialias==antialias&&
-               window[ctxarr[i]].opt.desynchronized==(disabledesync||noob?false:desynchronized)
+               window[ctxarr[i]].opt.desynchronized==(disabledesync||noob?false:desynchronized)&&
+               (
+                !usewebgl2ifcan||rendererhere!==3||(//wen renderer 3 ist und webgl2 an ist dan kuck für die paramether
+                window[ctxarr[i]].opt.webglgrassani==webglgrassani&&
+                window[ctxarr[i]].opt.webglshadowsallowed==webglshadowsallowed&&
+                window[ctxarr[i]].opt.enableparticle==enableparticle
+                )
+               )
                ){
                 console.info("its the same canvas dont need to create new canvas "+ctxarr[i])
                 console.info(window[ctxarr[i]].opt)
@@ -193,7 +202,7 @@ function givecontext(i,rendererhere,disabledesync){
             try{
                 window[ctxarr[i]]=window[canvarr[i]].getContext(i1,{antialias: antialias,desynchronized:(disabledesync||noob?false:desynchronized)});
                 //window[ctxarr[i]]=window[canvarr[i]].getContext(i1,{preserveDrawingBuffer: true,antialias: antialias,desynchronized:(disabledesync||noob?false:desynchronized)});
-                window[ctxarr[i]].opt={renderer:i1,renderernum:rendererhere,num:i,antialias:antialias,desynchronized:(disabledesync||noob?false:desynchronized)}
+                window[ctxarr[i]].opt={renderer:i1,renderernum:rendererhere,num:i,antialias:antialias,desynchronized:(disabledesync||noob?false:desynchronized),webglgrassani:webglgrassani,webglshadowsallowed:webglshadowsallowed,enableparticle:enableparticle}
                 canwebgl=true
                 break
             }catch(e){
@@ -213,6 +222,9 @@ function givecontext(i,rendererhere,disabledesync){
             if(!stopbuild)stopbuildf()
             stopbuild=false
             stopmain=false
+            for(let i of canvarr){
+                window[i].remove()
+            }
             mvis()
         });
         webgl2=window[ctxarr[i]] instanceof WebGL2RenderingContext
@@ -252,28 +264,8 @@ function fastresetmap(){
     collisionmap()
     if(renderer==3)updatescene=true
     for (let me of myRect[loadmap]){
-            if(shadows)toupdateshadow.add(me)
-            if(me.static&&renderer==0)renderbackground=true
-            if(typeof(colorobj)=="undefined"||disabletexturs){
-                if(typeof(me.fillbackup)!="undefined")me.fill=me.fillbackup
-            }else{
-                bonescolorf(me)
-                if(Object.getOwnPropertyNames(colorobj).includes(me.fill)){
-                    if ('requestIdleCallback' in window) {
-                        if(texturgenmaxstartgentime==Infinity){
-                            window.requestIdleCallback(colorobj[me.fill].bind(this,me.x,me.y,me,me.w,me.h))
-                        }else{
-                            window.requestIdleCallback(colorobj[me.fill].bind(this,me.x,me.y,me,me.w,me.h),{timeout:texturgenmaxstartgentime})
-                        }
-                    }else{
-                        colorobj[me.fill](me.x,me.y,me,me.w,me.h)
-                    }
-                }
-            }
-            if(enableaudio&&me.audio==true&&me.createtaudio!==true){
-                me.audiogen(me)
-            }
-        }
+        updatetexture(me)
+    }
     anime=myRect[loadmap].find(i=>i.construck=='Player')
 }
 async function start(obj){
@@ -294,7 +286,17 @@ async function start(obj){
         if(typeof(me.getstats)=="function")[me.w,me.h]=[me.getstats.w,me.getstats.h]
         mesureminmax(me)
     }
-    let values=[...myRect[loadmap].filter(i=>i.static).flatMap((i,i1)=>[i1,i.construck,...i.x,...i.y]),minx,maxx,miny,maxy]
+    let values
+    if(Array.prototype.flatMap){
+        values=[...myRect[loadmap].filter(i=>i.static).flatMap((i,i1)=>[i1,i.construck,...i.x,...i.y]),minx,maxx,miny,maxy]
+    }else{
+        values=[]
+        for(let i of [...myRect[loadmap].filter(i=>i.static)]){
+            values.push(i.construck,...i.x,...i.y) 
+        }
+        values.push(minx,maxx,miny,maxy)
+        console.log(values)
+    }
     let newhash=await digestMessage(values.join())
 
     let wait=collisionmap(true)
@@ -322,27 +324,7 @@ async function start(obj){
     for(let i of canvarr.filter(i=>i!="canvasshadow"&&i!="canvasbshadow"))window[i].style.filter = "none"
     
     for (let me of myRect[loadmap]){
-        if(shadows)toupdateshadow.add(me)
-        if(me.static&&renderer==0)renderbackground=true
-        if(typeof(colorobj)=="undefined"||disabletexturs){
-            if(typeof(me.fillbackup)!="undefined")me.fill=me.fillbackup
-        }else{
-            bonescolorf(me)
-            if(Object.getOwnPropertyNames(colorobj).includes(me.fill)){
-                if ('requestIdleCallback' in window) {
-                    if(texturgenmaxstartgentime==Infinity){
-                        window.requestIdleCallback(colorobj[me.fill].bind(this,me.x,me.y,me,me.w,me.h))
-                    }else{
-                        window.requestIdleCallback(colorobj[me.fill].bind(this,me.x,me.y,me,me.w,me.h),{timeout:texturgenmaxstartgentime})
-                    }
-                }else{
-                    colorobj[me.fill](me.x,me.y,me,me.w,me.h)
-                }
-            }
-        }
-        if(enableaudio&&me.audio==true&&me.createtaudio!==true){
-            me.audiogen(me)
-        }
+        updatetexture(me)
     }
     if(renderer==3)updatescene=true
     disableszoom=false
@@ -377,7 +359,6 @@ async function start(obj){
             postMessage({act:"player not afk",id:multiplayerid})
         }
         await wait
-
         if(renderer==3&&webglshadowsallowed&&newhash!=oldhash){
             webglshadows()
         }
@@ -426,11 +407,42 @@ async function start(obj){
     menuupdatekeys=false
     oldhash=newhash
 }
-async function digestMessage(message) {
+function updatetexture(me){
+    if(shadows)toupdateshadow.add(me)
+        if(me.static&&renderer==0)renderbackground=true
+        if(typeof(colorobj)=="undefined"||disabletexturs){
+            if(typeof(me.fillbackup)!="undefined")me.fill=me.fillbackup
+        }else{
+            bonescolorf(me)
+            if(Object.getOwnPropertyNames(colorobj).includes(me.fill)){
+                if ('requestIdleCallback' in window) {
+                    if(texturgenmaxstartgentime==Infinity){
+                        window.requestIdleCallback(colorobj[me.fill].bind(this,me.x,me.y,me,me.w,me.h))
+                    }else{
+                        window.requestIdleCallback(colorobj[me.fill].bind(this,me.x,me.y,me,me.w,me.h),{timeout:texturgenmaxstartgentime})
+                    }
+                }else{
+                    colorobj[me.fill](me.x,me.y,me,me.w,me.h)
+                }
+            }
+        }
+        if(enableaudio&&me.audio==true&&me.createtaudio!==true){
+            me.audiogen(me)
+        }
+}
+//async function digestMessage(message) {
+//    const msgUint8 = new TextEncoder().encode(message);
+//    const hashBuffer = await crypto.subtle.digest('SHA-512', msgUint8);
+//    const hashHex = Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+//    return hashHex;
+//}
+function digestMessage(message) {
+    let resv
+    let rej
+    let res=new Promise((r, re) => {resv=r;rej=re})
     const msgUint8 = new TextEncoder().encode(message);
-    const hashBuffer = await crypto.subtle.digest('SHA-512', msgUint8);
-    const hashHex = Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
-    return hashHex;
+    crypto.subtle.digest('SHA-512', msgUint8).then(hashBuffer=>{resv(Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join(''))},(r)=>rej(r));
+    return res;
 }
 
 function startaudio(){
@@ -527,16 +539,19 @@ function collisionmap(wait=false,ignore=false){
         if(renderer==3&&enableparticle)webgl2breakinitialize()
     }else{
         if(sharedarraybufferallowed&&collwebworkershared&&(!collwebworkersharedsend||(maxy-miny)*(maxx-minx)*Uint32Array.BYTES_PER_ELEMENT!=colsharedmap.byteLength)){
-            workercol.postMessage([minx,miny,maxx,maxy,test,gpuacceleratedgame])
+            console.log((maxy-miny)*(maxx-minx))
             colsharedmap=new SharedArrayBuffer((maxy-miny)*(maxx-minx)*Uint32Array.BYTES_PER_ELEMENT);
             objcolsharedmap=new SharedArrayBuffer((maxy-miny)*(maxx-minx)*Uint8Array.BYTES_PER_ELEMENT);
             objenemysharedmap=new SharedArrayBuffer((maxy-miny)*(maxx-minx)*Uint8Array.BYTES_PER_ELEMENT);
-            if(gravicache)gravisharedmap=new SharedArrayBuffer((maxy-miny)*(maxx-minx)*Float32Array.BYTES_PER_ELEMENT*4);
+            if(gravicache){
+                gravisharedmap=new SharedArrayBuffer((maxy-miny)*(maxx-minx)*Float32Array.BYTES_PER_ELEMENT*4);
+                gravimap=new Float32Array(gravisharedmap)
+            }
             colmap=new Uint32Array(colsharedmap);
             objcolmap=new Uint8Array(objcolsharedmap);
             objenemymap=new Uint8Array(objenemysharedmap);
-            if(gravicache)gravimap=new Float32Array(gravisharedmap)
             workercol.postMessage([colsharedmap,objcolsharedmap,objenemysharedmap])
+            //workercol.postMessage([minx,miny,maxx,maxy,test,gpuacceleratedgame])
             for(let i of myRect[loadmap])if("worker" in i)i.worker.postMessage({
                 update:{
                     objcolmap:objcolsharedmap,
@@ -551,8 +566,6 @@ function collisionmap(wait=false,ignore=false){
         }
         if(wait){
             return new Promise((resolve, reject) => {
-                workercol.postMessage([minx,miny,maxx,maxy,test,gpuacceleratedgame])
-
                 workercol.onmessage=(e)=>{
                     if(!collwebworkersharedsend){
                         colmap=new Uint32Array(e.data[0]);
@@ -565,9 +578,9 @@ function collisionmap(wait=false,ignore=false){
                     if(renderer==3&&enableparticle)webgl2breakinitialize()
                 }
                 workercol.onerror=reject
+                workercol.postMessage([minx,miny,maxx,maxy,test,gpuacceleratedgame])
             })
         }else{
-            workercol.postMessage([minx,miny,maxx,maxy,test,gpuacceleratedgame])
             workercol.onmessage=(e)=>{
                 if(!collwebworkersharedsend){
                     colmap=new Uint32Array(e.data[0]);
@@ -578,6 +591,7 @@ function collisionmap(wait=false,ignore=false){
                 collupdate=true
                 if(renderer==3&&enableparticle)webgl2breakinitialize()
             }
+            workercol.postMessage([minx,miny,maxx,maxy,test,gpuacceleratedgame])
         }
     }
 }
@@ -618,15 +632,15 @@ function menucontrolls() {
     function loop1(){
         let obj=document.querySelectorAll("button,input,textarea")
         let ind=[...obj].findIndex(me=>me===document.activeElement)||0
-        if(keys.keytoggle(27))try{obj[ind].blur()}catch{}
+        if(keys.keytoggle(27))try{obj[ind].blur()}catch(err){}
         if(menuallowedtomove){
             if(keys.keytoggle(83))ind++
             if(keys.keytoggle(87))ind--
             if(ind<0)ind+=obj.length
             if(ind>=obj.length)ind-=obj.length
 
-            if(keys.keytoggle(82))try{obj[ind].click()}catch{}
-            try{obj[ind].focus()}catch{}
+            if(keys.keytoggle(82))try{obj[ind].click()}catch(err){}
+            try{obj[ind].focus()}catch(err){}
         }
         if(menuupdatekeys&&!disablemenucontrolls)window.requestAnimationFrame(loop1);
     }
@@ -697,15 +711,19 @@ async function weaterlatlon(lat,lon){
     console.log('Your latitude is :'+lat+' and longitude is '+lon);
     weaterinfo=await fetch('https://api.openweathermap.org/data/2.5/weather?units=metric&lat='+lat+'&lon='+lon+'&appid='+weatherapikey).then(resp=>resp.json()) // Convert data to json
     console.log(weaterinfo);
-    //distance of 
-    //devicedirection
-    //weaterinfo.wind.deg
-    //todo   (couldnt do not enoth medicine)
-    windrange=[weaterinfo.wind.speed/5,weaterinfo.wind.speed/10]
+    setwind()
 }
 
+function setwind(){
+    if(weaterinfo==undefined)return
+    let a=(Math.PI/180)*(devicedirection+180)
+    let b=(Math.PI/180)*weaterinfo.wind.deg
+    let atab=Math.atan2(Math.abs(Math.abs(Math.sin(a))-Math.abs(Math.sin(b))),Math.abs(Math.abs(Math.cos(a))-Math.abs(Math.cos(b))))
+    let factor=Math.abs(Math.sin(atab)-Math.cos(atab))
+    windrange=[weaterinfo.wind.speed*factor,weaterinfo.wind.speed*factor] 
+}
 
-window.addEventListener("deviceorientation", event=>{devicedirection=event.beta|0}, true);
+window.addEventListener("deviceorientation", event=>{devicedirection=event.beta|0,setwind()}, true);
 
 function testvib(time,slow=1,strong=1){
     function vib(){

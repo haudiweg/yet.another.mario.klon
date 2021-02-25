@@ -1,49 +1,76 @@
 function webglstart(i){
     //net immer neu compile 
     //dynamisch neues hinzufügen lassen
+    //for(let i of shaderProgram){
+    //    window[ctxarr[i]].deleteProgram(i)
+    //}
+    shadowrendermode=0
+    grasstogpuwebgl2mode=0
+    updatetgrass=0
+    grasstorender=0
+    howmutchgrass=0
+    webglgrassdrawarr={firsts:[],counts:[],num:[],xy:[]}
+    WEBGLdisjointtimermode=0
+    shaderProgram=[]
+    for(let i of Object.keys(webglbuffers)){
+        for(let i1 of Object.keys(webglbuffers[i].buffer)){
+            webglbuffers[i].gl.deleteBuffer(webglbuffers[i].buffer[i1].buffer)
+        }
+        for(let i1 of Object.keys(webglbuffers[i].framebuffer)){
+            webglbuffers[i].gl.deleteFramebuffer(webglbuffers[i].framebuffer[i1].buffer)
+        }
+        for(let i1 of Object.keys(webglbuffers[i].feedbackbuffer)){
+            webglbuffers[i].gl.deleteBuffer(webglbuffers[i].feedbackbuffer[i1].buffer)
+        }
+    }
+    webglbuffers=[]
     createshader(i,0,webgl2?"defaultwebgl2":"default")
 
     if(webgl2){
         WEBGLmultidraw=gl.getExtension("WEBGL_multi_draw")
         WEBGLdisjointtimer=gl.getExtension('EXT_disjoint_timer_query_webgl2');
 
-        createshader(i,1,"grass",true)
-        transformFeedback[i+0] = window[ctxarr[i]].createTransformFeedback()
-        window[ctxarr[i]].bindTransformFeedback(window[ctxarr[i]].TRANSFORM_FEEDBACK, transformFeedback[i+0])
-        window[ctxarr[i]].transformFeedbackVaryings(shaderProgram[1], ['aVelo1','aWind1','aWindrandtimer1'], window[ctxarr[i]].SEPARATE_ATTRIBS)
+        if(webglgrassani){
+            createshader(i,1,"grass",true)
+            transformFeedback[i+0] = window[ctxarr[i]].createTransformFeedback()
+            window[ctxarr[i]].bindTransformFeedback(window[ctxarr[i]].TRANSFORM_FEEDBACK, transformFeedback[i+0])
+            window[ctxarr[i]].transformFeedbackVaryings(shaderProgram[1], ['aVelo1','aWind1','aWindrandtimer1'], window[ctxarr[i]].SEPARATE_ATTRIBS)
+        }
 
 
+        if(enableparticle){
+            createshader(i,2,"particle",true)
+            transformFeedback[i+1] = window[ctxarr[i]].createTransformFeedback()
+            window[ctxarr[i]].bindTransformFeedback(window[ctxarr[i]].TRANSFORM_FEEDBACK, transformFeedback[i+1])
+            window[ctxarr[i]].transformFeedbackVaryings(shaderProgram[2], ['aVelop1','aPosp1','aLivep1'], window[ctxarr[i]].SEPARATE_ATTRIBS)
+        }
 
-        createshader(i,2,"particle",true)
-        transformFeedback[i+1] = window[ctxarr[i]].createTransformFeedback()
-        window[ctxarr[i]].bindTransformFeedback(window[ctxarr[i]].TRANSFORM_FEEDBACK, transformFeedback[i+1])
-        window[ctxarr[i]].transformFeedbackVaryings(shaderProgram[2], ['aVelop1','aPosp1','aLivep1'], window[ctxarr[i]].SEPARATE_ATTRIBS)
-
-
-        createshader(i,3,"shadow",true)
-        transformFeedback[i+2] = window[ctxarr[i]].createTransformFeedback()
-        window[ctxarr[i]].bindTransformFeedback(window[ctxarr[i]].TRANSFORM_FEEDBACK, transformFeedback[i+2])
-        window[ctxarr[i]].transformFeedbackVaryings(shaderProgram[3], ['aColorsun1'], window[ctxarr[i]].SEPARATE_ATTRIBS)
-        //reinfolge fixen
-
-
-        createshader(i,4,"shadowdraw")
-
-        createshader(i,5,"shadowminmax")
-        transformFeedback[i+5] = window[ctxarr[i]].createTransformFeedback()
-        window[ctxarr[i]].bindTransformFeedback(window[ctxarr[i]].TRANSFORM_FEEDBACK, transformFeedback[i+5])
-        window[ctxarr[i]].transformFeedbackVaryings(shaderProgram[5], ['minmaxinslight1'], window[ctxarr[i]].SEPARATE_ATTRIBS)
-
-        createshader(i,6,"shadowkante")
-        transformFeedback[i+6] = window[ctxarr[i]].createTransformFeedback()
-        window[ctxarr[i]].bindTransformFeedback(window[ctxarr[i]].TRANSFORM_FEEDBACK, transformFeedback[i+6])
-        window[ctxarr[i]].transformFeedbackVaryings(shaderProgram[6], ['aKante'], window[ctxarr[i]].SEPARATE_ATTRIBS)
+        if(webglshadowsallowed){
+            createshader(i,3,"shadow",true)
+            transformFeedback[i+2] = window[ctxarr[i]].createTransformFeedback()
+            window[ctxarr[i]].bindTransformFeedback(window[ctxarr[i]].TRANSFORM_FEEDBACK, transformFeedback[i+2])
+            window[ctxarr[i]].transformFeedbackVaryings(shaderProgram[3], ['aColorsun1'], window[ctxarr[i]].SEPARATE_ATTRIBS)
+            //reinfolge fixen
 
 
-        createshader(i,7,"sunrender")
-        transformFeedback[i+7] = window[ctxarr[i]].createTransformFeedback()
-        window[ctxarr[i]].bindTransformFeedback(window[ctxarr[i]].TRANSFORM_FEEDBACK, transformFeedback[i+7])
-        window[ctxarr[i]].transformFeedbackVaryings(shaderProgram[7], ['asunarr1'], window[ctxarr[i]].SEPARATE_ATTRIBS)
+            createshader(i,4,"shadowdraw")
+
+            createshader(i,5,"shadowminmax")
+            transformFeedback[i+5] = window[ctxarr[i]].createTransformFeedback()
+            window[ctxarr[i]].bindTransformFeedback(window[ctxarr[i]].TRANSFORM_FEEDBACK, transformFeedback[i+5])
+            window[ctxarr[i]].transformFeedbackVaryings(shaderProgram[5], ['minmaxinslight1'], window[ctxarr[i]].SEPARATE_ATTRIBS)
+
+            createshader(i,6,"shadowkante")
+            transformFeedback[i+6] = window[ctxarr[i]].createTransformFeedback()
+            window[ctxarr[i]].bindTransformFeedback(window[ctxarr[i]].TRANSFORM_FEEDBACK, transformFeedback[i+6])
+            window[ctxarr[i]].transformFeedbackVaryings(shaderProgram[6], ['aKante'], window[ctxarr[i]].SEPARATE_ATTRIBS)
+
+
+            createshader(i,7,"sunrender")
+            transformFeedback[i+7] = window[ctxarr[i]].createTransformFeedback()
+            window[ctxarr[i]].bindTransformFeedback(window[ctxarr[i]].TRANSFORM_FEEDBACK, transformFeedback[i+7])
+            window[ctxarr[i]].transformFeedbackVaryings(shaderProgram[7], ['asunarr1'], window[ctxarr[i]].SEPARATE_ATTRIBS)
+        }
 
     }else{
         WEBGLoes=gl.getExtension("OES_vertex_array_object");
@@ -73,6 +100,7 @@ function webglstart(i){
     new webglbuffer.addvaotogroup("obj")
     if(webgl2){
         if(webglgrassani){
+            updategrass=true
             new webglbuffer.creategroup({name:"grass",shader:shaderProgram[1]})
             new webglbuffer.createbuffer("grass",{buffername:"coordinates1"})
             new webglbuffer.createbuffer("grass",{buffername:"grasscolor",bufferlength:4})
@@ -285,8 +313,7 @@ async function repaint3(x=0,y=0,time=0){
             if(typeof(ctxb)!="undefined")ctxb.clearRect(0,0,canvas.width,canvas.height);
         }
 
-
-        webgldrawarr=[...mySun[loadmap],...myRect[loadmap]].filter(i=>(!webglfallback||!i.equal)&&(!webglfallback||!i.webglcantdraw)&&!(inversekinematics&&promall[3].res&&i.inversekinematics==true)&&!("animation" in i&&playertexturanimation))
+        webgldrawarr=[...mySun[loadmap],...myRect[loadmap]].filter(i=>(!webglfallback||!i.equal)&&(!webglfallback||!i.webglcantdraw)&&!(inversekinematics&&promall[3].res&&i.inversekinematics==true)&&!("animation" in i&&playertexturanimation&&(!disablevideos||!disablepics||!disabletexturs)))
 
 
         /**@type {number[]} objvertices */
@@ -327,7 +354,8 @@ async function repaint3(x=0,y=0,time=0){
             if(i.nodraw||i.invisible){
                 i.webglfill=[0,0,0,0]
             }else{
-                if((Array.isArray(i.fill)||i.fill.constructor.name.match("OffscreenCanvas|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement"))&&i.webglcantdraw!=true){
+                if(disablevideos&&disablepics&&disabletexturs&&typeof(i.texture)!=="undefined"&&gl.isTexture(i.texture)){gl.deleteTexture(i.texture);delete i.texture}//clear useless textures
+                if((Array.isArray(i.fill)||i.fill.constructor.name.match("OffscreenCanvas|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement"))&&i.webglcantdraw!=true&&(!disablevideos||!disablepics||!disabletexturs)){
                     if(typeof(i.texture)=="undefined"||!gl.isTexture(i.texture))i.texture=gl.createTexture();
                     gl.bindTexture(gl.TEXTURE_2D, i.texture);
                     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
@@ -363,10 +391,11 @@ async function repaint3(x=0,y=0,time=0){
                     gl.bindTexture(gl.TEXTURE_2D, null);
                     pics++
                 }
-                if(typeof(i.fill)=="string"){
+                if(typeof(i.fill)=="string"||typeof(i.fillbackup)=="string"||typeof(i.fillstr)=="string"){
                     let colorctx = new OffscreenCanvas(1,1).getContext('2d');
-                    if(Object.keys(colorobj).includes(i.fill)){
-                        colorctx.fillStyle = i.fillbackup
+                    if(Object.keys(colorobj).includes(i.fill)||typeof(i.fill)!="string"){
+                        if(typeof(i.fillbackup)=="string")colorctx.fillStyle = i.fillbackup
+                        if(typeof(i.fillstr)=="string")colorctx.fillStyle=i.fillstr
                     }else{
                         colorctx.fillStyle = i.fill;
                     }
@@ -380,12 +409,7 @@ async function repaint3(x=0,y=0,time=0){
                 }
                 if(texturerror){
                     if(!loadedtexture)i.webglcantdrawfillbackup=true//wen schon bild geladen ist ist es net schlim wen man noch default textur nimmt
-                    let colorctx = new OffscreenCanvas(1,1).getContext('2d');
-                    colorctx.fillStyle = typeof(i.fillbackup)=="string"?i.fillbackup:"black";
-                    colorctx.fillRect(0, 0, 1, 1);
-                    let compcolor=[...colorctx.getImageData(0, 0, 1, 1).data]
-                    for (let i1 in compcolor)compcolor[i1]/=255
-                    i.webglfill=compcolor
+                    i.webglfill=[0,0,0,1]
                     if(!loadedtexture&&basicinfo){
                         console.groupCollapsed("texture webgl info")
                         console.info("texturerror: "+texturerrorobj)
@@ -488,7 +512,7 @@ async function repaint3(x=0,y=0,time=0){
         if(statscanvas!=undefined)ctxb.drawImage(statscanvas,0,0,statscanvas.width,statscanvas.height)
     }
     if(inversekinematics&&promall[3].res&&webglfallback)canvasdrawbones(ctxb,x,y)
-    if(webglfallback)for(let i of [...mySun[loadmap],...myRect[loadmap]])if(("animation" in i&&playertexturanimation&&!(inversekinematics&&promall[3].res&&i.inversekinematics==true))||i.equal||i.webglcantdraw)canvasdrawimage(ctxb,i,x,y)
+    if(webglfallback)for(let i of [...mySun[loadmap],...myRect[loadmap]])if(("animation" in i&&(playertexturanimation&&(!disablevideos||!disablepics||!disabletexturs))&&!(inversekinematics&&promall[3].res&&i.inversekinematics==true))||i.equal||(i.webglcantdraw&&(!disablevideos||!disablepics||!disabletexturs)))canvasdrawimage(ctxb,i,x,y)
 
 }
 function webgldraw(x=0,y=0,time=0){
@@ -508,7 +532,6 @@ function webgldraw(x=0,y=0,time=0){
             i1.minx/zoomn<rofx+canvas.width+20&&
             rofy*zoomn-20<i1.miny+i1.h&&
             i1.miny/zoomn<rofy+canvas.height+20))continue//wen unsichtbar nicht draw
-
         if("blur" in i1){
             gl.uniform1f(webglbuffers.obj.uniform.blur,i1.blur)
             if("webglblurcolor" in i1){
@@ -530,7 +553,7 @@ function webgldraw(x=0,y=0,time=0){
         }
 
         gl.uniform1f(webglbuffers.obj.uniform.aPicture, 0);
-        if((Array.isArray(i1.fill)||i1.fill.constructor.name.match("OffscreenCanvas|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement"))&&!i1.webglcantdrawfillbackup){
+        if((!disablevideos||!disablepics||!disabletexturs)&&(Array.isArray(i1.fill)||i1.fill.constructor.name.match("OffscreenCanvas|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement"))&&!i1.webglcantdrawfillbackup){
             gl.uniform1f(webglbuffers.obj.uniform.aPicture, 1);
             gl.bindTexture(gl.TEXTURE_2D, i1.texture);
             

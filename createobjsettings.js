@@ -188,12 +188,13 @@ const createobjsettings={
         thrown:"boolean",
         gravimulti:"number",
         lightcolor:"string",
+        id:"symbol",
         Multiplayer:{
             onlineplayernum:"number",
             onlineplayer:"string",
         },
         Questionblock:{
-            option:[/\[\[string,object(,\[number,\[(\[object\],)*\[object\]\]\])?\](,)?(\[string,object(,\[number,\[(\[object\],)*\[object\]\]\])?\])?\]/,"object"]
+            spawn:"object",
         },
         Specialblock:{
             option:[/(\[(number,)*number\])|number/,"object"],
@@ -292,10 +293,10 @@ const createobjsettings={
         "invisible"
     ],
     multiplayerallowedspawn:[
-        "Powerup"
+        "Powerup","Questionblock","Shape"
     ],
     multiplayerallowedremove:[
-        "Powerup"
+        "Powerup","Questionblock"
     ]
 }
 //Object.freeze(createobjsettings)

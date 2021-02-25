@@ -114,7 +114,7 @@ function webgl2breakadd(x,y,velo=[0,0],color=[1,0,0,1],anzahl=1,live=400,randomp
             let posy=y-myGravi[loadmap][i].miny
             posy-=Math.max(0,Math.min(posy,myGravi[loadmap][i].h))
             if(posx!==0||posy!==0){
-                let starke=(myGravi[loadmap][i].stärke/Math.max(myGravi[loadmap][i].abfac*Math.sqrt(Math.pow(posx,2)+Math.pow(posy,2)),0))
+                let starke=(myGravi[loadmap][i].stärke/Math.max(myGravi[loadmap][i].abfac*Math.hypot(posx,posy),0))
                 let winkel=Math.atan2(posy,posx)
                 graviins[0]+=starke*Math.cos(winkel)
                 graviins[1]+=starke*Math.sin(winkel)

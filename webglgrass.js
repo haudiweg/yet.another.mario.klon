@@ -279,6 +279,7 @@ function grasstogpuwebgl23(timetowalk){
         }
         webglgrassdrawarr.firsts=new Int32Array(firstsarr)
         webglgrassdrawarr.counts=new Int32Array(countsarr)
+        //console.log((objvertices.length/2)*Float32Array.BYTES_PER_ELEMENT)
         webglbuffer.testbufferoverflow("grass",(objvertices.length/2)*Float32Array.BYTES_PER_ELEMENT)
 
         //obj die weiter web sind weniger grass details

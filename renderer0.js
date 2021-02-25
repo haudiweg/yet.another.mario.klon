@@ -158,7 +158,7 @@ function canvasdrawbones(ctxt,x,y){
                 let finishx=seg.finish.x
                 let finishy=seg.finish.y
                 if(typeof(textur1)=="object"&&textur1.constructor.name.match("OffscreenCanvas|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement")){
-                    let dist=Math.sqrt(Math.pow(Math.abs(originx/zoomn-finishx/zoomn),2)+Math.pow(Math.abs(originy/zoomn-finishy/zoomn),2))
+                    let dist=Math.hypot(Math.abs(originx/zoomn-finishx/zoomn),Math.abs(originy/zoomn-finishy/zoomn))
                     let rot=Math.atan2(originy-finishy,originx-finishx)-Math.PI/2-Math.PI
                     ctxt.save();
                     ctxt.translate(originx/zoomn-x,originy/zoomn-y);

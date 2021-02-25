@@ -112,7 +112,7 @@ function setting(){
     }
 
 
-    obj.push(...settings)
+    obj.push(...JSON.parse(JSON.stringify(settings)))
     if(cheats)obj.push([...cheatsettings])
     if(noob){
         let finish=false

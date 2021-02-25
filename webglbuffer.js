@@ -166,7 +166,7 @@ const webglbuffer={
         if(webglbuffers.hasOwnProperty(groupname))group=webglbuffers[groupname]
         if(group==undefined){console.warn("nogroup");return}
     
-        if(group.buffersize<objlength*Float32Array.BYTES_PER_ELEMENT+100){
+        if(group.buffersize<objlength*Float32Array.BYTES_PER_ELEMENT+100){//||group.buffersize>objlength*Float32Array.BYTES_PER_ELEMENT+400
             const buffersizeold=group.buffersize
             let multi=Math.pow(10,(Math.log(objlength*Float32Array.BYTES_PER_ELEMENT)*Math.LOG10E+1|0)-1)
             if(group.buffersize==Math.ceil((objlength*Float32Array.BYTES_PER_ELEMENT)/multi)*multi)return

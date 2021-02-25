@@ -293,7 +293,7 @@ var keys={
         if(this.arr[key].mode=="axesmouse"&&this.arr[key].sign=="1")return mousex!=null?Math.max(mousex/(canvas.width/2)-1,0):0
         if(this.arr[key].mode=="axesmouse"&&this.arr[key].sign=="2")return mousey!=null?Math.max(1-mousey/(canvas.height/2),0):0
         if(this.arr[key].mode=="axesmouse"&&this.arr[key].sign=="3")return mousey!=null?Math.max(mousey/(canvas.height/2)-1,0):0
-        if(this.arr[key].mode=="axesmouse"&&this.arr[key].sign=="4")return mousex!=null&&mousey!=null?1-Math.sqrt(Math.pow(Math.abs(canvas.height/2-mousey),2)+Math.pow(Math.abs(canvas.width/2-mousex),2))/Math.sqrt(Math.pow(canvas.height/2,2)+Math.pow(canvas.width/2,2)):0
+        if(this.arr[key].mode=="axesmouse"&&this.arr[key].sign=="4")return mousex!=null&&mousey!=null?1-Math.hypot(Math.abs(canvas.height/2-mousey),Math.abs(canvas.width/2-mousex))/Math.hypot(canvas.height/2,canvas.width/2):0
         if(this.arr[key].mode=="exitmouse"&&this.arr[key].sign=="0")return mousex!=null&&mousey!=null&&exitborder>mousex&&exitborder>mousey?1:0
         if(this.arr[key].mode=="key"){
             return this.arr[key].stärke
@@ -308,7 +308,7 @@ var keys={
             if(this.arr[i].mode=="axesmouse"&&this.arr[i].sign=="1")this.arr[i].stärke=mousex!=null?Math.max(mousex/(canvas.width/2)-1,0):0
             if(this.arr[i].mode=="axesmouse"&&this.arr[i].sign=="2")this.arr[i].stärke=mousey!=null?Math.max(1-mousey/(canvas.height/2),0):0
             if(this.arr[i].mode=="axesmouse"&&this.arr[i].sign=="3")this.arr[i].stärke=mousey!=null?Math.max(mousey/(canvas.height/2)-1,0):0
-            if(this.arr[i].mode=="axesmouse"&&this.arr[i].sign=="4")this.arr[i].stärke=mousex!=null&&mousey!=null?1-Math.sqrt(Math.pow(Math.abs(canvas.height/2-mousey),2)+Math.pow(Math.abs(canvas.width/2-mousex),2))/Math.sqrt(Math.pow(canvas.height/2,2)+Math.pow(canvas.width/2,2)):0
+            if(this.arr[i].mode=="axesmouse"&&this.arr[i].sign=="4")this.arr[i].stärke=mousex!=null&&mousey!=null?1-Math.hypot(Math.abs(canvas.height/2-mousey),Math.abs(canvas.width/2-mousex))/Math.hypot(canvas.height/2,canvas.width/2):0
             if(this.arr[i].mode=="exitmouse"&&this.arr[i].sign=="0")this.arr[i].stärke=mousex!=null&&mousey!=null&&exitborder>mousex&&exitborder>mousey?1:0
         }
     },
@@ -370,12 +370,12 @@ var keys={
     setactmax:function(key,key1,stärke){
         this.actmax[key+","+key1]=stärke
     },
-    mousemove:function(){
+    mousemove:function(event){
         let bound=canvas.getBoundingClientRect();
         mousexc=(event.clientX-bound.left-canvas.clientLeft)*zoomn;
         mouseyc=(event.clientY-bound.top-canvas.clientTop)*zoomn;
     },
-    mousedown:function(){
+    mousedown:function(event){
         let bound=canvas.getBoundingClientRect();
         mousex=(event.clientX-bound.left-canvas.clientLeft)*zoomn;
         mousey=(event.clientY-bound.top-canvas.clientTop)*zoomn;

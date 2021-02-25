@@ -1,24 +1,28 @@
-function multiplayeraction(a){
-    if(a.act=="spawn obj"){
-        if(createobj.multiplayerallowedspawn.includes(a.data.construck)){
-            if(multiplayeridcheckingonspawn&&!checkids(a.id))return
-            let prop=[]
-            for(let i1 of createobj.multiplayerallowedobjprop)if(a.data.hasOwnProperty(i1))prop[i1]=a.data[i1]
-            new createobj[a.data.construck](myRect,{onlineplayernum:a.data.playerid,onlineplayer:a.id,...prop})
+function multiplayeraction(pac){
+    if(pac.act=="spawn obj"){
+        if(createobj.multiplayerallowedspawn.includes(pac.data.construck)){
+            if(multiplayeridcheckingonspawn&&!checkids(pac.id))return
+            let prop={}
+            for(let i1 of createobj.multiplayerallowedobjprop){
+                if(pac.data.hasOwnProperty(i1)){
+                    prop[i1]=pac.data[i1]
+                }
+            }
+            new createobj[pac.data.construck](myRect,Object.assign({onlineplayernum:pac.data.playerid,onlineplayer:pac.id},prop));
         }
         return
     }
-    if(a.act=="update obj"){
+    if(pac.act=="update obj"){
         for(let i of myRect[loadmap]){
-            if(i.managefromplayerobjnum==a.managefromplayerobjnum&&(i.managefromplayernum==a.id||i.sync)){
-                visibilityandcol(i,a.data)
+            if(i.managefromplayerobjnum==pac.managefromplayerobjnum&&(i.managefromplayernum==pac.id||i.sync)){
+                visibilityandcol(i,pac.data)
                 //mache shared obj besonders updaten
                 for(let i1 of createobj.multiplayerallowedobjprop){
-                    if(a.data.hasOwnProperty(i1)){
+                    if(pac.data.hasOwnProperty(i1)){
                         if("BYTES_PER_ELEMENT" in i[i1]){
-                            i[i1].fill(a.data[i1])
+                            i[i1].fill(pac.data[i1])
                         }else{
-                            i[i1]=a.data[i1]
+                            i[i1]=pac.data[i1]
                         }
                     }
                 }
@@ -27,53 +31,53 @@ function multiplayeraction(a){
         }
         return
     }
-    if(a.act=="remove obj"){
+    if(pac.act=="remove obj"){
         for(let i of myRect[loadmap]){
-            if(i.managefromplayerobjnum==a.managefromplayerobjnum&&((i.managefromplayernum==a.id||i.sync)|(i.managefromplayernum==a.data.id||!i.sync))){
+            if(i.managefromplayerobjnum==pac.managefromplayerobjnum&&((i.managefromplayernum==pac.id||i.sync)|(i.managefromplayernum==pac.data.id||!i.sync))){
 
             }
         }
         return
     }
-    if(stopmain&&a.act=="winscreen"){
+    if(stopmain&&pac.act=="winscreen"){
         console.log("finish (multiplayer)")
         stopmain=false;
         winscreen()
         return
     }
-    if(a.act=="sendmap"){//recive map
-        if(multiplayerblacklist.has(a.id))return//wen id auf blacklist dan return
-        if(multiplayerwhitelist.has(a.id)||multiplayeracceptallmaps){// wen auf whitelist dan accepte
-            loadarr(a.obj)
+    if(pac.act=="sendmap"){//recive map
+        if(multiplayerblacklist.has(pac.id))return//wen id auf blacklist dan return
+        if(multiplayerwhitelist.has(pac.id)||multiplayeracceptallmaps){// wen auf whitelist dan accepte
+            loadarr(pac.obj)
             return
         }
-        if(!multiplayerignorenotwitelistet)askfor(1,a)
+        if(!multiplayerignorenotwitelistet)askfor(1,pac)
         return
     }
 
-    if(stopmain&&a.act=="player stats update"){
+    if(stopmain&&pac.act=="player stats update"){
         for(let i of myRect[loadmap]){
-            if(i.onlineplayernum==a.playersendid&&i.onlineplayer==a.id){
-                if(renderer==3&&((typeof(a.w)=="number"&&i.w!=a.w)||(typeof(a.h)=="number"&&i.h!=a.h))){updatescene=true}
-                for(let i1 of createobj.multiplayerallowedprop)if(a.data.hasOwnProperty(i1)&&i.hasOwnProperty(i1))i[i1]=a.data[i1]
+            if(i.onlineplayernum==pac.playersendid&&i.onlineplayer==pac.id){
+                if(renderer==3&&((typeof(pac.w)=="number"&&i.w!=pac.w)||(typeof(pac.h)=="number"&&i.h!=pac.h))){updatescene=true}
+                for(let i1 of createobj.multiplayerallowedprop)if(pac.data.hasOwnProperty(i1)&&i.hasOwnProperty(i1))i[i1]=pac.data[i1]
                 return
             }
         }
     }
-    if(a.act=="player join"||a.act=="player join2"){
-        if(multiplayerblacklistgame.has(a.id))return//wen id auf blacklist dan return
+    if(pac.act=="player join"||pac.act=="player join2"){
+        if(multiplayerblacklistgame.has(pac.id))return//wen id auf blacklist dan return
         // wen auf whitelist schon da oder man alle accepten sol dan accepte 
-        if(multiplayerwhitelistgame.has(a.id)||multiplayeracceptallplayer||myRect[loadmap].some(i=>i.onlineplayernum==a.data.playerid&&i.onlineplayer==a.id)){
-            join(a)
+        if(multiplayerwhitelistgame.has(pac.id)||multiplayeracceptallplayer||myRect[loadmap].some(i=>i.onlineplayernum==pac.data.playerid&&i.onlineplayer==pac.id)){
+            join(pac)
             return
         }
-        if(!myRect[loadmap].some(i=>i.onlineplayernum==a.data.playerid&&i.onlineplayer==a.id)&&!multiplayerignorenotwitelistetgame)askfor(0,a)
+        if(!myRect[loadmap].some(i=>i.onlineplayernum==pac.data.playerid&&i.onlineplayer==pac.id)&&!multiplayerignorenotwitelistetgame)askfor(0,pac)
         return
     }
 
-    if(a.act=="player leave"){
+    if(pac.act=="player leave"){
         for(let i in myRect[loadmap]){
-            if(myRect[loadmap][i].onlineplayernum==a.data.playerid&&myRect[loadmap][i].onlineplayer==a.id){
+            if(myRect[loadmap][i].onlineplayernum==pac.data.playerid&&myRect[loadmap][i].onlineplayer==pac.id){
                 myRect[loadmap].splice(i,1);
                 break
             }
@@ -82,36 +86,36 @@ function multiplayeraction(a){
         return
     }
 
-    if(a.act=="is player away?"&&a.awayid==multiplayerid){
+    if(pac.act=="is player away?"&&pac.awayid==multiplayerid){
         postMessage({act:"im not away",id:multiplayerid})
         return
     }
 
-    if(a.act=="bye"){
+    if(pac.act=="bye"){
         for(let i in myRect[loadmap]){
-            if(myRect[loadmap][i].onlineplayer==a.id)myRect[loadmap].splice(i,1);
+            if(myRect[loadmap][i].onlineplayer==pac.id)myRect[loadmap].splice(i,1);
         }
-        multiplayermapplayer.delete(a.id)
-        multiplayerafk.delete(a.id)
+        multiplayermapplayer.delete(pac.id)
+        multiplayerafk.delete(pac.id)
         managefromplayer()
         return
     }
-    if(a.act=="dont answered (disconnect)"){
+    if(pac.act=="dont answered (disconnect)"){
         for(let i in myRect[loadmap]){
-            if(myRect[loadmap][i].onlineplayer==a.awayid)myRect[loadmap].splice(i,1);
+            if(myRect[loadmap][i].onlineplayer==pac.awayid)myRect[loadmap].splice(i,1);
         }
-        multiplayermapplayer.delete(a.awayid)
-        multiplayerafk.delete(a.awayid)
+        multiplayermapplayer.delete(pac.awayid)
+        multiplayerafk.delete(pac.awayid)
         managefromplayer()
         return
     }
-    if(a.act=="player afk"){
-        multiplayerafk.add(a.id)
+    if(pac.act=="player afk"){
+        multiplayerafk.add(pac.id)
         managefromplayer()
         return
     }
-    if(a.act=="player not afk"){
-        multiplayerafk.delete(a.id)
+    if(pac.act=="player not afk"){
+        multiplayerafk.delete(pac.id)
         managefromplayer()
         return
     }

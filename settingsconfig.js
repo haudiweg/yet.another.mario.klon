@@ -2,6 +2,9 @@ const settings=[
     "webglneedtocleareveryframe",
     "gamespeedup",
     "gravicache",
+    "webglwasserdraw",
+    ["playerwidthcollpoints","playerheightcollpoints","playercollpoints"],
+    "highcolquali",
     ["webglshadowsallowed","webglshadowsallowed","webglshadowseach","webglshadowsdrawmode","shadowstomemorypbo","raydebug","shadowupdatemax","rayres","shadowhighquali","shadowdrawmode"],
     ["neatkiworker","importki","exportki"],
     "basicinfo",
@@ -45,8 +48,8 @@ const noobsettings=["noobtarget",["nokill","inflive"],["tp","tptofinish"],["news
  */
 const checksettings={
     camfocusallplayer:"boolean",
-    cheats:"boolean",
-    noob:"boolean",
+    cheats:[/boolean/,"boolean",/true|false/,()=>{document.querySelectorAll('.preset').forEach((me)=>me.remove());setting()}],
+    noob:[/boolean/,"boolean",/true|false/,()=>{document.querySelectorAll('.preset').forEach((me)=>me.remove());setting()}],
     noobtarget:[/number/,"number",/[0-9]*/],
     language:"string",
     renderer:[/number/,"number",/[0-3]/],
@@ -195,7 +198,12 @@ const checksettings={
     rayres:"number",
     shadowhighquali:"boolean",
     shadowdrawmode:"number",
-    debugbackground:"boolean"
+    debugbackground:"boolean",
+    highcolquali:"boolean",
+    playerwidthcollpoints:[/number/,"number",/[0-9]{0-3}/],
+    playerheightcollpoints:[/number/,"number",/[0-9]{0-3}/],
+    playercollpoints:[/number/,"number",/[0-9]{0-3}/],
+    webglwasserdraw:"boolean"
 }
 const profilesettings={
     noonline:{
@@ -216,6 +224,25 @@ const profilesettings={
         wasserphysik:false,
         textureantialiasingscaling:false,
         fastmessuretext:false,
+    },
+    evenworsepc:{
+        webglshadowsallowed:false,
+        shadowlimmiter:false,
+        sunnlineofsight:false,
+        shadows:false,
+        suppixel:false,
+        inversekinematics:false,
+        playertexturanimation:false,
+        webglgrassani:false,
+        wasserphycollision:false,
+        wasserphysik:false,
+        textureantialiasingscaling:false,
+        fastmessuretext:false,
+        highcolquali:false,
+        disablevideos:true,
+        disablepics:true,
+        disabletexturs:true,
+        webglfallback:false
     },
     notextures:{
         disablevideos:true,

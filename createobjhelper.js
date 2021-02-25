@@ -5,25 +5,40 @@ const createobjhelper={
     check:function(arr,defaultarr){
         if(!(this.constructor.name in createobjsettings))createobjsettings[this.constructor.name]={}
         if(typeof(createobjsettings[this.constructor.name].type)=="undefined"){
-            Object.create(createobjsettings[this.constructor.name].type={...createobjsettings.type})//filter hir alle obj raus die namen von obj haben
+            Object.create(createobjsettings[this.constructor.name].type=Object.assign({}, createobjsettings.type))//filter hir alle obj raus die namen von obj haben
             if(typeof(createobjsettings.type[this.constructor.name])=="object")Object.assign(createobjsettings[this.constructor.name].type,createobjsettings.type[this.constructor.name])
         }
         if(typeof(createobjsettings[this.constructor.name].notdisplay)=="undefined"){
-            Object.create(createobjsettings[this.constructor.name].notdisplay={...createobjsettings.notdisplay.global})
+            Object.create(createobjsettings[this.constructor.name].notdisplay=Object.assign({}, createobjsettings.notdisplay.global))
             if(typeof(createobjsettings.notdisplay[this.constructor.name])=="object")Object.assign(createobjsettings[this.constructor.name].notdisplay,createobjsettings.notdisplay[this.constructor.name])
         }
         //@ts-expect-error
         let languagetemp=language=="auto"?(window.navigator.languages?window.navigator.languages[0]:navigator.language||navigator.browserLanguage||navigator.userLanguage||"en").replace(/[-_].*/,""):language
         if(!createobjsettings.tooltip.hasOwnProperty(languagetemp))languagetemp="en"
         if(typeof(createobjsettings[this.constructor.name].tooltip)=="undefined"){
-            Object.create(createobjsettings[this.constructor.name].tooltip={...createobjsettings.tooltip[languagetemp]})//filter hir alle obj raus die namen von obj haben
+            Object.create(createobjsettings[this.constructor.name].tooltip=Object.assign({}, createobjsettings.tooltip[languagetemp]))//filter hir alle obj raus die namen von obj haben
             if(typeof(createobjsettings.tooltip[languagetemp][this.constructor.name])=="object")Object.assign(createobjsettings[this.constructor.name].tooltip,createobjsettings.tooltip[languagetemp][this.constructor.name])
         }
+        let constr
+        if(typeof(arr[0])=="number"||typeof(arr[0])=="symbol"){
+            constr=Object.keys(window).find(me=>window[me]===arr[arr.length-1])
+        }else if(typeof(arr)=="symbol"){
+            constr=Object.keys(window).find(me=>window[me]===defaultarr.constructor.name)
+        }else if(arr=="return"){
+            constr=Object.keys(window).find(me=>window[me]===defaultarr.constructor.name)
+        }else if(arr==undefined){
+            constr=Object.keys(window).find(me=>window[me]===defaultarr.constructor.name)
+        }else if(typeof(arr)=="object"){
+            constr=Object.keys(window).find(me=>window[me]===arr)
+        }else{
+            constr="error"
+        }
+
         Object.defineProperty(this, 'construckarr', {
             enumerable: true,
             configurable: false,
             writable: false,
-            value: (arr=="return")?defaultarr.constructor.name:Object.keys(window).find(me=>window[me]===((typeof(arr[0])=="number")?arr[arr.length-1]:(arr!==undefined?arr:defaultarr.constructor.name)))
+            value: constr
         });
         Object.defineProperty(this, 'construck', {
             enumerable: true,
@@ -34,28 +49,65 @@ const createobjhelper={
         if(!checkprop(this))return
         //arr="return"
         //arr=myRect
+        //arr=symbol
         //arr=[0,myRect] //zahl=platz in aktuellen myRect array
         //arr=[0,0,myRect] // erste zahl myRect array karten number   zweite zahl number in myRect array
+        //arr=[symbol,myRect] 
+        //arr=[0,symbol,myRect]
 
-        createobjhelper.objcreateworker.call(this)
+        if(sharedarraybufferallowed)createobjhelper.objcreateworker.call(this)
         if(neatkiworker&&sharedarraybufferallowed)createobjhelper.objcreatesharedworker.call(this)
 
-        if(typeof(arr[0])=="number"){
+        
+        //refectorn
+
+        if(typeof(arr[0])=="number"||typeof(arr[0])=="symbol"){
             if(arr.length==3){
-                arr[2][arr[0]][arr[1]]=this
-            }else{
-                arr[1][loadmap][arr[0]]=this
-            }
-        }else{
-            if(arr=="return"){
-                return this
-            }else{
-                if(arr==undefined){
-                    defaultarr[loadmap].push(this)
+                if(typeof(arr[1])=="symbol"){
+                    let num=arr[2][arr[0]].findIndex(i=>i.id==arr[1])
+                    if(num==-1){
+                        console.warn("couldnt find symbol")
+                        return
+                    }
+                    this.id=arr[1]
+                    arr[2][arr[0]][num]=this
                 }else{
-                    arr[loadmap].push(this)
+                    this.id=Symbol("id")
+                    arr[2][arr[0]][arr[1]]=this
+                }
+            }else{
+                if(typeof(arr[0])=="symbol"){
+                    let num=arr[1][loadmap].findIndex(i=>i.id==arr[0])
+                    if(num==-1){
+                        console.warn("couldnt find symbol")
+                        return
+                    }
+                    this.id=arr[0]
+                    arr[1][loadmap][num]=this
+                }else{
+                    this.id=Symbol("id")
+                    arr[1][loadmap][arr[0]]=this
                 }
             }
+        }else if(typeof(arr)=="symbol"){
+            let num=defaultarr[loadmap].findIndex(i=>i.id==arr)
+            if(num==-1){
+                console.warn("couldnt find symbol")
+                return
+            }
+            this.id=arr
+            defaultarr[loadmap][num]=this
+        }else if(arr=="return"){
+            this.id=Symbol("id")
+            return this
+        }else if(arr==undefined){
+            this.id=Symbol("id")
+            defaultarr[loadmap].push(this)
+        }else if(typeof(arr)=="object"){
+            this.id=Symbol("id")
+            arr[loadmap].push(this)
+        }else{
+            console.warn("cant find were to put obj")
         }
     },
     /**@private */
